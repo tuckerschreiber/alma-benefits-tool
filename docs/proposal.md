@@ -42,7 +42,7 @@ Includes two monitoring features: a refresh button for checking new messages, an
 | Buffer (Twilio API quirks, testing, feedback rounds) | 4–6 |
 | **Total** | **27–38 hrs** |
 
-Quote as **30–40 hrs**.
+Quote as **30–40 hrs** at $75/hr = **$2,250–$3,000**.
 
 ---
 
