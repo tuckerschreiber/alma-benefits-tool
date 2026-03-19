@@ -16,11 +16,11 @@ Includes two monitoring features: a refresh button for checking new messages, an
 |---|---|
 | Project setup, hosting, database | 3–4 |
 | Authentication (login, staff accounts) | 2–3 |
-| Conversations list + create flow | 4–5 |
+| Conversations list + create flow | 3–4 |
 | Conversation detail (participants, message history, archive) | 3–4 |
-| Admin staff management | 2–3 |
-| Navigation, layout, polish | 2–3 |
-| **Subtotal** | **16–22 hrs** |
+| Admin staff management | 1–2 |
+| Navigation, layout, polish | 1–2 |
+| **Subtotal** | **13–19 hrs** |
 
 ### Monitoring + @alma tagging (new scope)
 
@@ -38,11 +38,11 @@ Includes two monitoring features: a refresh button for checking new messages, an
 
 | | Hours |
 |---|---|
-| Development | 23–32 |
-| Buffer (Twilio API quirks, testing, feedback rounds) | 4–6 |
-| **Total** | **27–38 hrs** |
+| Development | 20–29 |
+| Buffer (Twilio API quirks, testing, feedback rounds) | 3–5 |
+| **Total** | **23–34 hrs** |
 
-Quote as **30–40 hrs** at $75/hr = **$2,250–$3,000**.
+Quote as **25–35 hrs** at $75/hr = **$1,875–$2,625**.
 
 ---
 
