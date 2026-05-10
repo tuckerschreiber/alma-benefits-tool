@@ -1,0 +1,1135 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+    /* ---------- Reset / base ---------- */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: #FFFAF4;
+      color: #032215;
+      font-family: 'Futura', 'Futura PT', 'Trebuchet MS', sans-serif;
+      font-weight: 400;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: 500;
+      color: #032215;
+    }
+
+    h1 {
+      font-size: 28px;
+      line-height: 1.25;
+    }
+
+    /* ---------- App shell ---------- */
+    .ap-app {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ---------- Progress ---------- */
+    .ap-progress {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ap-progress__label {
+      font-size: 13px;
+      color: #999;
+      letter-spacing: 0.02em;
+    }
+
+    .ap-progress__bar {
+      display: flex;
+      gap: 6px;
+    }
+
+    .ap-progress__segment {
+      flex: 1;
+      height: 6px;
+      border-radius: 999px;
+      background: rgb(235, 225, 213);
+    }
+
+    .ap-progress__segment--active {
+      background: #156146;
+    }
+
+    /* ---------- Step sections ---------- */
+    .ap-step {
+      display: none;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .ap-step--active {
+      display: flex;
+    }
+
+    .ap-step__header {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ap-step__subhead {
+      color: #555;
+      font-size: 15px;
+    }
+
+    /* ---------- Card (reserved for later use) ---------- */
+    .ap-card {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    /* ---------- Field group ---------- */
+    .ap-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ap-label {
+      color: #032215;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .ap-optional {
+      color: #999;
+      font-size: 13px;
+      font-weight: 400;
+    }
+
+    .ap-input,
+    .ap-textarea {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #032215;
+      width: 100%;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .ap-input:focus,
+    .ap-textarea:focus {
+      outline: none;
+      border-color: #156146;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    .ap-textarea {
+      resize: vertical;
+      min-height: 96px;
+      line-height: 1.5;
+    }
+
+    /* ---------- Postpartum toggle link ---------- */
+    .ap-field__footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    .ap-link-toggle {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #156146;
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: right;
+    }
+
+    .ap-link-toggle:hover {
+      text-decoration: underline;
+    }
+
+    .ap-link-toggle strong {
+      font-weight: 500;
+    }
+
+    /* ---------- Hidden helper ---------- */
+    .ap-hidden {
+      display: none !important;
+    }
+
+    /* ---------- Two-button toggle (first-time parent) ---------- */
+    .ap-toggle-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .ap-toggle-group--three {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    /* ---------- Select (styled like ap-input) ---------- */
+    .ap-select {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 12px 40px 12px 16px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #032215;
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='none' stroke='%23156146' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M1 1l5 5 5-5'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      cursor: pointer;
+    }
+
+    .ap-select:focus {
+      outline: none;
+      border-color: #156146;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    /* ---------- Currency input ---------- */
+    .ap-input-currency {
+      position: relative;
+    }
+
+    .ap-input-currency__prefix {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #555;
+      font-size: 15px;
+      pointer-events: none;
+    }
+
+    .ap-input-currency .ap-input {
+      padding-left: 28px;
+    }
+
+    /* ---------- Label row (label + info button) ---------- */
+    .ap-label-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+    }
+
+    .ap-info-btn {
+      background: none;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 999px;
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      font-family: inherit;
+      font-size: 11px;
+      line-height: 1;
+      color: #156146;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ap-info-btn:hover,
+    .ap-info-btn:focus {
+      border-color: #156146;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    .ap-tooltip {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 6px;
+      background: #032215;
+      color: #FFFAF4;
+      font-size: 13px;
+      line-height: 1.45;
+      padding: 10px 12px;
+      border-radius: 8px;
+      max-width: 320px;
+      z-index: 10;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .ap-toggle {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #032215;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .ap-toggle:hover {
+      border-color: #156146;
+    }
+
+    .ap-toggle--selected {
+      border-color: #156146;
+      background: #F4E9DD;
+    }
+
+    /* ---------- Nav ---------- */
+    .ap-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .ap-btn {
+      background: #156146;
+      color: #FFFAF4;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 32px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+
+    .ap-btn:hover {
+      opacity: 0.92;
+    }
+
+    .ap-btn:disabled,
+    .ap-btn[disabled] {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .ap-btn--back {
+      background: transparent;
+      color: #156146;
+      border: 1px solid rgb(235, 225, 213);
+    }
+
+    /* ---------- Service grid (step 3) ---------- */
+    .ap-service-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 720px) {
+      .ap-service-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .ap-service-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .ap-service-card {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
+      padding: 16px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #032215;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      width: 100%;
+    }
+
+    .ap-service-card:hover {
+      border-color: #156146;
+    }
+
+    .ap-service-card:focus-visible {
+      outline: none;
+      border-color: #156146;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    .ap-service-card[aria-checked="true"] {
+      border-color: #156146;
+      background: #F4E9DD;
+    }
+
+    .ap-service-card__check {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      border: 1.5px solid rgb(180, 165, 150);
+      background: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ap-service-card[aria-checked="true"] .ap-service-card__check {
+      border-color: #156146;
+      background: #156146;
+    }
+
+    .ap-service-card__check svg {
+      display: none;
+      width: 12px;
+      height: 12px;
+      color: #FFFAF4;
+    }
+
+    .ap-service-card[aria-checked="true"] .ap-service-card__check svg {
+      display: block;
+    }
+
+    .ap-service-card__label {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    /* Coverage detail block (expanded under each checked service) */
+    .ap-coverage-detail {
+      grid-column: 1 / -1;
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 720px) {
+      .ap-coverage-detail {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .ap-coverage-detail {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .ap-coverage-detail__title {
+      grid-column: 1 / -1;
+      font-size: 13px;
+      color: #555;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .ap-coverage-detail .ap-field {
+      gap: 4px;
+    }
+
+    .ap-coverage-detail .ap-label {
+      font-size: 13px;
+    }
+
+    .ap-coverage-detail .ap-input {
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+
+    .ap-coverage-detail .ap-input-currency .ap-input {
+      padding-left: 24px;
+    }
+
+    /* ---------- Not-sure link ---------- */
+    .ap-help-link {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #156146;
+      font-family: inherit;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: underline;
+      align-self: flex-start;
+    }
+
+    .ap-help-link:hover {
+      opacity: 0.85;
+    }
+
+    /* ---------- Modal ---------- */
+    .ap-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 34, 21, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 100;
+    }
+
+    .ap-modal[hidden] {
+      display: none;
+    }
+
+    .ap-modal__card {
+      background: #FFFAF4;
+      border-radius: 12px;
+      padding: 28px;
+      max-width: 480px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    .ap-modal__title {
+      font-size: 20px;
+      font-weight: 500;
+      color: #032215;
+    }
+
+    .ap-modal__body {
+      color: #555;
+      font-size: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .ap-modal__close {
+      align-self: flex-end;
+      margin-top: 8px;
+    }
+
+    /* ---------- Results panels ---------- */
+    .ap-panel {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .ap-panel h2 {
+      font-weight: 500;
+      font-size: 24px;
+      color: #032215;
+    }
+
+    .ap-panel p {
+      color: #555;
+      font-size: 15px;
+    }
+
+    .ap-snapshot-hero {
+      font-size: 44px;
+      line-height: 1.1;
+      font-weight: 500;
+      color: #156146;
+    }
+
+    .ap-snapshot-hero--muted {
+      color: #999;
+      font-size: 20px;
+      font-weight: 400;
+    }
+
+    .ap-hsa-callout {
+      display: inline-block;
+      background: #F4E9DD;
+      color: #032215;
+      font-size: 14px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      align-self: flex-start;
+    }
+
+    .ap-coverage-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 8px;
+    }
+
+    .ap-coverage-list__column h3 {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .ap-coverage-list ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ap-coverage-list li {
+      font-size: 15px;
+      color: #032215;
+    }
+
+    .ap-coverage-list li.ap-coverage-list__item--muted {
+      color: #999;
+    }
+
+    .ap-coverage-list__check {
+      color: #156146;
+      font-weight: 600;
+      margin-right: 6px;
+    }
+
+    .ap-coverage-list__dash {
+      color: #bbb;
+      margin-right: 6px;
+    }
+
+    .ap-rec-card {
+      background: #FFFAF4;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .ap-rec-card__icon {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      background: #F4E9DD;
+      color: #032215;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 500;
+      text-align: center;
+      line-height: 44px;
+    }
+
+    .ap-rec-card__body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ap-rec-card__title {
+      font-size: 17px;
+      font-weight: 500;
+      color: #032215;
+    }
+
+    .ap-rec-card__dosing {
+      font-size: 14px;
+      color: #156146;
+      font-weight: 500;
+    }
+
+    .ap-rec-card__rationale {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .ap-rec-card__callout {
+      margin: 0;
+      padding: 8px 12px;
+      background: #F4E9DD;
+      color: #156146;
+      border-radius: 6px;
+      font-size: 13px;
+      font-style: italic;
+      line-height: 1.4;
+    }
+
+    .ap-cost-breakdown {
+      margin-top: 8px;
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ap-cost-breakdown__row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .ap-cost-breakdown__row--covered {
+      color: #156146;
+    }
+
+    .ap-cost-breakdown__row--oop {
+      color: #888;
+    }
+
+    .ap-cost-breakdown__row--total {
+      font-weight: 500;
+      color: #032215;
+    }
+
+    .ap-funding-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ap-funding-list li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 15px;
+      color: #032215;
+    }
+
+    .ap-funding-list li::before {
+      content: '\2022';
+      color: #156146;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .ap-cta-row {
+      display: flex;
+      flex-direction: row;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .ap-cta-row .ap-btn {
+      padding: 16px 28px;
+      font-size: 16px;
+    }
+
+    .ap-btn--secondary {
+      background: transparent;
+      color: #156146;
+      border: 1px solid #156146;
+    }
+
+    .ap-empty-rec {
+      color: #555;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* ---------- Lead capture drawer ---------- */
+    .ap-panel--lead {
+      margin-top: 16px;
+    }
+
+    .ap-panel--lead h2 {
+      font-size: 20px;
+    }
+
+    .ap-panel--lead .ap-field {
+      gap: 6px;
+    }
+
+    .ap-panel--lead label {
+      color: #032215;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .ap-panel--lead input[type="text"],
+    .ap-panel--lead input[type="email"],
+    .ap-panel--lead textarea {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #032215;
+      width: 100%;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .ap-panel--lead textarea {
+      resize: vertical;
+      min-height: 88px;
+      line-height: 1.5;
+    }
+
+    .ap-panel--lead input:focus,
+    .ap-panel--lead textarea:focus {
+      outline: none;
+      border-color: #156146;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    .ap-panel--lead input[aria-invalid="true"],
+    .ap-panel--lead textarea[aria-invalid="true"] {
+      border-color: #B23A2E;
+      box-shadow: 0 0 0 3px rgba(178, 58, 46, 0.12);
+    }
+
+    .ap-panel--lead form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .ap-privacy {
+      font-size: 13px;
+      color: #777;
+    }
+
+    .ap-lead-status {
+      font-size: 14px;
+      min-height: 18px;
+      margin-top: 4px;
+    }
+
+    .ap-lead-status--error {
+      color: #B23A2E;
+    }
+
+    .ap-lead-status--success {
+      color: #156146;
+    }
+
+    .ap-lead-submit {
+      align-self: flex-start;
+    }
+
+    /* ---------- PDF source (off-screen render target) ---------- */
+    .ap-pdf-source {
+      position: fixed;
+      top: 0;
+      left: -10000px;
+      width: 8.5in;
+      background: #ffffff;
+      color: #032215;
+      font-family: 'Futura', 'Futura PT', 'Trebuchet MS', sans-serif;
+      font-weight: 400;
+      line-height: 1.5;
+      padding: 0;
+    }
+
+    .ap-pdf-source * {
+      box-sizing: border-box;
+    }
+
+    .ap-pdf__letterhead {
+      border-bottom: 2px solid #156146;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+
+    .ap-pdf__brand {
+      font-size: 28px;
+      font-weight: 500;
+      color: #156146;
+      letter-spacing: 0.02em;
+    }
+
+    .ap-pdf__brand-tag {
+      font-size: 12px;
+      color: #555;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .ap-pdf__meta {
+      margin-top: 14px;
+      font-size: 13px;
+      color: #555;
+      line-height: 1.55;
+    }
+
+    .ap-pdf__meta strong {
+      color: #032215;
+      font-weight: 500;
+    }
+
+    .ap-pdf__heading {
+      font-size: 22px;
+      font-weight: 500;
+      color: #032215;
+      margin-bottom: 20px;
+    }
+
+    .ap-pdf__panel {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 16px;
+      page-break-inside: avoid;
+    }
+
+    .ap-pdf__panel h3 {
+      font-size: 16px;
+      font-weight: 500;
+      color: #156146;
+      margin-bottom: 8px;
+    }
+
+    .ap-pdf__panel p {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .ap-pdf__hero {
+      font-size: 28px;
+      font-weight: 500;
+      color: #156146;
+      margin: 8px 0;
+    }
+
+    .ap-pdf__hero--muted {
+      color: #999;
+      font-size: 18px;
+      font-weight: 400;
+    }
+
+    .ap-pdf__hsa {
+      display: inline-block;
+      background: #F4E9DD;
+      color: #032215;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+
+    .ap-pdf__cov-grid {
+      margin-top: 8px;
+    }
+
+    .ap-pdf__cov-col {
+      margin-bottom: 10px;
+    }
+
+    .ap-pdf__cov-col h4 {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 4px;
+    }
+
+    .ap-pdf__cov-col ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .ap-pdf__cov-col li {
+      font-size: 13px;
+      color: #032215;
+      padding: 2px 0;
+    }
+
+    .ap-pdf__cov-col li.muted {
+      color: #999;
+    }
+
+    .ap-pdf__rec {
+      background: #FFFAF4;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 10px;
+      page-break-inside: avoid;
+    }
+
+    .ap-pdf__rec-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: #032215;
+      margin-bottom: 4px;
+    }
+
+    .ap-pdf__rec-dosing {
+      font-size: 12px;
+      color: #156146;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .ap-pdf__rec-rationale {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .ap-pdf__cost {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ap-pdf__cost-row {
+      padding: 2px 0;
+    }
+
+    .ap-pdf__cost-row span:last-child {
+      float: right;
+    }
+
+    .ap-pdf__cost-row--covered { color: #156146; }
+    .ap-pdf__cost-row--oop { color: #888; }
+    .ap-pdf__cost-row--total { color: #032215; font-weight: 500; }
+
+    .ap-pdf__funding {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .ap-pdf__funding li {
+      font-size: 13px;
+      color: #032215;
+      padding: 4px 0 4px 14px;
+      position: relative;
+    }
+
+    .ap-pdf__funding li::before {
+      content: '•';
+      color: #156146;
+      font-weight: 700;
+      position: absolute;
+      left: 0;
+    }
+
+    .ap-pdf__footer {
+      margin-top: 20px;
+      padding-top: 14px;
+      border-top: 1px solid rgb(235, 225, 213);
+      font-size: 11px;
+      color: #888;
+      line-height: 1.55;
+    }
+
+    .ap-pdf__footer-link {
+      color: #156146;
+      font-weight: 500;
+    }
+
+    /* ---------- Mobile ---------- */
+    @media (max-width: 640px) {
+      .ap-app {
+        max-width: 100%;
+        padding: 24px 16px 48px;
+      }
+
+      .ap-btn {
+        padding: 12px 24px;
+        font-size: 14px;
+      }
+
+      .ap-toggle-group,
+      .ap-toggle-group--three {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .ap-panel {
+        padding: 24px;
+      }
+
+      .ap-panel h2 {
+        font-size: 20px;
+      }
+
+      .ap-snapshot-hero {
+        font-size: 32px;
+      }
+
+      .ap-coverage-list {
+        grid-template-columns: 1fr;
+      }
+
+      .ap-cta-row {
+        flex-direction: column;
+      }
+
+      .ap-cta-row .ap-btn {
+        width: 100%;
+      }
+    }
+  </style>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Alma Care Benefits Eligibility Tool",
+  "description": "Find out what your extended health benefits cover for postpartum care, get a personalized care plan, and a free PDF estimate for your insurance.",
+  "url": "https://almacare.ca/benefits",
+  "applicationCategory": "HealthApplication",
+  "operatingSystem": "Any",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CAD"
+  },
+  "provider": {
+    "@type": "Organization",
+    "name": "Alma Care",
+    "url": "https://almacare.ca"
+  }
+}
+</script>
