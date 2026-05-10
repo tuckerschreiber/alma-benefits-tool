@@ -337,6 +337,203 @@
       border: 1px solid rgb(235, 225, 213);
     }
 
+    /* ---------- Service grid (step 3) ---------- */
+    .ap-service-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 720px) {
+      .ap-service-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .ap-service-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .ap-service-card {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
+      padding: 16px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #032215;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      width: 100%;
+    }
+
+    .ap-service-card:hover {
+      border-color: #156146;
+    }
+
+    .ap-service-card:focus-visible {
+      outline: none;
+      border-color: #156146;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    .ap-service-card[aria-checked="true"] {
+      border-color: #156146;
+      background: #F4E9DD;
+    }
+
+    .ap-service-card__check {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      border: 1.5px solid rgb(180, 165, 150);
+      background: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ap-service-card[aria-checked="true"] .ap-service-card__check {
+      border-color: #156146;
+      background: #156146;
+    }
+
+    .ap-service-card__check svg {
+      display: none;
+      width: 12px;
+      height: 12px;
+      color: #FFFAF4;
+    }
+
+    .ap-service-card[aria-checked="true"] .ap-service-card__check svg {
+      display: block;
+    }
+
+    .ap-service-card__label {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    /* Coverage detail block (expanded under each checked service) */
+    .ap-coverage-detail {
+      grid-column: 1 / -1;
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 720px) {
+      .ap-coverage-detail {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .ap-coverage-detail {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .ap-coverage-detail__title {
+      grid-column: 1 / -1;
+      font-size: 13px;
+      color: #555;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .ap-coverage-detail .ap-field {
+      gap: 4px;
+    }
+
+    .ap-coverage-detail .ap-label {
+      font-size: 13px;
+    }
+
+    .ap-coverage-detail .ap-input {
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+
+    .ap-coverage-detail .ap-input-currency .ap-input {
+      padding-left: 24px;
+    }
+
+    /* ---------- Not-sure link ---------- */
+    .ap-help-link {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #156146;
+      font-family: inherit;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: underline;
+      align-self: flex-start;
+    }
+
+    .ap-help-link:hover {
+      opacity: 0.85;
+    }
+
+    /* ---------- Modal ---------- */
+    .ap-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 34, 21, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 100;
+    }
+
+    .ap-modal[hidden] {
+      display: none;
+    }
+
+    .ap-modal__card {
+      background: #FFFAF4;
+      border-radius: 12px;
+      padding: 28px;
+      max-width: 480px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    .ap-modal__title {
+      font-size: 20px;
+      font-weight: 500;
+      color: #032215;
+    }
+
+    .ap-modal__body {
+      color: #555;
+      font-size: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .ap-modal__close {
+      align-self: flex-end;
+      margin-top: 8px;
+    }
+
     /* ---------- Mobile ---------- */
     @media (max-width: 640px) {
       .ap-app {
@@ -449,8 +646,262 @@
     </section>
 
     <section id="ap-step-3" class="ap-step">
-      <p>Step 3 coming</p>
+      <div class="ap-step__header">
+        <h1>What's covered under your benefits?</h1>
+        <p class="ap-step__subhead">Check the services your plan covers. We'll only ask for details on what's checked.</p>
+      </div>
+
+      <div id="ap-service-grid" class="ap-service-grid" role="group" aria-label="Covered services">
+        <!-- 9 service cards, each followed by a hidden coverage-detail block -->
+        <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="massage_therapy">
+          <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
+          <span class="ap-service-card__label">Massage therapy</span>
+        </button>
+        <div class="ap-coverage-detail ap-hidden" data-coverage-detail="massage_therapy">
+          <div class="ap-coverage-detail__title">Massage therapy coverage</div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-amount-massage_therapy">Annual amount</label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-amount-massage_therapy" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="massage_therapy">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-cap-massage_therapy">Per-visit cap <span class="ap-optional">(optional)</span></label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-cap-massage_therapy" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="massage_therapy">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-pct-massage_therapy">Reimbursement % <span class="ap-optional">(optional)</span></label>
+            <input type="number" id="ap-cov-pct-massage_therapy" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="massage_therapy">
+          </div>
+        </div>
+
+        <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="acupuncture">
+          <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
+          <span class="ap-service-card__label">Acupuncture</span>
+        </button>
+        <div class="ap-coverage-detail ap-hidden" data-coverage-detail="acupuncture">
+          <div class="ap-coverage-detail__title">Acupuncture coverage</div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-amount-acupuncture">Annual amount</label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-amount-acupuncture" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="acupuncture">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-cap-acupuncture">Per-visit cap <span class="ap-optional">(optional)</span></label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-cap-acupuncture" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="acupuncture">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-pct-acupuncture">Reimbursement % <span class="ap-optional">(optional)</span></label>
+            <input type="number" id="ap-cov-pct-acupuncture" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="acupuncture">
+          </div>
+        </div>
+
+        <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="lactation_consulting">
+          <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
+          <span class="ap-service-card__label">Lactation consulting</span>
+        </button>
+        <div class="ap-coverage-detail ap-hidden" data-coverage-detail="lactation_consulting">
+          <div class="ap-coverage-detail__title">Lactation consulting coverage</div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-amount-lactation_consulting">Annual amount</label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-amount-lactation_consulting" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="lactation_consulting">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-cap-lactation_consulting">Per-visit cap <span class="ap-optional">(optional)</span></label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-cap-lactation_consulting" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="lactation_consulting">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-pct-lactation_consulting">Reimbursement % <span class="ap-optional">(optional)</span></label>
+            <input type="number" id="ap-cov-pct-lactation_consulting" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="lactation_consulting">
+          </div>
+        </div>
+
+        <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="postpartum_doula_care">
+          <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
+          <span class="ap-service-card__label">Postpartum doula care</span>
+        </button>
+        <div class="ap-coverage-detail ap-hidden" data-coverage-detail="postpartum_doula_care">
+          <div class="ap-coverage-detail__title">Postpartum doula care coverage</div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-amount-postpartum_doula_care">Annual amount</label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-amount-postpartum_doula_care" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="postpartum_doula_care">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-cap-postpartum_doula_care">Per-visit cap <span class="ap-optional">(optional)</span></label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-cap-postpartum_doula_care" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="postpartum_doula_care">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-pct-postpartum_doula_care">Reimbursement % <span class="ap-optional">(optional)</span></label>
+            <input type="number" id="ap-cov-pct-postpartum_doula_care" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="postpartum_doula_care">
+          </div>
+        </div>
+
+        <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="registered_nursing">
+          <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
+          <span class="ap-service-card__label">Registered nursing</span>
+        </button>
+        <div class="ap-coverage-detail ap-hidden" data-coverage-detail="registered_nursing">
+          <div class="ap-coverage-detail__title">Registered nursing coverage</div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-amount-registered_nursing">Annual amount</label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-amount-registered_nursing" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="registered_nursing">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-cap-registered_nursing">Per-visit cap <span class="ap-optional">(optional)</span></label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-cap-registered_nursing" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="registered_nursing">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-pct-registered_nursing">Reimbursement % <span class="ap-optional">(optional)</span></label>
+            <input type="number" id="ap-cov-pct-registered_nursing" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="registered_nursing">
+          </div>
+        </div>
+
+        <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="psw">
+          <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
+          <span class="ap-service-card__label">Personal support worker (PSW)</span>
+        </button>
+        <div class="ap-coverage-detail ap-hidden" data-coverage-detail="psw">
+          <div class="ap-coverage-detail__title">Personal support worker coverage</div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-amount-psw">Annual amount</label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-amount-psw" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="psw">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-cap-psw">Per-visit cap <span class="ap-optional">(optional)</span></label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-cap-psw" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="psw">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-pct-psw">Reimbursement % <span class="ap-optional">(optional)</span></label>
+            <input type="number" id="ap-cov-pct-psw" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="psw">
+          </div>
+        </div>
+
+        <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="mental_health">
+          <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
+          <span class="ap-service-card__label">Mental health support</span>
+        </button>
+        <div class="ap-coverage-detail ap-hidden" data-coverage-detail="mental_health">
+          <div class="ap-coverage-detail__title">Mental health support coverage</div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-amount-mental_health">Annual amount</label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-amount-mental_health" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="mental_health">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-cap-mental_health">Per-visit cap <span class="ap-optional">(optional)</span></label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-cap-mental_health" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="mental_health">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-pct-mental_health">Reimbursement % <span class="ap-optional">(optional)</span></label>
+            <input type="number" id="ap-cov-pct-mental_health" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="mental_health">
+          </div>
+        </div>
+
+        <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="nutritionist">
+          <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
+          <span class="ap-service-card__label">Nutritionist</span>
+        </button>
+        <div class="ap-coverage-detail ap-hidden" data-coverage-detail="nutritionist">
+          <div class="ap-coverage-detail__title">Nutritionist coverage</div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-amount-nutritionist">Annual amount</label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-amount-nutritionist" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="nutritionist">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-cap-nutritionist">Per-visit cap <span class="ap-optional">(optional)</span></label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-cap-nutritionist" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="nutritionist">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-pct-nutritionist">Reimbursement % <span class="ap-optional">(optional)</span></label>
+            <input type="number" id="ap-cov-pct-nutritionist" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="nutritionist">
+          </div>
+        </div>
+
+        <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="dietician">
+          <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
+          <span class="ap-service-card__label">Dietician</span>
+        </button>
+        <div class="ap-coverage-detail ap-hidden" data-coverage-detail="dietician">
+          <div class="ap-coverage-detail__title">Dietician coverage</div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-amount-dietician">Annual amount</label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-amount-dietician" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="dietician">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-cap-dietician">Per-visit cap <span class="ap-optional">(optional)</span></label>
+            <div class="ap-input-currency">
+              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+              <input type="number" id="ap-cov-cap-dietician" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="dietician">
+            </div>
+          </div>
+          <div class="ap-field">
+            <label class="ap-label" for="ap-cov-pct-dietician">Reimbursement % <span class="ap-optional">(optional)</span></label>
+            <input type="number" id="ap-cov-pct-dietician" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="dietician">
+          </div>
+        </div>
+      </div>
+
+      <button type="button" id="ap-coverage-help-trigger" class="ap-help-link">I'm not sure what's covered</button>
     </section>
+
+    <!-- Coverage help modal -->
+    <div id="ap-coverage-modal" class="ap-modal" role="dialog" aria-modal="true" aria-labelledby="ap-coverage-modal-title" hidden>
+      <div class="ap-modal__card" role="document">
+        <h2 id="ap-coverage-modal-title" class="ap-modal__title">Where to find your coverage details</h2>
+        <div class="ap-modal__body">
+          <p>Look in your benefits booklet (often a PDF in your employer portal or available on your insurer's website). Look for sections labeled "Extended Health Care", "Paramedical Services", or "Health Spending Account". You'll find annual maximums and per-visit limits there.</p>
+          <p>If you're stuck, just give your best estimate or skip — our care team can help refine it on your free consult.</p>
+        </div>
+        <button type="button" id="ap-coverage-modal-close" class="ap-btn ap-modal__close">Close</button>
+      </div>
+    </div>
 
     <section id="ap-results" class="ap-step">
       <p>Results coming</p>
@@ -476,11 +927,23 @@
         concerns: '',
         insurer: null,
         hasHsa: null,
-        hsaBalance: null
+        hsaBalance: null,
+        coverage: {}
       };
 
       let currentStep = 1;
       const TOTAL_STEPS = 3;
+      const SERVICE_IDS = [
+        'massage_therapy',
+        'acupuncture',
+        'lactation_consulting',
+        'postpartum_doula_care',
+        'registered_nursing',
+        'psw',
+        'mental_health',
+        'nutritionist',
+        'dietician'
+      ];
 
       // ---------- Element refs ----------
       const dueDateInput = document.getElementById('ap-due-date');
@@ -501,6 +964,12 @@
       const progressLabel = document.querySelector('.ap-progress__label');
       const progressBar = document.querySelector('.ap-progress__bar');
       const progressSegments = document.querySelectorAll('.ap-progress__segment');
+      const progressHeader = document.querySelector('.ap-progress');
+      const serviceCards = document.querySelectorAll('.ap-service-card');
+      const coverageInputs = document.querySelectorAll('[data-coverage-field]');
+      const coverageHelpTrigger = document.getElementById('ap-coverage-help-trigger');
+      const coverageModal = document.getElementById('ap-coverage-modal');
+      const coverageModalClose = document.getElementById('ap-coverage-modal-close');
 
       // ---------- Set max on due date input (1 year from today) ----------
       function setDueDateMax() {
@@ -621,6 +1090,98 @@
         updateContinueButton();
       }
 
+      // ---------- Coverage (step 3) ----------
+      function findCard(serviceId) {
+        return document.querySelector(`.ap-service-card[data-service="${serviceId}"]`);
+      }
+
+      function findDetail(serviceId) {
+        return document.querySelector(`[data-coverage-detail="${serviceId}"]`);
+      }
+
+      function setCardChecked(serviceId, isChecked) {
+        const card = findCard(serviceId);
+        const detail = findDetail(serviceId);
+        if (!card || !detail) return;
+        card.setAttribute('aria-checked', String(isChecked));
+        detail.classList.toggle('ap-hidden', !isChecked);
+      }
+
+      function setCoverageInputValue(serviceId, field, value) {
+        const input = document.querySelector(
+          `[data-coverage-field="${field}"][data-service="${serviceId}"]`
+        );
+        if (!input) return;
+        input.value = value == null ? '' : value;
+      }
+
+      function clearCoverageInputs(serviceId) {
+        setCoverageInputValue(serviceId, 'amount', null);
+        setCoverageInputValue(serviceId, 'perVisitCap', null);
+        setCoverageInputValue(serviceId, 'reimbursementPercent', null);
+      }
+
+      function toggleService(serviceId) {
+        if (!state.coverage) state.coverage = {};
+        const isChecked = Object.prototype.hasOwnProperty.call(state.coverage, serviceId);
+        if (isChecked) {
+          delete state.coverage[serviceId];
+          setCardChecked(serviceId, false);
+          clearCoverageInputs(serviceId);
+        } else {
+          state.coverage[serviceId] = { amount: null, perVisitCap: null, reimbursementPercent: 100 };
+          setCardChecked(serviceId, true);
+          setCoverageInputValue(serviceId, 'reimbursementPercent', 100);
+        }
+        saveState();
+        updateContinueButton();
+      }
+
+      function updateCoverageField(serviceId, field, rawValue) {
+        if (!state.coverage || !state.coverage[serviceId]) return;
+        let parsed;
+        if (rawValue === '' || rawValue == null) {
+          parsed = null;
+        } else {
+          const num = parseFloat(rawValue);
+          parsed = Number.isNaN(num) ? null : num;
+        }
+        state.coverage[serviceId][field] = parsed;
+        saveState();
+        updateContinueButton();
+      }
+
+      // Sync DOM to state.coverage. Used by hydrateUI on load.
+      function applyCoverageUI() {
+        SERVICE_IDS.forEach((serviceId) => {
+          const entry = state.coverage ? state.coverage[serviceId] : null;
+          const isChecked = !!entry;
+          setCardChecked(serviceId, isChecked);
+          if (isChecked) {
+            setCoverageInputValue(serviceId, 'amount', entry.amount);
+            setCoverageInputValue(serviceId, 'perVisitCap', entry.perVisitCap);
+            setCoverageInputValue(
+              serviceId,
+              'reimbursementPercent',
+              entry.reimbursementPercent == null ? '' : entry.reimbursementPercent
+            );
+          } else {
+            clearCoverageInputs(serviceId);
+          }
+        });
+      }
+
+      function isCoverageValidForContinue() {
+        // Empty coverage map is valid (zero-coverage path).
+        const keys = state.coverage ? Object.keys(state.coverage) : [];
+        if (keys.length === 0) return true;
+        // Every checked service must have a positive amount.
+        return keys.every((id) => {
+          const entry = state.coverage[id];
+          return entry && typeof entry.amount === 'number' && entry.amount > 0;
+        });
+      }
+
       function hasValidTimingAnswer() {
         if (state.isPostpartum) {
           return typeof state.weeksPostpartum === 'number' && !Number.isNaN(state.weeksPostpartum);
@@ -634,8 +1195,9 @@
           canContinue = hasValidTimingAnswer() && state.firstTimeParent !== null;
         } else if (currentStep === 2) {
           canContinue = !!state.insurer;
+        } else if (currentStep === 3) {
+          canContinue = isCoverageValidForContinue();
         } else {
-          // Later steps default to enabled (placeholder).
           canContinue = true;
         }
         continueBtn.disabled = !canContinue;
@@ -656,28 +1218,46 @@
           hsaBalanceField.classList.add('ap-hidden');
         }
         hsaBalanceInput.value = state.hsaBalance != null ? state.hsaBalance : '';
+        // Step 3
+        applyCoverageUI();
         updateContinueButton();
       }
 
       // ---------- Navigation ----------
+      // n=4 corresponds to the results section (#ap-results), which is beyond
+      // intake. Progress bar hides and the wizard nav remains for back-to-edit.
       function goToStep(n) {
-        if (n < 1 || n > TOTAL_STEPS) return;
-        const currentEl = document.getElementById(`ap-step-${currentStep}`);
-        const nextEl = document.getElementById(`ap-step-${n}`);
-        if (currentEl) currentEl.classList.remove('ap-step--active');
+        if (n < 1 || n > TOTAL_STEPS + 1) return;
+        // Hide all step sections, then reveal the target one.
+        document.querySelectorAll('.ap-step').forEach((el) => el.classList.remove('ap-step--active'));
+        const nextEl = n > TOTAL_STEPS
+          ? document.getElementById('ap-results')
+          : document.getElementById(`ap-step-${n}`);
         if (nextEl) nextEl.classList.add('ap-step--active');
         currentStep = n;
 
-        // Update progress label + segments
-        progressLabel.textContent = `Step ${n} of ${TOTAL_STEPS}`;
-        progressBar.setAttribute('aria-valuenow', String(n));
-        progressSegments.forEach((seg, i) => {
-          if (i < n) {
-            seg.classList.add('ap-progress__segment--active');
-          } else {
-            seg.classList.remove('ap-progress__segment--active');
-          }
-        });
+        // Progress bar: visible during intake, hidden on results.
+        if (n > TOTAL_STEPS) {
+          progressHeader.classList.add('ap-hidden');
+        } else {
+          progressHeader.classList.remove('ap-hidden');
+          progressLabel.textContent = `Step ${n} of ${TOTAL_STEPS}`;
+          progressBar.setAttribute('aria-valuenow', String(n));
+          progressSegments.forEach((seg, i) => {
+            if (i < n) {
+              seg.classList.add('ap-progress__segment--active');
+            } else {
+              seg.classList.remove('ap-progress__segment--active');
+            }
+          });
+        }
+
+        // Continue label changes on the final intake step.
+        if (n === 3) {
+          continueBtn.textContent = 'See my care plan →';
+        } else {
+          continueBtn.textContent = 'Continue';
+        }
 
         // Back disabled on step 1
         backBtn.disabled = n === 1;
@@ -777,12 +1357,69 @@
 
       continueBtn.addEventListener('click', () => {
         if (continueBtn.disabled) return;
-        if (currentStep < TOTAL_STEPS) goToStep(currentStep + 1);
+        if (currentStep === TOTAL_STEPS) {
+          // Final intake step → advance to results placeholder. Engine wiring
+          // lands in task 6; for now we log state to confirm the shape.
+          console.log('Benefits wizard submitted:', state);
+          goToStep(TOTAL_STEPS + 1);
+        } else if (currentStep < TOTAL_STEPS) {
+          goToStep(currentStep + 1);
+        }
       });
 
       backBtn.addEventListener('click', () => {
         if (backBtn.disabled) return;
         if (currentStep > 1) goToStep(currentStep - 1);
+      });
+
+      // ---------- Service cards (step 3) ----------
+      serviceCards.forEach((card) => {
+        card.addEventListener('click', () => {
+          const serviceId = card.getAttribute('data-service');
+          if (serviceId) toggleService(serviceId);
+        });
+        // Spacebar/Enter on the button already fires `click`; nothing extra needed.
+      });
+
+      coverageInputs.forEach((input) => {
+        input.addEventListener('input', (e) => {
+          const serviceId = input.getAttribute('data-service');
+          const field = input.getAttribute('data-coverage-field');
+          updateCoverageField(serviceId, field, e.target.value);
+        });
+      });
+
+      // ---------- Coverage help modal ----------
+      let modalLastFocus = null;
+
+      function openCoverageModal() {
+        modalLastFocus = document.activeElement;
+        coverageModal.hidden = false;
+        // Move focus to the close button for keyboard users.
+        coverageModalClose.focus();
+      }
+
+      function closeCoverageModal() {
+        if (coverageModal.hidden) return;
+        coverageModal.hidden = true;
+        if (modalLastFocus && typeof modalLastFocus.focus === 'function') {
+          modalLastFocus.focus();
+        }
+        modalLastFocus = null;
+      }
+
+      coverageHelpTrigger.addEventListener('click', openCoverageModal);
+      coverageModalClose.addEventListener('click', closeCoverageModal);
+
+      // Click on the dim overlay (but not the card) closes the modal.
+      coverageModal.addEventListener('click', (e) => {
+        if (e.target === coverageModal) closeCoverageModal();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !coverageModal.hidden) {
+          closeCoverageModal();
+        }
       });
 
       // ---------- Init ----------
