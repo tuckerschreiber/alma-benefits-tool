@@ -45,6 +45,22 @@ test('normalizeInputs: due date in the past auto-flips to postpartum', () => {
   assert.equal(result.weeksUntilDue, undefined);
 });
 
+test('normalizeInputs: due date 1 day in the past auto-flips to postpartum (handles -0)', () => {
+  const today = new Date('2026-05-10');
+  const yesterday = new Date('2026-05-09');
+  const result = normalizeInputs({ dueDate: yesterday.toISOString().slice(0, 10) }, today);
+  assert.equal(result.isPostpartum, true);
+  assert.ok(result.weeksPostpartum >= 0);
+  assert.equal(result.weeksUntilDue, undefined);
+});
+
+test('normalizeInputs: due date 3 days in the past auto-flips to postpartum', () => {
+  const today = new Date('2026-05-10');
+  const result = normalizeInputs({ dueDate: '2026-05-07' }, today);
+  assert.equal(result.isPostpartum, true);
+  assert.equal(result.weeksUntilDue, undefined);
+});
+
 test('normalizeInputs: defaults missing optional fields', () => {
   const today = new Date('2026-05-10');
   const result = normalizeInputs(

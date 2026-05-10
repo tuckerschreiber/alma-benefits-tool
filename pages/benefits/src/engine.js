@@ -50,7 +50,7 @@ export function normalizeInputs(inputs, today = new Date()) {
   let weeksUntilDue = 0;
   if (dueDate) {
     const due = new Date(dueDate);
-    weeksUntilDue = Math.round((due - today) / MS_PER_WEEK);
+    weeksUntilDue = Math.floor((due - today) / MS_PER_WEEK);
   }
 
   // If the due date is in the past, the user is actually postpartum — auto-flip
