@@ -434,7 +434,7 @@
       // === END ENGINE ===
 
       const STORAGE_KEY = 'ap_benefits_state';
-      const CONSULT_URL = 'https://calendly.com/almacare/consult';
+      const CONSULT_URL = 'https://www.almacare.ca/booking/book-a-call';
       const BRAND_MARK_SVG = '<svg class="ap-pdf__brand-mark" viewBox="0 0 16 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M15.8824 14.5159C14.0886 17.1544 10.1939 18.5457 6.90264 17.7997C3.30689 16.9828 0.583086 14.1157 0.0875972 10.6277C-0.421732 7.01991 1.37476 4.02478 3.28198 2.71508C0.488969 7.14516 2.19411 11.6488 4.71862 13.8897C7.49225 16.3511 12.007 17.0917 15.8796 14.5159H15.8824Z" fill="#032215"/><path d="M13.6596 12.5698C14.6445 6.75767 10.9451 1.31856 5.0865 0.120987C6.70739 -0.484559 10.4709 1.2672 12.3094 3.49745C14.9318 6.67386 14.7895 10.6288 13.6596 12.5698Z" fill="#032215"/><path d="M6.6478 12.9721C6.53855 12.2334 6.52735 11.5002 5.96711 10.9288C5.40687 10.3573 4.66735 10.3462 3.94463 10.2235C4.67855 10.1734 5.38726 10.1148 5.9531 9.56288C6.52735 8.99979 6.53295 8.26388 6.63939 7.5419C6.69822 8.26945 6.72623 8.99422 7.28367 9.55173C7.84671 10.1176 8.56662 10.1901 9.34256 10.2263C7.51897 10.2542 6.58057 11.1211 6.6478 12.9693V12.9721Z" fill="#032215"/><path d="M11.2618 13.1732C11.0609 12.6421 10.7672 12.2888 10.3806 12.113C10.9121 11.9096 11.0041 11.8036 11.2411 11.0615C11.3447 11.6632 11.6092 12.007 12.1453 12.0987C11.6599 12.2649 11.3147 12.5084 11.2618 13.1732Z" fill="#032215"/><path d="M9.82793 7.54503C9.85348 7.57322 9.92647 7.67343 10.0214 7.75485C10.1162 7.83627 10.233 7.89577 10.2768 7.92395C10.0651 8.08053 9.84253 8.24338 9.62356 8.40622C9.69655 8.41875 9.76589 8.4344 9.83888 8.44693C9.63451 8.26217 9.4265 8.0774 9.34256 7.99911C9.43015 7.91769 9.61991 7.73919 9.82793 7.5419V7.54503Z" fill="#032215"/></svg>';
       const HUBSPOT = {
         portalId: 'TODO_FILL_IN',
@@ -1570,7 +1570,7 @@
           + renderPdfFunding(results)
           + '<div class="ap-pdf__footer">'
           + 'This estimate is based on the information you provided. Actual coverage and pricing may vary. Speak with your benefits provider for confirmation.'
-          + '<br>Book your free consult: <span class="ap-pdf__footer-link">almacare.ca/book</span>'
+          + '<br>Book your free consult: <span class="ap-pdf__footer-link">almacare.ca/booking/book-a-call</span>'
           + '</div>'
         );
       }
