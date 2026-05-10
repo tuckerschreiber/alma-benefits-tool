@@ -52,13 +52,9 @@ if (!styleMatch) {
 }
 const styleBlock = `<style>${styleMatch[1]}</style>`;
 
-// --- Extract html2pdf CDN <script> tag --------------------------------------
-const html2pdfMatch = html.match(/<script src="[^"]*html2pdf[^"]*"><\/script>/);
-if (!html2pdfMatch) {
-  console.error('build-webflow: could not find html2pdf <script> tag in preview.html');
-  process.exit(1);
-}
-const html2pdfTag = html2pdfMatch[0];
+// No external <script> tags needed in the head anymore — native print
+// replaced html2pdf. (build-webflow used to inject html2pdf here.)
+const externalHeadScripts = '';
 
 // --- Extract <body>…</body> -------------------------------------------------
 const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/);
@@ -104,10 +100,9 @@ const jsonLd = {
 const jsonLdBlock = `<script type="application/ld+json">\n${JSON.stringify(jsonLd, null, 2)}\n</script>`;
 
 // --- Compose outputs --------------------------------------------------------
-// Webflow head: html2pdf CDN + styles + JSON-LD + app.js script (deferred so
-// it loads after DOM is parsed).
-const headOut = `${html2pdfTag}
-<script defer src="${APP_JS_URL_PROD}"></script>
+// Webflow head: styles + JSON-LD + app.js script (deferred so it loads after
+// DOM is parsed). No html2pdf — switched to native window.print() flow.
+const headOut = `${externalHeadScripts}<script defer src="${APP_JS_URL_PROD}"></script>
 
 ${styleBlock}
 

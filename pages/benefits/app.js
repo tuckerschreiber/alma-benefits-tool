@@ -1385,47 +1385,41 @@
             return;
           }
 
-          setLeadStatus('Generating your care plan…', '');
+          setLeadStatus('Preparing your care plan…', '');
           if (submitBtn) submitBtn.disabled = true;
 
+          // Submit to Hubspot first so the care team is notified even if
+          // the user cancels the print dialog.
+          let hubspotResult;
           try {
-            await generatePdf();
-
-            // PDF succeeded — try to notify our care team via Hubspot. We don't
-            // abort the success state on Hubspot failure: the user got their
-            // care plan, which is the most important thing.
-            let hubspotResult;
-            try {
-              hubspotResult = await submitToHubspot(state);
-            } catch (err) {
-              console.error('Hubspot submit failed:', err);
-              hubspotResult = { ok: false, reason: 'network_error' };
-            }
-
-            if (hubspotResult && hubspotResult.ok) {
-              setLeadStatus('Your care plan is downloading and we\'ve notified our care team.', 'success');
-              track('submission_succeeded', {
-                hubspot_ok: true,
-                hubspot_reason: 'configured'
-              });
-            } else if (hubspotResult && hubspotResult.reason === 'not_configured') {
-              setLeadStatus('Your care plan is downloading.', 'success');
-              track('submission_succeeded', {
-                hubspot_ok: false,
-                hubspot_reason: 'not_configured'
-              });
-            } else {
-              setLeadStatus('Your care plan is downloading. We had trouble notifying our care team — feel free to email care@almacare.ca and we\'ll follow up.', 'success');
-              track('submission_succeeded', {
-                hubspot_ok: false,
-                hubspot_reason: (hubspotResult && hubspotResult.reason) || 'http_error'
-              });
-            }
+            hubspotResult = await submitToHubspot(state);
           } catch (err) {
-            // Surface PDF failures so the user isn't left wondering.
-            console.error('PDF generation failed', err);
-            setLeadStatus('Something went wrong generating your PDF. Please try again.', 'error');
-            track('submission_failed', { stage: 'pdf_error' });
+            console.error('Hubspot submit failed:', err);
+            hubspotResult = { ok: false, reason: 'network_error' };
+          }
+
+          // Set the final status message before opening the print dialog
+          // (the dialog can block the page momentarily).
+          if (hubspotResult && hubspotResult.ok) {
+            setLeadStatus('We\'ve shared your details with our care team. Choose "Save as PDF" in the print dialog to download your plan.', 'success');
+            track('submission_succeeded', { hubspot_ok: true, hubspot_reason: 'configured' });
+          } else if (hubspotResult && hubspotResult.reason === 'not_configured') {
+            setLeadStatus('Choose "Save as PDF" in the print dialog to download your plan.', 'success');
+            track('submission_succeeded', { hubspot_ok: false, hubspot_reason: 'not_configured' });
+          } else {
+            setLeadStatus('Choose "Save as PDF" in the print dialog to download your plan. We had trouble notifying our care team — feel free to email care@almacare.ca and we\'ll follow up.', 'success');
+            track('submission_succeeded', {
+              hubspot_ok: false,
+              hubspot_reason: (hubspotResult && hubspotResult.reason) || 'http_error'
+            });
+          }
+
+          try {
+            await printCarePlan();
+          } catch (err) {
+            console.error('print failed', err);
+            setLeadStatus('Something went wrong opening the print dialog. Please try again.', 'error');
+            track('submission_failed', { stage: 'print_error' });
           } finally {
             if (submitBtn) submitBtn.disabled = false;
           }
@@ -1584,112 +1578,45 @@
         );
       }
 
-      async function generatePdf() {
+      // Native print → "Save as PDF". Populates #ap-print-root with the
+      // branded care plan markup and triggers window.print(). The
+      // @media print CSS hides everything else on the page so the
+      // browser's PDF output is just the care plan.
+      function printCarePlan() {
         if (!state.results) {
-          throw new Error('No results available to generate PDF.');
+          return Promise.reject(new Error('No results available to print.'));
         }
-        if (!window.html2pdf) {
-          throw new Error('html2pdf is not loaded.');
-        }
+        return new Promise(function (resolve) {
+          // Remove any stale print root from a prior run.
+          const stale = document.getElementById('ap-print-root');
+          if (stale && stale.parentNode) stale.parentNode.removeChild(stale);
 
-        // Remove any leftover from a prior run.
-        const stale = document.getElementById('ap-pdf-source');
-        if (stale && stale.parentNode) stale.parentNode.removeChild(stale);
+          const printRoot = document.createElement('div');
+          printRoot.id = 'ap-print-root';
+          printRoot.innerHTML = renderPdfSource(state.results);
+          document.body.appendChild(printRoot);
 
-        // Build the PDF source as a normal absolutely-positioned element
-        // anchored at the top-left of the page. Full layout dimensions so
-        // html2canvas can capture cleanly.
-        const pdfSource = document.createElement('div');
-        pdfSource.id = 'ap-pdf-source';
-        pdfSource.className = 'ap-pdf-source';
-        pdfSource.innerHTML = renderPdfSource(state.results);
-        document.body.appendChild(pdfSource);
+          let cleaned = false;
+          function cleanup() {
+            if (cleaned) return;
+            cleaned = true;
+            window.removeEventListener('afterprint', cleanup);
+            if (printRoot.parentNode) printRoot.parentNode.removeChild(printRoot);
+            resolve();
+          }
+          window.addEventListener('afterprint', cleanup);
+          // Safety: some browsers don't fire afterprint reliably. Clean up
+          // after 60s no matter what.
+          setTimeout(cleanup, 60000);
 
-        // Cover it with a loading overlay so the user sees a "Generating…"
-        // state instead of the raw PDF source flashing on screen.
-        const overlay = document.createElement('div');
-        overlay.className = 'ap-pdf-overlay';
-        overlay.innerHTML =
-          '<div class="ap-pdf-overlay__spinner" aria-hidden="true"></div>' +
-          '<div class="ap-pdf-overlay__msg" role="status">Generating your care plan…</div>';
-        document.body.appendChild(overlay);
-
-        // Wait two frames so layout settles before html2canvas reads dimensions.
-        await new Promise(function (resolve) {
-          requestAnimationFrame(function () { requestAnimationFrame(resolve); });
+          // Defer print() one frame so the print root has a chance to lay out.
+          requestAnimationFrame(function () {
+            window.print();
+            track('care_plan_printed', {
+              has_recommendations: (state.results.recommendations || []).length > 0
+            });
+          });
         });
-
-        const safeName = (state.lead.name || '').toLowerCase().replace(/\s+/g, '-') || 'estimate';
-        const opts = {
-          margin: [15, 15, 20, 15], // top, right, bottom, left, mm
-          filename: 'alma-care-plan-' + safeName + '.pdf',
-          image: { type: 'jpeg', quality: 0.95 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            // Force a fixed 8.5in (816px) capture window regardless of the
-            // host page's viewport size. This decouples PDF rendering from
-            // whatever Webflow's body width / responsive rules are doing.
-            width: 816,
-            height: pdfSource.scrollHeight,
-            windowWidth: 816,
-            windowHeight: pdfSource.scrollHeight,
-            x: 0,
-            y: 0,
-            scrollX: 0,
-            scrollY: 0,
-            logging: false,
-            // Clean clone before capture: drop fonts/styles inherited from
-            // the host page that don't apply inside our scoped block.
-            onclone: function (clonedDoc) {
-              const cloned = clonedDoc.getElementById('ap-pdf-source');
-              if (cloned) {
-                cloned.style.position = 'static';
-                cloned.style.top = 'auto';
-                cloned.style.left = 'auto';
-                cloned.style.zIndex = 'auto';
-                cloned.style.width = '816px';
-                cloned.style.maxWidth = '816px';
-                cloned.style.margin = '0';
-              }
-            }
-          },
-          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
-          pagebreak: { mode: ['css', 'legacy'] }
-        };
-
-        try {
-          // Debug — confirm source + canvas dimensions on the live page
-          console.log('[pdf-debug] pdfSource rect:', pdfSource.getBoundingClientRect());
-          console.log('[pdf-debug] pdfSource computed width:', getComputedStyle(pdfSource).width);
-          console.log('[pdf-debug] window inner:', window.innerWidth, 'x', window.innerHeight);
-          console.log('[pdf-debug] body width:', document.body.offsetWidth);
-          const worker = window.html2pdf().from(pdfSource).set(opts);
-          const canvas = await worker.toCanvas().get('canvas');
-          console.log('[pdf-debug] canvas dimensions:', canvas.width, 'x', canvas.height);
-          // Sample pixels at 5 spots so we can see where the content actually is
-          const ctx = canvas.getContext('2d');
-          const samples = [
-            [canvas.width * 0.1, canvas.height * 0.1, 'top-left 10%'],
-            [canvas.width * 0.5, canvas.height * 0.1, 'top-center'],
-            [canvas.width * 0.9, canvas.height * 0.1, 'top-right'],
-            [canvas.width * 0.1, canvas.height * 0.5, 'mid-left'],
-            [canvas.width * 0.5, canvas.height * 0.5, 'mid-center'],
-            [canvas.width * 0.9, canvas.height * 0.5, 'mid-right']
-          ];
-          samples.forEach(function (s) {
-            const p = ctx.getImageData(s[0], s[1], 1, 1).data;
-            console.log('[pdf-debug] ' + s[2] + ':', Array.from(p));
-          });
-          await worker.save();
-          track('pdf_downloaded', {
-            has_recommendations: (state.results.recommendations || []).length > 0
-          });
-        } finally {
-          if (pdfSource.parentNode) pdfSource.parentNode.removeChild(pdfSource);
-          if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-        }
       }
 
       function renderResults(results) {
