@@ -1934,24 +1934,42 @@
           throw new Error('html2pdf is not loaded.');
         }
 
-        // Build (or replace) the off-screen PDF source element.
-        let pdfSource = document.getElementById('ap-pdf-source');
-        if (pdfSource && pdfSource.parentNode) {
-          pdfSource.parentNode.removeChild(pdfSource);
+        // Build a fresh wrapper + PDF source element. Wrapper has height:0
+        // + overflow:hidden so the user never sees it; inner has full
+        // dimensions so html2canvas can capture cleanly.
+        let oldWrapper = document.getElementById('ap-pdf-wrapper');
+        if (oldWrapper && oldWrapper.parentNode) {
+          oldWrapper.parentNode.removeChild(oldWrapper);
         }
-        pdfSource = document.createElement('div');
+        const wrapper = document.createElement('div');
+        wrapper.id = 'ap-pdf-wrapper';
+        wrapper.className = 'ap-pdf-wrapper';
+        const pdfSource = document.createElement('div');
         pdfSource.id = 'ap-pdf-source';
         pdfSource.className = 'ap-pdf-source';
         pdfSource.innerHTML = renderPdfSource(state.results);
-        document.body.appendChild(pdfSource);
+        wrapper.appendChild(pdfSource);
+        document.body.appendChild(wrapper);
+
+        // Wait one frame so layout settles before html2canvas reads dimensions.
+        await new Promise(function (resolve) {
+          requestAnimationFrame(function () { requestAnimationFrame(resolve); });
+        });
 
         const safeName = (state.lead.name || '').toLowerCase().replace(/\s+/g, '-') || 'estimate';
         const opts = {
           margin: [15, 15, 20, 15], // top, right, bottom, left, mm
           filename: 'alma-care-plan-' + safeName + '.pdf',
           image: { type: 'jpeg', quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            windowWidth: pdfSource.scrollWidth,
+            windowHeight: pdfSource.scrollHeight
+          },
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'] }
         };
 
         try {
@@ -1960,8 +1978,8 @@
             has_recommendations: (state.results.recommendations || []).length > 0
           });
         } finally {
-          if (pdfSource && pdfSource.parentNode) {
-            pdfSource.parentNode.removeChild(pdfSource);
+          if (wrapper && wrapper.parentNode) {
+            wrapper.parentNode.removeChild(wrapper);
           }
         }
       }

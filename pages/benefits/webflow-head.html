@@ -980,11 +980,20 @@
       align-self: flex-start;
     }
 
-    /* ---------- PDF source (off-screen render target) ---------- */
+    /* ---------- PDF source (off-screen render target) ----------
+       Wrapped in .ap-pdf-wrapper (height:0, overflow:hidden) so the user
+       never sees it, but the inner element keeps full layout dimensions
+       so html2canvas can capture it. Using position:fixed/-10000px
+       breaks html2canvas in some browsers — this wrapper trick is
+       the reliable pattern. */
+    .ap-pdf-wrapper {
+      position: relative;
+      height: 0;
+      overflow: hidden;
+      width: 8.5in;
+    }
     .ap-pdf-source {
-      position: fixed;
-      top: 0;
-      left: -10000px;
+      position: relative;
       width: 8.5in;
       background: #ffffff;
       color: #032215;
