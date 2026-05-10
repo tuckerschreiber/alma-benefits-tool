@@ -26,6 +26,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const previewPath = join(__dirname, 'preview.html');
 const headOutPath = join(__dirname, 'webflow-head.html');
 const bodyOutPath = join(__dirname, 'webflow-body.html');
+const testOutPath = join(__dirname, 'webflow-test.html');
 
 const html = readFileSync(previewPath, 'utf8');
 
@@ -84,6 +85,40 @@ const bodyOut = bodyContent;
 writeFileSync(headOutPath, headOut, 'utf8');
 writeFileSync(bodyOutPath, bodyOut, 'utf8');
 
+// --- Compose a prod-faithful test page --------------------------------------
+// Mirrors how Webflow assembles the page: head custom code lives inside <head>,
+// the Embed element sits between a placeholder nav and footer in <body>.
+const testOut = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free postpartum benefits eligibility tool — Alma Care</title>
+<meta name="description" content="Find out what your extended health benefits cover for postpartum care, get a personalized care plan, and a free PDF estimate for your insurance pre-approval.">
+<style>
+  /* Minimal Webflow-like nav + footer styling so the embed sits in realistic page chrome */
+  body { margin: 0; font-family: 'Futura', 'Futura PT', 'Trebuchet MS', sans-serif; background: #FFFAF4; color: #032215; }
+  .test-nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 32px; border-bottom: 1px solid rgb(235, 225, 213); }
+  .test-nav__brand { font-weight: 500; font-size: 18px; }
+  .test-nav__links { display: flex; gap: 24px; font-size: 14px; }
+  .test-nav__links a { color: #032215; text-decoration: none; }
+  .test-footer { padding: 32px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid rgb(235, 225, 213); margin-top: 64px; }
+  .test-banner { background: #F4E9DD; color: #032215; padding: 8px 16px; text-align: center; font-size: 12px; }
+</style>
+${headOut}</head>
+<body>
+<div class="test-banner">LOCAL TEST PAGE — mirrors prod Webflow output. Nav + footer here are placeholders only.</div>
+<nav class="test-nav">
+  <div class="test-nav__brand">Alma Care</div>
+  <div class="test-nav__links"><a href="#">Services</a><a href="#">About</a><a href="#">Book</a></div>
+</nav>
+${bodyOut}<footer class="test-footer">© Alma Care — placeholder footer for local test only.</footer>
+</body>
+</html>
+`;
+writeFileSync(testOutPath, testOut, 'utf8');
+
 console.log('build-webflow: wrote');
 console.log(`  ${headOutPath}  (${headOut.length} bytes)`);
 console.log(`  ${bodyOutPath}  (${bodyOut.length} bytes)`);
+console.log(`  ${testOutPath}  (${testOut.length} bytes — local test page)`);
