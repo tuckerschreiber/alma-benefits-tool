@@ -1912,6 +1912,27 @@
         formId: 'TODO_FILL_IN'
       };
 
+      // Lightweight analytics: fires through Plausible and/or GA when present,
+      // falls back to console.log in dev when neither is loaded. No PII allowed
+      // in props — keep these to enums, counts, and booleans.
+      function track(event, props) {
+        const safeProps = props || {};
+        try {
+          if (typeof window.plausible === 'function') {
+            window.plausible(event, { props: safeProps });
+          }
+        } catch (e) { /* swallow */ }
+        try {
+          if (typeof window.gtag === 'function') {
+            window.gtag('event', event, safeProps);
+          }
+        } catch (e) { /* swallow */ }
+        // Dev visibility — only when neither analytics lib is present
+        if (typeof window.plausible !== 'function' && typeof window.gtag !== 'function') {
+          if (window.console) console.log('[track]', event, safeProps);
+        }
+      }
+
       const state = {
         dueDate: null,
         isPostpartum: false,
@@ -2369,9 +2390,21 @@
         if (currentStep === TOTAL_STEPS) {
           // Final intake step → run engine, render panels, then advance.
           state.results = computeResults(state, RULES, ALMA_SERVICES, new Date());
+          track('intake_step_completed', { step: currentStep });
           renderResults(state.results);
+          track('results_viewed', {
+            recommendations_count: state.results.recommendations.length,
+            total_covered: state.results.totalCovered,
+            has_concerns: state.results.detectedConcerns.length > 0
+          });
+          if (state.results.detectedConcerns.length > 0) {
+            track('concerns_detected', {
+              tags: state.results.detectedConcerns.join(',')
+            });
+          }
           goToStep(TOTAL_STEPS + 1);
         } else if (currentStep < TOTAL_STEPS) {
+          track('intake_step_completed', { step: currentStep });
           goToStep(currentStep + 1);
         }
       });
@@ -2582,7 +2615,7 @@
       function renderCtaRow() {
         return (
           '<div class="ap-cta-row">'
-          + '<a class="ap-btn ap-btn--primary" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a free consult</a>'
+          + '<a class="ap-btn ap-btn--primary" id="ap-consult-cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a free consult</a>'
           + '<button type="button" class="ap-btn ap-btn--secondary" id="ap-email-plan">Email me my care plan</button>'
           + '</div>'
           + renderLeadDrawer()
@@ -2810,6 +2843,7 @@
 
           if (invalid) {
             setLeadStatus('Please fill all required fields and enter a valid email.', 'error');
+            track('submission_failed', { stage: 'validation' });
             return;
           }
 
@@ -2832,15 +2866,28 @@
 
             if (hubspotResult && hubspotResult.ok) {
               setLeadStatus('Your care plan is downloading and we\'ve notified our care team.', 'success');
+              track('submission_succeeded', {
+                hubspot_ok: true,
+                hubspot_reason: 'configured'
+              });
             } else if (hubspotResult && hubspotResult.reason === 'not_configured') {
               setLeadStatus('Your care plan is downloading.', 'success');
+              track('submission_succeeded', {
+                hubspot_ok: false,
+                hubspot_reason: 'not_configured'
+              });
             } else {
               setLeadStatus('Your care plan is downloading. We had trouble notifying our care team — feel free to email care@almacare.ca and we\'ll follow up.', 'success');
+              track('submission_succeeded', {
+                hubspot_ok: false,
+                hubspot_reason: (hubspotResult && hubspotResult.reason) || 'http_error'
+              });
             }
           } catch (err) {
             // Surface PDF failures so the user isn't left wondering.
             console.error('PDF generation failed', err);
             setLeadStatus('Something went wrong generating your PDF. Please try again.', 'error');
+            track('submission_failed', { stage: 'pdf_error' });
           } finally {
             if (submitBtn) submitBtn.disabled = false;
           }
@@ -3029,6 +3076,9 @@
 
         try {
           await window.html2pdf().from(pdfSource).set(opts).save();
+          track('pdf_downloaded', {
+            has_recommendations: (state.results.recommendations || []).length > 0
+          });
         } finally {
           if (pdfSource && pdfSource.parentNode) {
             pdfSource.parentNode.removeChild(pdfSource);
@@ -3053,12 +3103,21 @@
             if (isHidden) {
               openLeadDrawer();
               emailBtn.textContent = 'Hide';
+              track('lead_drawer_opened', { has_results: true });
             } else {
               drawer.classList.add('ap-hidden');
               emailBtn.textContent = 'Email me my care plan';
             }
           });
         }
+
+        const consultBtn = document.getElementById('ap-consult-cta');
+        if (consultBtn) {
+          consultBtn.addEventListener('click', function () {
+            track('consult_cta_clicked', { source: 'results_primary_cta' });
+          });
+        }
+
         wireLeadForm();
       }
 
