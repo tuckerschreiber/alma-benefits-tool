@@ -9,6 +9,19 @@
     /* ---------- Reset / base ---------- */
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* Respect users who've opted into reduced motion — keep transitions
+       perceptible for state changes (focus rings) but trim animation. */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        transition-duration: 0.001ms !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
     html, body {
       background: #FFFAF4;
       color: #032215;
@@ -17,6 +30,8 @@
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      -webkit-text-size-adjust: 100%; /* prevent iOS landscape text bloat */
+      overflow-x: hidden; /* hard guard against accidental horizontal scroll on mobile */
     }
 
     h1, h2, h3, h4, h5, h6 {
@@ -124,10 +139,32 @@
       border-radius: 8px;
       padding: 12px 16px;
       font-family: inherit;
-      font-size: 15px;
+      font-size: 16px; /* 16px+ prevents iOS Safari auto-zoom on focus */
       color: #032215;
       width: 100%;
+      max-width: 100%;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    /* Remove the native number-input spinners on Safari/Chrome so the
+       currency $ prefix stays aligned and the input keeps a clean look. */
+    .ap-input[type="number"]::-webkit-outer-spin-button,
+    .ap-input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .ap-input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    /* iOS Safari date inputs render with their own internal padding —
+       this normalizes them with our other inputs. */
+    .ap-input[type="date"] {
+      -webkit-appearance: none;
+      appearance: none;
+      min-height: 44px;
     }
 
     .ap-input:focus,
@@ -153,16 +190,23 @@
     .ap-link-toggle {
       background: none;
       border: none;
-      padding: 0;
+      padding: 10px 4px;
+      min-height: 44px;
       color: #156146;
       font-family: inherit;
       font-size: 13px;
       cursor: pointer;
       text-align: right;
+      border-radius: 6px;
     }
 
     .ap-link-toggle:hover {
       text-decoration: underline;
+    }
+
+    .ap-link-toggle:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
     }
 
     .ap-link-toggle strong {
@@ -191,10 +235,12 @@
       border: 1px solid rgb(235, 225, 213);
       border-radius: 8px;
       padding: 12px 40px 12px 16px;
+      min-height: 44px;
       font-family: inherit;
-      font-size: 15px;
+      font-size: 16px; /* 16px+ prevents iOS Safari auto-zoom on focus */
       color: #032215;
       width: 100%;
+      max-width: 100%;
       appearance: none;
       -webkit-appearance: none;
       -moz-appearance: none;
@@ -253,10 +299,27 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      position: relative;
     }
 
-    .ap-info-btn:hover,
-    .ap-info-btn:focus {
+    /* Expand the touch target to 44x44 without changing the visual size
+       (mobile a11y guideline). The ::before pseudo extends the hit area
+       outward in all directions. */
+    .ap-info-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 44px;
+      height: 44px;
+    }
+
+    .ap-info-btn:hover {
+      border-color: #156146;
+    }
+
+    .ap-info-btn:focus-visible {
       border-color: #156146;
       outline: none;
       box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
@@ -266,6 +329,7 @@
       position: absolute;
       top: 100%;
       left: 0;
+      right: 0;
       margin-top: 6px;
       background: #032215;
       color: #FFFAF4;
@@ -276,6 +340,8 @@
       max-width: 320px;
       z-index: 10;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      overflow-wrap: break-word;
+      word-wrap: break-word;
     }
 
     .ap-toggle {
@@ -283,16 +349,25 @@
       border: 1px solid rgb(235, 225, 213);
       border-radius: 8px;
       padding: 16px 20px;
+      min-height: 44px;
       font-family: inherit;
       font-size: 15px;
       color: #032215;
       cursor: pointer;
       text-align: left;
       transition: border-color 0.15s ease, background 0.15s ease;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
     }
 
     .ap-toggle:hover {
       border-color: #156146;
+    }
+
+    .ap-toggle:focus-visible {
+      outline: none;
+      border-color: #156146;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
     }
 
     .ap-toggle--selected {
@@ -315,15 +390,22 @@
       border: none;
       border-radius: 8px;
       padding: 14px 32px;
+      min-height: 44px;
       font-family: inherit;
       font-size: 15px;
       font-weight: 500;
       cursor: pointer;
       transition: opacity 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .ap-btn:hover {
       opacity: 0.92;
+    }
+
+    .ap-btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.35);
     }
 
     .ap-btn:disabled,
@@ -362,6 +444,7 @@
       border: 1px solid rgb(235, 225, 213);
       border-radius: 10px;
       padding: 16px;
+      min-height: 44px;
       font-family: inherit;
       font-size: 15px;
       color: #032215;
@@ -372,6 +455,9 @@
       gap: 10px;
       transition: border-color 0.15s ease, background 0.15s ease;
       width: 100%;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .ap-service-card:hover {
@@ -419,7 +505,11 @@
 
     .ap-service-card__label {
       flex: 1;
+      min-width: 0;
       font-weight: 500;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      hyphens: auto;
     }
 
     /* Coverage detail block (expanded under each checked service) */
@@ -467,6 +557,14 @@
       font-size: 14px;
     }
 
+    /* On mobile, bump coverage-detail inputs back to 16px so iOS Safari
+       doesn't auto-zoom on focus. */
+    @media (max-width: 640px) {
+      .ap-coverage-detail .ap-input {
+        font-size: 16px;
+      }
+    }
+
     .ap-coverage-detail .ap-input-currency .ap-input {
       padding-left: 24px;
     }
@@ -475,17 +573,24 @@
     .ap-help-link {
       background: none;
       border: none;
-      padding: 0;
+      padding: 12px 4px;
+      min-height: 44px;
       color: #156146;
       font-family: inherit;
       font-size: 14px;
       cursor: pointer;
       text-decoration: underline;
       align-self: flex-start;
+      border-radius: 6px;
     }
 
     .ap-help-link:hover {
       opacity: 0.85;
+    }
+
+    .ap-help-link:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
     }
 
     /* ---------- Modal ---------- */
@@ -496,8 +601,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 16px;
       z-index: 100;
+      overflow-y: auto;
     }
 
     .ap-modal[hidden] {
@@ -510,6 +616,8 @@
       padding: 28px;
       max-width: 480px;
       width: 100%;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -559,10 +667,12 @@
     }
 
     .ap-snapshot-hero {
-      font-size: 44px;
+      font-size: clamp(28px, 7vw, 44px);
       line-height: 1.1;
       font-weight: 500;
       color: #156146;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
     }
 
     .ap-snapshot-hero--muted {
@@ -609,6 +719,8 @@
     .ap-coverage-list li {
       font-size: 15px;
       color: #032215;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
     }
 
     .ap-coverage-list li.ap-coverage-list__item--muted {
@@ -654,9 +766,18 @@
 
     .ap-rec-card__body {
       flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       gap: 8px;
+    }
+
+    .ap-rec-card__title,
+    .ap-rec-card__dosing,
+    .ap-rec-card__rationale,
+    .ap-rec-card__callout {
+      overflow-wrap: break-word;
+      word-wrap: break-word;
     }
 
     .ap-rec-card__title {
@@ -705,6 +826,11 @@
       display: flex;
       justify-content: space-between;
       gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .ap-cost-breakdown__row > span:last-child {
+      flex-shrink: 0;
     }
 
     .ap-cost-breakdown__row--covered {
@@ -735,6 +861,8 @@
       align-items: flex-start;
       font-size: 15px;
       color: #032215;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
     }
 
     .ap-funding-list li::before {
@@ -795,10 +923,18 @@
       border-radius: 8px;
       padding: 12px 16px;
       font-family: inherit;
-      font-size: 15px;
+      font-size: 16px; /* 16px+ prevents iOS Safari auto-zoom on focus */
       color: #032215;
       width: 100%;
+      max-width: 100%;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .ap-panel--lead input[type="text"],
+    .ap-panel--lead input[type="email"] {
+      min-height: 44px;
     }
 
     .ap-panel--lead textarea {
@@ -893,6 +1029,9 @@
       font-size: 13px;
       color: #555;
       line-height: 1.55;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      word-break: break-word;
     }
 
     .ap-pdf__meta strong {
@@ -914,6 +1053,7 @@
       padding: 20px;
       margin-bottom: 16px;
       page-break-inside: avoid;
+      break-inside: avoid;
     }
 
     .ap-pdf__panel h3 {
@@ -992,6 +1132,7 @@
       padding: 14px;
       margin-bottom: 10px;
       page-break-inside: avoid;
+      break-inside: avoid;
     }
 
     .ap-pdf__rec-title {
@@ -1099,10 +1240,6 @@
         font-size: 20px;
       }
 
-      .ap-snapshot-hero {
-        font-size: 32px;
-      }
-
       .ap-coverage-list {
         grid-template-columns: 1fr;
       }
@@ -1113,6 +1250,39 @@
 
       .ap-cta-row .ap-btn {
         width: 100%;
+      }
+
+      .ap-rec-card {
+        padding: 16px;
+        gap: 12px;
+      }
+
+      .ap-modal__card {
+        padding: 20px;
+      }
+    }
+
+    /* Extra-narrow viewports (iPhone SE / 320px). Tighten paddings further
+       and let the snapshot hero shrink so nothing overflows the viewport. */
+    @media (max-width: 380px) {
+      .ap-app {
+        padding: 20px 12px 40px;
+      }
+
+      .ap-panel {
+        padding: 20px 16px;
+      }
+
+      .ap-rec-card {
+        padding: 14px;
+        gap: 10px;
+      }
+
+      .ap-rec-card__icon {
+        width: 36px;
+        height: 36px;
+        line-height: 36px;
+        font-size: 16px;
       }
     }
   </style>
