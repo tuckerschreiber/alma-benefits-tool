@@ -180,6 +180,103 @@
       gap: 12px;
     }
 
+    .ap-toggle-group--three {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    /* ---------- Select (styled like ap-input) ---------- */
+    .ap-select {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 12px 40px 12px 16px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #032215;
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='none' stroke='%23156146' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M1 1l5 5 5-5'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      cursor: pointer;
+    }
+
+    .ap-select:focus {
+      outline: none;
+      border-color: #156146;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    /* ---------- Currency input ---------- */
+    .ap-input-currency {
+      position: relative;
+    }
+
+    .ap-input-currency__prefix {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #555;
+      font-size: 15px;
+      pointer-events: none;
+    }
+
+    .ap-input-currency .ap-input {
+      padding-left: 28px;
+    }
+
+    /* ---------- Label row (label + info button) ---------- */
+    .ap-label-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+    }
+
+    .ap-info-btn {
+      background: none;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 999px;
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      font-family: inherit;
+      font-size: 11px;
+      line-height: 1;
+      color: #156146;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ap-info-btn:hover,
+    .ap-info-btn:focus {
+      border-color: #156146;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    .ap-tooltip {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 6px;
+      background: #032215;
+      color: #FFFAF4;
+      font-size: 13px;
+      line-height: 1.45;
+      padding: 10px 12px;
+      border-radius: 8px;
+      max-width: 320px;
+      z-index: 10;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
     .ap-toggle {
       background: #ffffff;
       border: 1px solid rgb(235, 225, 213);
@@ -252,7 +349,8 @@
         font-size: 14px;
       }
 
-      .ap-toggle-group {
+      .ap-toggle-group,
+      .ap-toggle-group--three {
         grid-template-columns: 1fr;
       }
 
@@ -309,7 +407,45 @@
     </section>
 
     <section id="ap-step-2" class="ap-step">
-      <p>Step 2 coming</p>
+      <div class="ap-step__header">
+        <h1>Your insurance</h1>
+        <p class="ap-step__subhead">This helps us figure out what's covered.</p>
+      </div>
+
+      <div class="ap-field">
+        <label class="ap-label" for="ap-insurer">Insurance provider</label>
+        <select id="ap-insurer" name="insurer" class="ap-select">
+          <option value="">Select your insurer</option>
+          <option value="sun_life">Sun Life</option>
+          <option value="manulife">Manulife</option>
+          <option value="canada_life">Canada Life</option>
+          <option value="green_shield">GreenShield</option>
+          <option value="equitable">Equitable</option>
+          <option value="desjardins">Desjardins</option>
+          <option value="other">Other / not sure</option>
+        </select>
+      </div>
+
+      <div class="ap-field">
+        <div class="ap-label-row">
+          <label class="ap-label" id="ap-hsa-label">Do you have an HSA or LSA?</label>
+          <button type="button" id="ap-hsa-info-btn" class="ap-info-btn" aria-label="What is an HSA or LSA?" aria-expanded="false" aria-controls="ap-hsa-tooltip">i</button>
+          <span id="ap-hsa-tooltip" class="ap-tooltip ap-hidden" role="tooltip">An HSA (Health Spending Account) or LSA (Lifestyle Spending Account) is flexible coverage from your employer that you can use for things your insurance doesn't cover. Look for it in your benefits booklet.</span>
+        </div>
+        <div class="ap-toggle-group ap-toggle-group--three" role="group" aria-labelledby="ap-hsa-label">
+          <button type="button" class="ap-toggle" data-toggle="hasHsa" data-value="yes" aria-pressed="false">Yes</button>
+          <button type="button" class="ap-toggle" data-toggle="hasHsa" data-value="no" aria-pressed="false">No</button>
+          <button type="button" class="ap-toggle" data-toggle="hasHsa" data-value="not_sure" aria-pressed="false">Not sure</button>
+        </div>
+      </div>
+
+      <div id="ap-hsa-balance-field" class="ap-field ap-hidden">
+        <label class="ap-label" for="ap-hsa-balance">How much is in your HSA?</label>
+        <div class="ap-input-currency">
+          <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
+          <input type="number" id="ap-hsa-balance" name="hsaBalance" min="0" step="50" placeholder="e.g. 1500" class="ap-input">
+        </div>
+      </div>
     </section>
 
     <section id="ap-step-3" class="ap-step">
@@ -337,7 +473,10 @@
         isPostpartum: false,
         weeksPostpartum: null,
         firstTimeParent: null,
-        concerns: ''
+        concerns: '',
+        insurer: null,
+        hasHsa: null,
+        hsaBalance: null
       };
 
       let currentStep = 1;
@@ -351,6 +490,12 @@
       const concernsInput = document.getElementById('ap-concerns');
       const postpartumToggle = document.getElementById('ap-postpartum-toggle');
       const firstTimeButtons = document.querySelectorAll('[data-toggle="firstTimeParent"]');
+      const insurerSelect = document.getElementById('ap-insurer');
+      const hsaButtons = document.querySelectorAll('[data-toggle="hasHsa"]');
+      const hsaBalanceField = document.getElementById('ap-hsa-balance-field');
+      const hsaBalanceInput = document.getElementById('ap-hsa-balance');
+      const hsaInfoBtn = document.getElementById('ap-hsa-info-btn');
+      const hsaTooltip = document.getElementById('ap-hsa-tooltip');
       const continueBtn = document.querySelector('.ap-btn--continue');
       const backBtn = document.querySelector('.ap-btn--back');
       const progressLabel = document.querySelector('.ap-progress__label');
@@ -446,6 +591,36 @@
         updateContinueButton();
       }
 
+      // Visual-only update for the HSA toggle. Mirrors applyFirstTimeParentUI:
+      // hydrateUI calls this directly to avoid a redundant saveState write.
+      function applyHsaUI(value) {
+        hsaButtons.forEach((btn) => {
+          const isSelected = btn.getAttribute('data-value') === value;
+          btn.classList.toggle('ap-toggle--selected', isSelected);
+          btn.setAttribute('aria-pressed', String(isSelected));
+        });
+      }
+
+      // Show/hide the HSA balance input. When hiding, also clear the value
+      // so a stale balance can't survive a switch to "no" or "not sure".
+      function applyHsaBalanceVisibility(value) {
+        if (value === 'yes') {
+          hsaBalanceField.classList.remove('ap-hidden');
+        } else {
+          hsaBalanceField.classList.add('ap-hidden');
+          state.hsaBalance = null;
+          hsaBalanceInput.value = '';
+        }
+      }
+
+      function selectHsa(value) {
+        state.hasHsa = value;
+        applyHsaUI(value);
+        applyHsaBalanceVisibility(value);
+        saveState();
+        updateContinueButton();
+      }
+
       function hasValidTimingAnswer() {
         if (state.isPostpartum) {
           return typeof state.weeksPostpartum === 'number' && !Number.isNaN(state.weeksPostpartum);
@@ -454,7 +629,15 @@
       }
 
       function updateContinueButton() {
-        const canContinue = hasValidTimingAnswer() && state.firstTimeParent !== null;
+        let canContinue;
+        if (currentStep === 1) {
+          canContinue = hasValidTimingAnswer() && state.firstTimeParent !== null;
+        } else if (currentStep === 2) {
+          canContinue = !!state.insurer;
+        } else {
+          // Later steps default to enabled (placeholder).
+          canContinue = true;
+        }
         continueBtn.disabled = !canContinue;
       }
 
@@ -464,6 +647,15 @@
         concernsInput.value = state.concerns || '';
         if (state.isPostpartum) togglePostpartum(true, { clearOther: false });
         if (state.firstTimeParent !== null) applyFirstTimeParentUI(state.firstTimeParent);
+        // Step 2
+        insurerSelect.value = state.insurer || '';
+        if (state.hasHsa !== null) applyHsaUI(state.hasHsa);
+        if (state.hasHsa === 'yes') {
+          hsaBalanceField.classList.remove('ap-hidden');
+        } else {
+          hsaBalanceField.classList.add('ap-hidden');
+        }
+        hsaBalanceInput.value = state.hsaBalance != null ? state.hsaBalance : '';
         updateContinueButton();
       }
 
@@ -490,13 +682,9 @@
         // Back disabled on step 1
         backBtn.disabled = n === 1;
 
-        // Continue requirement is step-specific; for now only step 1 is wired.
-        // For later steps, default to enabled (placeholder until those steps are built).
-        if (n === 1) {
-          updateContinueButton();
-        } else {
-          continueBtn.disabled = false;
-        }
+        // Continue requirement is step-specific; updateContinueButton reads
+        // currentStep to apply the right gating.
+        updateContinueButton();
       }
 
       // ---------- Event wiring ----------
@@ -532,6 +720,59 @@
           const value = btn.getAttribute('data-value') === 'true';
           selectFirstTimeParent(value);
         });
+      });
+
+      insurerSelect.addEventListener('change', (e) => {
+        state.insurer = e.target.value || null;
+        saveState();
+        updateContinueButton();
+      });
+
+      hsaButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          selectHsa(btn.getAttribute('data-value'));
+        });
+      });
+
+      hsaBalanceInput.addEventListener('input', (e) => {
+        const raw = e.target.value;
+        if (raw === '') {
+          state.hsaBalance = null;
+        } else {
+          const num = parseFloat(raw);
+          state.hsaBalance = Number.isNaN(num) ? null : num;
+        }
+        saveState();
+      });
+
+      // Tooltip: toggle visibility on click; close on outside click or Escape.
+      function closeHsaTooltip() {
+        hsaTooltip.classList.add('ap-hidden');
+        hsaInfoBtn.setAttribute('aria-expanded', 'false');
+      }
+
+      hsaInfoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = !hsaTooltip.classList.contains('ap-hidden');
+        if (isOpen) {
+          closeHsaTooltip();
+        } else {
+          hsaTooltip.classList.remove('ap-hidden');
+          hsaInfoBtn.setAttribute('aria-expanded', 'true');
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (hsaTooltip.classList.contains('ap-hidden')) return;
+        if (e.target === hsaInfoBtn || hsaTooltip.contains(e.target)) return;
+        closeHsaTooltip();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !hsaTooltip.classList.contains('ap-hidden')) {
+          closeHsaTooltip();
+          hsaInfoBtn.focus();
+        }
       });
 
       continueBtn.addEventListener('click', () => {
