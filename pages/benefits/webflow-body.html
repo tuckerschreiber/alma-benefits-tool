@@ -1934,24 +1934,29 @@
           throw new Error('html2pdf is not loaded.');
         }
 
-        // Build a fresh wrapper + PDF source element. Wrapper has height:0
-        // + overflow:hidden so the user never sees it; inner has full
-        // dimensions so html2canvas can capture cleanly.
-        let oldWrapper = document.getElementById('ap-pdf-wrapper');
-        if (oldWrapper && oldWrapper.parentNode) {
-          oldWrapper.parentNode.removeChild(oldWrapper);
-        }
-        const wrapper = document.createElement('div');
-        wrapper.id = 'ap-pdf-wrapper';
-        wrapper.className = 'ap-pdf-wrapper';
+        // Remove any leftover from a prior run.
+        const stale = document.getElementById('ap-pdf-source');
+        if (stale && stale.parentNode) stale.parentNode.removeChild(stale);
+
+        // Build the PDF source as a normal absolutely-positioned element
+        // anchored at the top-left of the page. Full layout dimensions so
+        // html2canvas can capture cleanly.
         const pdfSource = document.createElement('div');
         pdfSource.id = 'ap-pdf-source';
         pdfSource.className = 'ap-pdf-source';
         pdfSource.innerHTML = renderPdfSource(state.results);
-        wrapper.appendChild(pdfSource);
-        document.body.appendChild(wrapper);
+        document.body.appendChild(pdfSource);
 
-        // Wait one frame so layout settles before html2canvas reads dimensions.
+        // Cover it with a loading overlay so the user sees a "Generating…"
+        // state instead of the raw PDF source flashing on screen.
+        const overlay = document.createElement('div');
+        overlay.className = 'ap-pdf-overlay';
+        overlay.innerHTML =
+          '<div class="ap-pdf-overlay__spinner" aria-hidden="true"></div>' +
+          '<div class="ap-pdf-overlay__msg" role="status">Generating your care plan…</div>';
+        document.body.appendChild(overlay);
+
+        // Wait two frames so layout settles before html2canvas reads dimensions.
         await new Promise(function (resolve) {
           requestAnimationFrame(function () { requestAnimationFrame(resolve); });
         });
@@ -1964,9 +1969,7 @@
           html2canvas: {
             scale: 2,
             useCORS: true,
-            backgroundColor: '#ffffff',
-            windowWidth: pdfSource.scrollWidth,
-            windowHeight: pdfSource.scrollHeight
+            backgroundColor: '#ffffff'
           },
           jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
           pagebreak: { mode: ['css', 'legacy'] }
@@ -1978,9 +1981,8 @@
             has_recommendations: (state.results.recommendations || []).length > 0
           });
         } finally {
-          if (wrapper && wrapper.parentNode) {
-            wrapper.parentNode.removeChild(wrapper);
-          }
+          if (pdfSource.parentNode) pdfSource.parentNode.removeChild(pdfSource);
+          if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
         }
       }
 

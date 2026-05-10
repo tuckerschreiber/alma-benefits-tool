@@ -980,20 +980,15 @@
       align-self: flex-start;
     }
 
-    /* ---------- PDF source (off-screen render target) ----------
-       Wrapped in .ap-pdf-wrapper (height:0, overflow:hidden) so the user
-       never sees it, but the inner element keeps full layout dimensions
-       so html2canvas can capture it. Using position:fixed/-10000px
-       breaks html2canvas in some browsers — this wrapper trick is
-       the reliable pattern. */
-    .ap-pdf-wrapper {
-      position: relative;
-      height: 0;
-      overflow: hidden;
-      width: 8.5in;
-    }
+    /* ---------- PDF source (on-screen render target) ----------
+       The element is rendered at top:0/left:0 with normal layout so
+       html2canvas can capture its full dimensions. The .ap-pdf-overlay
+       sits over it during capture so the user sees a loading state
+       instead of the raw PDF source. After save the source is removed. */
     .ap-pdf-source {
-      position: relative;
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 8.5in;
       background: #ffffff;
       color: #032215;
@@ -1001,6 +996,35 @@
       font-weight: 400;
       line-height: 1.5;
       padding: 0;
+      z-index: 1;
+    }
+    .ap-pdf-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 250, 244, 0.96);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .ap-pdf-overlay__spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgb(235, 225, 213);
+      border-top-color: #156146;
+      border-radius: 50%;
+      animation: ap-spin 0.8s linear infinite;
+    }
+    @keyframes ap-spin { to { transform: rotate(360deg); } }
+    .ap-pdf-overlay__msg {
+      color: #032215;
+      font-weight: 500;
+      font-size: 16px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ap-pdf-overlay__spinner { animation: none; }
     }
 
     .ap-pdf-source * {
