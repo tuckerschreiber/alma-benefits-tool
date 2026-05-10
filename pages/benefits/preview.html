@@ -2507,6 +2507,15 @@
         // Continue requirement is step-specific; updateContinueButton reads
         // currentStep to apply the right gating.
         updateContinueButton();
+
+        // Scroll the embed back to the top so the user sees the new step's
+        // heading, not whatever was visible at the bottom of the previous
+        // step. Honor prefers-reduced-motion.
+        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const appEl = document.querySelector('.ap-app');
+        if (appEl && appEl.scrollIntoView) {
+          appEl.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+        }
       }
 
       // ---------- Event wiring ----------
