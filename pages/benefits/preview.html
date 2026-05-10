@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Benefits eligibility tool — Alma Care</title>
+  <style>
+    /* ---------- Reset / base ---------- */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: #FFFAF4;
+      color: #032215;
+      font-family: 'Futura', 'Futura PT', 'Trebuchet MS', sans-serif;
+      font-weight: 400;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: 500;
+      color: #032215;
+    }
+
+    /* ---------- App shell ---------- */
+    .ap-app {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ---------- Progress ---------- */
+    .ap-progress {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ap-progress__label {
+      font-size: 13px;
+      color: #999;
+      letter-spacing: 0.02em;
+    }
+
+    .ap-progress__bar {
+      display: flex;
+      gap: 6px;
+    }
+
+    .ap-progress__segment {
+      flex: 1;
+      height: 6px;
+      border-radius: 999px;
+      background: rgb(235, 225, 213);
+    }
+
+    .ap-progress__segment--active {
+      background: #156146;
+    }
+
+    /* ---------- Step sections ---------- */
+    .ap-step {
+      display: none;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .ap-step--active {
+      display: flex;
+    }
+
+    /* ---------- Card (reserved for later use) ---------- */
+    .ap-card {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    /* ---------- Nav ---------- */
+    .ap-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .ap-btn {
+      background: #156146;
+      color: #FFFAF4;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 32px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+
+    .ap-btn:hover {
+      opacity: 0.92;
+    }
+
+    .ap-btn:disabled,
+    .ap-btn[disabled] {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* ---------- Mobile ---------- */
+    @media (max-width: 640px) {
+      .ap-app {
+        max-width: 100%;
+        padding: 24px 16px 48px;
+      }
+
+      .ap-btn {
+        padding: 12px 24px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="ap-app">
+    <header class="ap-progress" aria-label="Progress">
+      <div class="ap-progress__label">Step 1 of 3</div>
+      <div class="ap-progress__bar" role="progressbar" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1">
+        <div class="ap-progress__segment ap-progress__segment--active"></div>
+        <div class="ap-progress__segment"></div>
+        <div class="ap-progress__segment"></div>
+      </div>
+    </header>
+
+    <section id="ap-step-1" class="ap-step ap-step--active">
+      <p>Step 1 coming</p>
+    </section>
+
+    <section id="ap-step-2" class="ap-step">
+      <p>Step 2 coming</p>
+    </section>
+
+    <section id="ap-step-3" class="ap-step">
+      <p>Step 3 coming</p>
+    </section>
+
+    <section id="ap-results" class="ap-step">
+      <p>Results coming</p>
+    </section>
+
+    <nav class="ap-nav" aria-label="Wizard navigation">
+      <button type="button" class="ap-btn ap-btn--back" disabled>Back</button>
+      <button type="button" class="ap-btn ap-btn--continue">Continue</button>
+    </nav>
+  </main>
+
+  <script>
+    (function(){ /* placeholder for benefits tool logic */ })();
+  </script>
+</body>
+</html>
