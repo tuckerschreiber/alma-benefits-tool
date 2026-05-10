@@ -2419,10 +2419,11 @@
 
       function renderFunding(results) {
         const lines = results.fundingStrategy || [];
-        if (lines.length === 0) return '';
-        const items = lines.map(function (line) {
-          return '<li>' + escapeHtml(line) + '</li>';
-        }).join('');
+        const items = lines.length === 0
+          ? '<li>Speak with our care team for a personalized funding plan.</li>'
+          : lines.map(function (line) {
+              return '<li>' + escapeHtml(line) + '</li>';
+            }).join('');
         return (
           '<section class="ap-panel ap-panel--funding">'
           + '<h2>How to fund your care</h2>'
@@ -2570,7 +2571,7 @@
           try {
             await generatePdf();
             // TODO Task 8: submit to Hubspot
-            setLeadStatus('Sent! Your care plan should be downloading now.', 'success');
+            setLeadStatus('Your care plan is downloading.', 'success');
           } catch (err) {
             // Surface PDF failures so the user isn't left wondering.
             console.error('PDF generation failed', err);
@@ -2694,10 +2695,11 @@
 
       function renderPdfFunding(results) {
         const lines = results.fundingStrategy || [];
-        if (lines.length === 0) return '';
-        const items = lines.map(function (line) {
-          return '<li>' + escapeHtml(line) + '</li>';
-        }).join('');
+        const items = lines.length === 0
+          ? '<li>Speak with our care team for a personalized funding plan.</li>'
+          : lines.map(function (line) {
+              return '<li>' + escapeHtml(line) + '</li>';
+            }).join('');
         return (
           '<section class="ap-pdf__panel">'
           + '<h3>How to fund your care</h3>'
