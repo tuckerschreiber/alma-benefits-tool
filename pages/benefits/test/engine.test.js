@@ -445,3 +445,11 @@ test('applyRules: postpartum user matches postpartum-specific rule with weeksPos
   const nursingRec = result.find(r => r.service === 'registered_nursing');
   assert.ok(nursingRec, 'postpartum nursing rule should match');
 });
+
+test('detectConcerns: does not match "older child" as AMA', () => {
+  assert.deepEqual(detectConcerns('I have an older child at home'), []);
+});
+
+test('detectConcerns: does not match "twin bed" as twins', () => {
+  assert.deepEqual(detectConcerns('We have a twin bed in the nursery'), []);
+});
