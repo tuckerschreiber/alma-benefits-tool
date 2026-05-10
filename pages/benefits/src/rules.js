@@ -47,5 +47,34 @@ export const RULES = [
     dosing: { sessions: 2, estimatedSessionCost: 220, window: 'first 2 weeks postpartum' },
     rationale: 'A few in-home nursing visits in the first two weeks catch feeding, healing, and newborn questions before they escalate.',
     priority: 'medium'
+  },
+  // ----- Postpartum-specific rules (apply when user is already postpartum) -----
+  {
+    service: 'registered_nursing',
+    appliesWhen: { isPostpartum: true, weeksPostpartumMax: 2 },
+    dosing: { sessions: 2, estimatedSessionCost: 220, window: 'first 2 weeks postpartum' },
+    rationale: 'In-home nursing visits in the first two weeks help with feeding, healing, and newborn questions before they escalate.',
+    priority: 'high'
+  },
+  {
+    service: 'postpartum_doula_care',
+    appliesWhen: { isPostpartum: true, weeksPostpartumMax: 6 },
+    dosing: { sessions: 4, estimatedSessionCost: 180, window: 'weeks 1–6 postpartum' },
+    rationale: 'Doula support eases the transition home — practical help, recovery guidance, and a calmer first month.',
+    priority: 'high'
+  },
+  {
+    service: 'lactation_consulting',
+    appliesWhen: { isPostpartum: true, weeksPostpartumMax: 4, firstTimeParent: true },
+    dosing: { sessions: 2, estimatedSessionCost: 150, window: 'first 4 weeks postpartum' },
+    rationale: 'Lactation challenges often surface in the first 2 weeks. A couple of focused sessions resolve most issues quickly.',
+    priority: 'high'
+  },
+  {
+    service: 'mental_health',
+    appliesWhen: { isPostpartum: true, weeksPostpartumMax: 12 },
+    dosing: { sessions: 4, estimatedSessionCost: 200, window: 'first 12 weeks postpartum' },
+    rationale: 'Postpartum mood shifts affect 1 in 5 parents. A few sessions of preventative therapy keep small things from becoming bigger ones.',
+    priority: 'medium'
   }
 ];

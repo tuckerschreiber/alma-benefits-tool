@@ -16,6 +16,84 @@ export const SERVICE_NAMES = {
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
 const MS_PER_WEEK = 1000 * 60 * 60 * 24 * 7;
 
+export const CONCERN_KEYWORDS = {
+  ppd: ['ppd', 'depression', 'postpartum depression', 'mood', 'anxious', 'anxiety'],
+  hbp: ['blood pressure', 'preeclampsia', 'hypertension'],
+  csection: ['c-section', 'csection', 'cesarean', 'caesarean'],
+  twins: ['twin', 'twins', 'multiples'],
+  nicu: ['nicu', 'preemie', 'premature'],
+  ama: ['advanced maternal age', 'ama ', 'over 35', '35+', 'older'],
+  loss: ['miscarriage', 'stillbirth', 'previous loss', 'pregnancy loss']
+};
+
+export const CONCERN_TO_SERVICE_RULE = {
+  ppd: {
+    service: 'mental_health',
+    rationale: 'Based on what you shared, we\'d especially encourage early mental health support — addressing mood shifts proactively makes a real difference.',
+    dosing: { sessions: 4, estimatedSessionCost: 200, window: 'first 12 weeks postpartum' },
+    priority: 'high',
+    concernCallout: true
+  },
+  hbp: {
+    service: 'registered_nursing',
+    rationale: 'With elevated blood pressure history, in-home nursing checks add an extra layer of monitoring during recovery.',
+    dosing: { sessions: 3, estimatedSessionCost: 220, window: 'first 3 weeks postpartum' },
+    priority: 'high',
+    concernCallout: true
+  },
+  csection: {
+    service: 'massage_therapy',
+    rationale: 'C-section recovery benefits from gentle massage starting around week 6 — once your incision has healed.',
+    dosing: { sessions: 4, estimatedSessionCost: 120, window: 'weeks 6–10 postpartum' },
+    priority: 'high',
+    concernCallout: true
+  },
+  twins: {
+    service: 'postpartum_doula_care',
+    rationale: 'Twins double the workload. Extra doula hours in the early weeks make all the difference.',
+    dosing: { sessions: 6, estimatedSessionCost: 180, window: 'weeks 1–8 postpartum' },
+    priority: 'high',
+    concernCallout: true
+  },
+  nicu: {
+    service: 'lactation_consulting',
+    rationale: 'NICU stays often complicate feeding — focused lactation support helps re-establish or transition to direct feeding.',
+    dosing: { sessions: 3, estimatedSessionCost: 150, window: 'first 4 weeks home' },
+    priority: 'high',
+    concernCallout: true
+  },
+  ama: {
+    service: 'registered_nursing',
+    rationale: 'Postpartum recovery for parents over 35 benefits from extra clinical follow-up in the first weeks.',
+    dosing: { sessions: 2, estimatedSessionCost: 220, window: 'first 2 weeks postpartum' },
+    priority: 'high',
+    concernCallout: true
+  },
+  loss: {
+    service: 'mental_health',
+    rationale: 'Pregnancy after loss carries unique emotional weight. Mental health support is a powerful protective tool.',
+    dosing: { sessions: 4, estimatedSessionCost: 200, window: 'spread across pregnancy and first 12 weeks postpartum' },
+    priority: 'high',
+    concernCallout: true
+  }
+};
+
+/**
+ * Scan free-text concerns for known keywords. Returns the list of detected tags.
+ * Empty / non-string inputs return [].
+ */
+export function detectConcerns(concernsText) {
+  if (!concernsText || typeof concernsText !== 'string') return [];
+  const lower = concernsText.toLowerCase();
+  const tags = [];
+  for (const [tag, keywords] of Object.entries(CONCERN_KEYWORDS)) {
+    if (keywords.some((kw) => lower.includes(kw))) {
+      tags.push(tag);
+    }
+  }
+  return tags;
+}
+
 /**
  * Normalize raw wizard inputs into a flat shape the rule engine can match against.
  */
@@ -204,6 +282,33 @@ export function computeResults(rawInputs, rules, almaServices, today = new Date(
   const normalized = normalizeInputs(rawInputs, today);
   const eligibleServiceIds = eligibilityFilter(normalized.coverage, almaServices);
   const matched = applyRules(normalized, eligibleServiceIds, rules);
+
+  // ----- Concern keyword detection & injection -----
+  const detectedConcerns = detectConcerns(normalized.concerns);
+  const eligibleSet = new Set(eligibleServiceIds);
+  const existingServices = new Set(matched.map((r) => r.service));
+  for (const tag of detectedConcerns) {
+    const concernRule = CONCERN_TO_SERVICE_RULE[tag];
+    if (!concernRule) continue;
+    // Only inject if user is covered for the service AND it's not already recommended.
+    if (!eligibleSet.has(concernRule.service)) continue;
+    if (existingServices.has(concernRule.service)) continue;
+    matched.push({
+      service: concernRule.service,
+      dosing: concernRule.dosing,
+      rationale: concernRule.rationale,
+      priority: concernRule.priority,
+      concernCallout: true
+    });
+    existingServices.add(concernRule.service);
+  }
+  // Re-sort by priority (preserving the order added among ties).
+  matched.sort((a, b) => {
+    const pa = PRIORITY_RANK[a.priority] ?? 99;
+    const pb = PRIORITY_RANK[b.priority] ?? 99;
+    return pa - pb;
+  });
+
   const recommendations = allocateFunding(matched, normalized.coverage, normalized.hsaBalance);
 
   // totalCovered = sum of covered $ across recommendations
@@ -223,7 +328,8 @@ export function computeResults(rawInputs, rules, almaServices, today = new Date(
     recommendations,
     totalCovered,
     totalRecommendedCost,
-    fundingStrategy
+    fundingStrategy,
+    detectedConcerns
   };
 }
 

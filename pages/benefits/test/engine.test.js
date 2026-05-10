@@ -6,6 +6,7 @@ import {
   applyRules,
   allocateFunding,
   computeResults,
+  detectConcerns,
   SERVICE_NAMES
 } from '../src/engine.js';
 import { ALMA_SERVICES, RULES } from '../src/rules.js';
@@ -386,4 +387,61 @@ test('computeResults: SERVICE_NAMES exports human-readable names', () => {
   assert.equal(SERVICE_NAMES.massage_therapy, 'Massage therapy');
   assert.equal(SERVICE_NAMES.lactation_consulting, 'Lactation consulting');
   assert.equal(SERVICE_NAMES.psw, 'Personal support worker');
+});
+
+// ----- detectConcerns -----
+
+test('detectConcerns: matches PPD keywords case-insensitively', () => {
+  assert.deepEqual(detectConcerns('I had PPD last time'), ['ppd']);
+  assert.deepEqual(detectConcerns('Diagnosed with depression'), ['ppd']);
+  assert.deepEqual(detectConcerns(''), []);
+  assert.deepEqual(detectConcerns(null), []);
+});
+
+test('detectConcerns: matches multiple tags', () => {
+  const result = detectConcerns('twin pregnancy with high blood pressure');
+  assert.ok(result.includes('twins'));
+  assert.ok(result.includes('hbp'));
+});
+
+test('computeResults: PPD concern injects mental_health when covered', () => {
+  const inputs = {
+    dueDate: '2026-09-01',
+    isPostpartum: false,
+    firstTimeParent: false,
+    coverage: { mental_health: { amount: 1000, perVisitCap: 0, reimbursementPercent: 100 } },
+    hasHsa: 'no',
+    hsaBalance: 0,
+    concerns: 'I had PPD with my first child'
+  };
+  const today = new Date('2026-05-10');
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  assert.ok(result.detectedConcerns.includes('ppd'));
+  const mhRec = result.recommendations.find(r => r.service === 'mental_health');
+  assert.ok(mhRec, 'mental_health recommendation should be present');
+  assert.equal(mhRec.concernCallout, true);
+});
+
+test('computeResults: concern not injected if service not covered', () => {
+  const inputs = {
+    dueDate: '2026-09-01',
+    isPostpartum: false,
+    firstTimeParent: false,
+    coverage: { massage_therapy: { amount: 500, perVisitCap: 0, reimbursementPercent: 100 } },
+    concerns: 'I have a history of PPD'
+  };
+  const today = new Date('2026-05-10');
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  assert.ok(result.detectedConcerns.includes('ppd'));
+  // mental_health not covered, so no rec injected
+  const mhRec = result.recommendations.find(r => r.service === 'mental_health');
+  assert.equal(mhRec, undefined);
+});
+
+test('applyRules: postpartum user matches postpartum-specific rule with weeksPostpartumMax', () => {
+  const normalized = { isPostpartum: true, weeksPostpartum: 1, firstTimeParent: true, coverage: {}, hasHsa: 'no', hsaBalance: 0, concerns: '' };
+  const result = applyRules(normalized, ['registered_nursing'], RULES);
+  // Postpartum nursing rule with weeksPostpartumMax: 2 should match
+  const nursingRec = result.find(r => r.service === 'registered_nursing');
+  assert.ok(nursingRec, 'postpartum nursing rule should match');
 });
