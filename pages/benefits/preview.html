@@ -23,6 +23,11 @@
       color: #032215;
     }
 
+    h1 {
+      font-size: 28px;
+      line-height: 1.25;
+    }
+
     /* ---------- App shell ---------- */
     .ap-app {
       max-width: 720px;
@@ -73,12 +78,128 @@
       display: flex;
     }
 
+    .ap-step__header {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ap-step__subhead {
+      color: #555;
+      font-size: 15px;
+    }
+
     /* ---------- Card (reserved for later use) ---------- */
     .ap-card {
       background: #ffffff;
       border: 1px solid rgb(235, 225, 213);
       border-radius: 12px;
       padding: 24px;
+    }
+
+    /* ---------- Field group ---------- */
+    .ap-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ap-label {
+      color: #032215;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .ap-optional {
+      color: #999;
+      font-size: 13px;
+      font-weight: 400;
+    }
+
+    .ap-input,
+    .ap-textarea {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #032215;
+      width: 100%;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .ap-input:focus,
+    .ap-textarea:focus {
+      outline: none;
+      border-color: #156146;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    .ap-textarea {
+      resize: vertical;
+      min-height: 96px;
+      line-height: 1.5;
+    }
+
+    /* ---------- Postpartum toggle link ---------- */
+    .ap-field__footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    .ap-link-toggle {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #156146;
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: right;
+    }
+
+    .ap-link-toggle:hover {
+      text-decoration: underline;
+    }
+
+    .ap-link-toggle strong {
+      font-weight: 500;
+    }
+
+    /* ---------- Hidden helper ---------- */
+    .ap-hidden {
+      display: none !important;
+    }
+
+    /* ---------- Two-button toggle (first-time parent) ---------- */
+    .ap-toggle-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .ap-toggle {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #032215;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .ap-toggle:hover {
+      border-color: #156146;
+    }
+
+    .ap-toggle--selected {
+      border-color: #156146;
+      background: #F4E9DD;
     }
 
     /* ---------- Nav ---------- */
@@ -113,6 +234,12 @@
       cursor: not-allowed;
     }
 
+    .ap-btn--back {
+      background: transparent;
+      color: #156146;
+      border: 1px solid rgb(235, 225, 213);
+    }
+
     /* ---------- Mobile ---------- */
     @media (max-width: 640px) {
       .ap-app {
@@ -123,6 +250,14 @@
       .ap-btn {
         padding: 12px 24px;
         font-size: 14px;
+      }
+
+      .ap-toggle-group {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 24px;
       }
     }
   </style>
@@ -139,7 +274,38 @@
     </header>
 
     <section id="ap-step-1" class="ap-step ap-step--active">
-      <p>Step 1 coming</p>
+      <div class="ap-step__header">
+        <h1>Tell us about you</h1>
+        <p class="ap-step__subhead">A few quick questions so we can build your care plan.</p>
+      </div>
+
+      <div id="ap-due-date-field" class="ap-field">
+        <label class="ap-label" for="ap-due-date">When are you due?</label>
+        <input type="date" id="ap-due-date" name="dueDate" class="ap-input">
+        <div class="ap-field__footer">
+          <button type="button" id="ap-postpartum-toggle" class="ap-link-toggle">
+            Already had your baby? <strong>Switch to postpartum</strong>
+          </button>
+        </div>
+      </div>
+
+      <div id="ap-weeks-postpartum-field" class="ap-field ap-hidden">
+        <label class="ap-label" for="ap-weeks-postpartum">How many weeks ago did you give birth?</label>
+        <input type="number" id="ap-weeks-postpartum" name="weeksPostpartum" min="0" max="52" class="ap-input">
+      </div>
+
+      <div class="ap-field">
+        <label class="ap-label">Is this your first baby?</label>
+        <div class="ap-toggle-group" role="group" aria-label="First baby">
+          <button type="button" class="ap-toggle" data-toggle="firstTimeParent" data-value="true">Yes — first time</button>
+          <button type="button" class="ap-toggle" data-toggle="firstTimeParent" data-value="false">No — I've done this before</button>
+        </div>
+      </div>
+
+      <div class="ap-field">
+        <label class="ap-label" for="ap-concerns">Anything we should know? <span class="ap-optional">(optional)</span></label>
+        <textarea id="ap-concerns" name="concerns" rows="4" class="ap-textarea" placeholder="e.g. diagnosed with PPD, advanced maternal age, twin pregnancy, recovering from C-section…"></textarea>
+      </div>
     </section>
 
     <section id="ap-step-2" class="ap-step">
@@ -156,12 +322,215 @@
 
     <nav class="ap-nav" aria-label="Wizard navigation">
       <button type="button" class="ap-btn ap-btn--back" disabled>Back</button>
-      <button type="button" class="ap-btn ap-btn--continue">Continue</button>
+      <button type="button" class="ap-btn ap-btn--continue" disabled>Continue</button>
     </nav>
   </main>
 
   <script>
-    (function(){ /* placeholder for benefits tool logic */ })();
+    (function(){
+      'use strict';
+
+      const STORAGE_KEY = 'ap_benefits_state';
+
+      const state = {
+        dueDate: null,
+        isPostpartum: false,
+        weeksPostpartum: null,
+        firstTimeParent: null,
+        concerns: ''
+      };
+
+      let currentStep = 1;
+      const TOTAL_STEPS = 3;
+
+      // ---------- Element refs ----------
+      const dueDateInput = document.getElementById('ap-due-date');
+      const dueDateField = document.getElementById('ap-due-date-field');
+      const weeksInput = document.getElementById('ap-weeks-postpartum');
+      const weeksField = document.getElementById('ap-weeks-postpartum-field');
+      const concernsInput = document.getElementById('ap-concerns');
+      const postpartumToggle = document.getElementById('ap-postpartum-toggle');
+      const firstTimeButtons = document.querySelectorAll('[data-toggle="firstTimeParent"]');
+      const continueBtn = document.querySelector('.ap-btn--continue');
+      const backBtn = document.querySelector('.ap-btn--back');
+      const progressLabel = document.querySelector('.ap-progress__label');
+      const progressBar = document.querySelector('.ap-progress__bar');
+      const progressSegments = document.querySelectorAll('.ap-progress__segment');
+
+      // ---------- Set max on due date input (1 year from today) ----------
+      function setDueDateMax() {
+        const today = new Date();
+        const maxDate = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+        const yyyy = maxDate.getFullYear();
+        const mm = String(maxDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(maxDate.getDate()).padStart(2, '0');
+        dueDateInput.setAttribute('max', `${yyyy}-${mm}-${dd}`);
+      }
+
+      // ---------- Persistence ----------
+      function loadState() {
+        try {
+          const saved = sessionStorage.getItem(STORAGE_KEY);
+          if (saved) Object.assign(state, JSON.parse(saved));
+        } catch (e) { /* sessionStorage unavailable — silent fail */ }
+      }
+
+      function saveState() {
+        try {
+          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) { /* silent */ }
+      }
+
+      // ---------- UI updates ----------
+      // `opts.clearOther` clears the value of the field we're switching *away* from.
+      // We pass false during hydration so persisted values aren't wiped on reload.
+      function togglePostpartum(toPostpartum, opts) {
+        const clearOther = !opts || opts.clearOther !== false;
+        state.isPostpartum = !!toPostpartum;
+        if (state.isPostpartum) {
+          dueDateField.classList.add('ap-hidden');
+          weeksField.classList.remove('ap-hidden');
+          postpartumToggle.innerHTML = 'Still expecting? <strong>Switch back</strong>';
+          if (clearOther) {
+            state.dueDate = null;
+            dueDateInput.value = '';
+          }
+        } else {
+          dueDateField.classList.remove('ap-hidden');
+          weeksField.classList.add('ap-hidden');
+          postpartumToggle.innerHTML = 'Already had your baby? <strong>Switch to postpartum</strong>';
+          if (clearOther) {
+            state.weeksPostpartum = null;
+            weeksInput.value = '';
+          }
+        }
+        // Move the toggle link into whichever field is currently visible
+        const visibleField = state.isPostpartum ? weeksField : dueDateField;
+        const footer = postpartumToggle.parentElement;
+        if (footer && footer.classList.contains('ap-field__footer') && footer.parentElement !== visibleField) {
+          visibleField.appendChild(footer);
+        }
+        saveState();
+        updateContinueButton();
+      }
+
+      function selectFirstTimeParent(value) {
+        state.firstTimeParent = value;
+        firstTimeButtons.forEach((btn) => {
+          const btnValue = btn.getAttribute('data-value') === 'true';
+          if (btnValue === value) {
+            btn.classList.add('ap-toggle--selected');
+          } else {
+            btn.classList.remove('ap-toggle--selected');
+          }
+        });
+        saveState();
+        updateContinueButton();
+      }
+
+      function hasValidTimingAnswer() {
+        if (state.isPostpartum) {
+          return typeof state.weeksPostpartum === 'number' && !Number.isNaN(state.weeksPostpartum);
+        }
+        return !!state.dueDate;
+      }
+
+      function updateContinueButton() {
+        const canContinue = hasValidTimingAnswer() && state.firstTimeParent !== null;
+        continueBtn.disabled = !canContinue;
+      }
+
+      function hydrateUI() {
+        dueDateInput.value = state.dueDate || '';
+        weeksInput.value = state.weeksPostpartum != null ? state.weeksPostpartum : '';
+        concernsInput.value = state.concerns || '';
+        if (state.isPostpartum) togglePostpartum(true, { clearOther: false });
+        if (state.firstTimeParent !== null) selectFirstTimeParent(state.firstTimeParent);
+        updateContinueButton();
+      }
+
+      // ---------- Navigation ----------
+      function goToStep(n) {
+        if (n < 1 || n > TOTAL_STEPS) return;
+        const currentEl = document.getElementById(`ap-step-${currentStep}`);
+        const nextEl = document.getElementById(`ap-step-${n}`);
+        if (currentEl) currentEl.classList.remove('ap-step--active');
+        if (nextEl) nextEl.classList.add('ap-step--active');
+        currentStep = n;
+
+        // Update progress label + segments
+        progressLabel.textContent = `Step ${n} of ${TOTAL_STEPS}`;
+        progressBar.setAttribute('aria-valuenow', String(n));
+        progressSegments.forEach((seg, i) => {
+          if (i < n) {
+            seg.classList.add('ap-progress__segment--active');
+          } else {
+            seg.classList.remove('ap-progress__segment--active');
+          }
+        });
+
+        // Back disabled on step 1
+        backBtn.disabled = n === 1;
+
+        // Continue requirement is step-specific; for now only step 1 is wired.
+        // For later steps, default to enabled (placeholder until those steps are built).
+        if (n === 1) {
+          updateContinueButton();
+        } else {
+          continueBtn.disabled = false;
+        }
+      }
+
+      // ---------- Event wiring ----------
+      dueDateInput.addEventListener('change', (e) => {
+        state.dueDate = e.target.value || null;
+        saveState();
+        updateContinueButton();
+      });
+
+      weeksInput.addEventListener('input', (e) => {
+        const raw = e.target.value;
+        if (raw === '') {
+          state.weeksPostpartum = null;
+        } else {
+          const num = parseInt(raw, 10);
+          state.weeksPostpartum = Number.isNaN(num) ? null : num;
+        }
+        saveState();
+        updateContinueButton();
+      });
+
+      concernsInput.addEventListener('input', (e) => {
+        state.concerns = e.target.value;
+        saveState();
+      });
+
+      postpartumToggle.addEventListener('click', () => {
+        togglePostpartum(!state.isPostpartum);
+      });
+
+      firstTimeButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const value = btn.getAttribute('data-value') === 'true';
+          selectFirstTimeParent(value);
+        });
+      });
+
+      continueBtn.addEventListener('click', () => {
+        if (continueBtn.disabled) return;
+        if (currentStep < TOTAL_STEPS) goToStep(currentStep + 1);
+      });
+
+      backBtn.addEventListener('click', () => {
+        if (backBtn.disabled) return;
+        if (currentStep > 1) goToStep(currentStep - 1);
+      });
+
+      // ---------- Init ----------
+      setDueDateMax();
+      loadState();
+      hydrateUI();
+    })();
   </script>
 </body>
 </html>
