@@ -534,6 +534,234 @@
       margin-top: 8px;
     }
 
+    /* ---------- Results panels ---------- */
+    .ap-panel {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .ap-panel h2 {
+      font-weight: 500;
+      font-size: 24px;
+      color: #032215;
+    }
+
+    .ap-panel p {
+      color: #555;
+      font-size: 15px;
+    }
+
+    .ap-snapshot-hero {
+      font-size: 44px;
+      line-height: 1.1;
+      font-weight: 500;
+      color: #156146;
+    }
+
+    .ap-snapshot-hero--muted {
+      color: #999;
+      font-size: 20px;
+      font-weight: 400;
+    }
+
+    .ap-hsa-callout {
+      display: inline-block;
+      background: #F4E9DD;
+      color: #032215;
+      font-size: 14px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      align-self: flex-start;
+    }
+
+    .ap-coverage-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 8px;
+    }
+
+    .ap-coverage-list__column h3 {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .ap-coverage-list ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ap-coverage-list li {
+      font-size: 15px;
+      color: #032215;
+    }
+
+    .ap-coverage-list li.ap-coverage-list__item--muted {
+      color: #999;
+    }
+
+    .ap-coverage-list__check {
+      color: #156146;
+      font-weight: 600;
+      margin-right: 6px;
+    }
+
+    .ap-coverage-list__dash {
+      color: #bbb;
+      margin-right: 6px;
+    }
+
+    .ap-rec-card {
+      background: #FFFAF4;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .ap-rec-card__icon {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      background: #156146;
+      color: #FFFAF4;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .ap-rec-card__body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ap-rec-card__title {
+      font-size: 17px;
+      font-weight: 500;
+      color: #032215;
+    }
+
+    .ap-rec-card__dosing {
+      font-size: 14px;
+      color: #156146;
+      font-weight: 500;
+    }
+
+    .ap-rec-card__rationale {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .ap-cost-breakdown {
+      margin-top: 8px;
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ap-cost-breakdown__row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .ap-cost-breakdown__row--covered {
+      color: #156146;
+    }
+
+    .ap-cost-breakdown__row--oop {
+      color: #888;
+    }
+
+    .ap-cost-breakdown__row--total {
+      font-weight: 500;
+      color: #032215;
+    }
+
+    .ap-funding-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ap-funding-list li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 15px;
+      color: #032215;
+    }
+
+    .ap-funding-list li::before {
+      content: '\2022';
+      color: #156146;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .ap-cta-row {
+      display: flex;
+      flex-direction: row;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .ap-cta-row .ap-btn {
+      padding: 16px 28px;
+      font-size: 16px;
+    }
+
+    .ap-btn--secondary {
+      background: transparent;
+      color: #156146;
+      border: 1px solid #156146;
+    }
+
+    .ap-empty-rec {
+      color: #555;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    #ap-lead-drawer {
+      margin-top: 16px;
+      padding: 16px;
+      background: #F4E9DD;
+      border-radius: 8px;
+      color: #555;
+      font-size: 14px;
+    }
+
     /* ---------- Mobile ---------- */
     @media (max-width: 640px) {
       .ap-app {
@@ -553,6 +781,30 @@
 
       h1 {
         font-size: 24px;
+      }
+
+      .ap-panel {
+        padding: 24px;
+      }
+
+      .ap-panel h2 {
+        font-size: 20px;
+      }
+
+      .ap-snapshot-hero {
+        font-size: 32px;
+      }
+
+      .ap-coverage-list {
+        grid-template-columns: 1fr;
+      }
+
+      .ap-cta-row {
+        flex-direction: column;
+      }
+
+      .ap-cta-row .ap-btn {
+        width: 100%;
       }
     }
   </style>
@@ -903,9 +1155,7 @@
       </div>
     </div>
 
-    <section id="ap-results" class="ap-step">
-      <p>Results coming</p>
-    </section>
+    <section id="ap-results" class="ap-step" aria-live="polite"></section>
 
     <nav class="ap-nav" aria-label="Wizard navigation">
       <button type="button" class="ap-btn ap-btn--back" disabled>Back</button>
@@ -916,6 +1166,307 @@
   <script>
     (function(){
       'use strict';
+
+      // === ENGINE (mirror of src/engine.js + src/rules.js — keep in sync) ===
+      // Pure functions only: no DOM, no globals, no I/O. Runs identically in Node and browser.
+
+      const SERVICE_NAMES = {
+        massage_therapy: 'Massage therapy',
+        acupuncture: 'Acupuncture',
+        lactation_consulting: 'Lactation consulting',
+        postpartum_doula_care: 'Postpartum doula care',
+        registered_nursing: 'Registered nursing',
+        psw: 'Personal support worker',
+        mental_health: 'Mental health support',
+        nutritionist: 'Nutritionist',
+        dietician: 'Dietician'
+      };
+
+      const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
+      const MS_PER_WEEK = 1000 * 60 * 60 * 24 * 7;
+
+      // DRAFT v1 — Awaiting Alma clinical sign-off (see docs/clinical/benefits-tool-rule-matrix-DRAFT.md)
+      const ALMA_SERVICES = [
+        'massage_therapy', 'acupuncture', 'lactation_consulting',
+        'postpartum_doula_care', 'registered_nursing', 'psw',
+        'mental_health', 'nutritionist', 'dietician'
+      ];
+
+      const RULES = [
+        {
+          service: 'lactation_consulting',
+          appliesWhen: { weeksUntilDueMax: 8, firstTimeParent: true },
+          dosing: { sessions: 2, estimatedSessionCost: 150, window: 'first 2 weeks postpartum' },
+          rationale: 'First-time parents benefit most from early lactation support — small adjustments in the first 10 days prevent most feeding issues.',
+          priority: 'high'
+        },
+        {
+          service: 'postpartum_doula_care',
+          appliesWhen: { weeksUntilDueMax: 12 },
+          dosing: { sessions: 4, estimatedSessionCost: 180, window: 'weeks 1–4 postpartum' },
+          rationale: 'Doula care eases the transition home — practical support, recovery guidance, and a calmer first month.',
+          priority: 'high'
+        },
+        {
+          service: 'massage_therapy',
+          appliesWhen: {},
+          dosing: { sessions: 4, estimatedSessionCost: 120, window: 'spread across 8 weeks postpartum' },
+          rationale: 'Postpartum massage helps with muscle recovery, stress reduction, and circulation in the early weeks.',
+          priority: 'medium'
+        },
+        {
+          service: 'mental_health',
+          appliesWhen: { firstTimeParent: true, weeksUntilDueMax: 16 },
+          dosing: { sessions: 3, estimatedSessionCost: 200, window: 'first 12 weeks postpartum' },
+          rationale: 'Postpartum mood shifts affect 1 in 5 parents. A few sessions of preventative therapy keep small things from becoming bigger ones.',
+          priority: 'medium'
+        },
+        {
+          service: 'acupuncture',
+          appliesWhen: {},
+          dosing: { sessions: 3, estimatedSessionCost: 110, window: 'late pregnancy + early postpartum' },
+          rationale: 'Acupuncture supports labor preparation and early postpartum recovery — particularly for sleep and mood.',
+          priority: 'low'
+        },
+        {
+          service: 'registered_nursing',
+          appliesWhen: { weeksUntilDueMax: 4 },
+          dosing: { sessions: 2, estimatedSessionCost: 220, window: 'first 2 weeks postpartum' },
+          rationale: 'A few in-home nursing visits in the first two weeks catch feeding, healing, and newborn questions before they escalate.',
+          priority: 'medium'
+        }
+      ];
+
+      function normalizeInputs(inputs, today) {
+        if (!today) today = new Date();
+        const raw = inputs || {};
+        const dueDate = raw.dueDate;
+        const isPostpartum = raw.isPostpartum;
+        const weeksPostpartum = raw.weeksPostpartum;
+        const firstTimeParent = raw.firstTimeParent;
+        const coverage = raw.coverage;
+        const hasHsa = raw.hasHsa;
+        const hsaBalance = raw.hsaBalance;
+        const concerns = raw.concerns;
+
+        const base = {
+          firstTimeParent: firstTimeParent,
+          coverage: coverage || {},
+          hasHsa: hasHsa,
+          hsaBalance: typeof hsaBalance === 'number' ? hsaBalance : 0,
+          concerns: typeof concerns === 'string' ? concerns : ''
+        };
+
+        if (isPostpartum) {
+          return Object.assign({
+            isPostpartum: true,
+            weeksPostpartum: typeof weeksPostpartum === 'number' ? weeksPostpartum : 0
+          }, base);
+        }
+
+        let weeksUntilDue = 0;
+        if (dueDate) {
+          const due = new Date(dueDate);
+          weeksUntilDue = Math.floor((due - today) / MS_PER_WEEK);
+        }
+
+        // If the due date is in the past, the user is actually postpartum — auto-flip
+        // rather than letting a negative weeksUntilDue silently match prenatal rules.
+        if (weeksUntilDue < 0) {
+          return Object.assign({
+            isPostpartum: true,
+            weeksPostpartum: -weeksUntilDue
+          }, base);
+        }
+
+        return Object.assign({
+          isPostpartum: false,
+          weeksUntilDue: weeksUntilDue
+        }, base);
+      }
+
+      function eligibilityFilter(coveredServices, almaServices) {
+        if (!coveredServices || !almaServices) return [];
+        const covered = Object.keys(coveredServices);
+        return almaServices.filter(function (id) { return covered.includes(id); });
+      }
+
+      function ruleMatches(normalized, appliesWhen) {
+        if (!appliesWhen) return true;
+        for (const [key, value] of Object.entries(appliesWhen)) {
+          switch (key) {
+            case 'weeksUntilDueMax':
+              if (normalized.isPostpartum) break;
+              if (!(normalized.weeksUntilDue <= value)) return false;
+              break;
+            case 'weeksUntilDueMin':
+              if (normalized.isPostpartum) break;
+              if (!(normalized.weeksUntilDue >= value)) return false;
+              break;
+            case 'weeksPostpartumMax':
+              if (!normalized.isPostpartum) break;
+              if (!(normalized.weeksPostpartum <= value)) return false;
+              break;
+            case 'weeksPostpartumMin':
+              if (!normalized.isPostpartum) break;
+              if (!(normalized.weeksPostpartum >= value)) return false;
+              break;
+            case 'firstTimeParent':
+              if (normalized.firstTimeParent !== value) return false;
+              break;
+            case 'isPostpartum':
+              if (normalized.isPostpartum !== value) return false;
+              break;
+            default:
+              // Unknown condition — ignore (forward-compatible)
+              break;
+          }
+        }
+        return true;
+      }
+
+      function applyRules(normalized, eligibleServiceIds, rules) {
+        if (!rules || !rules.length) return [];
+        const eligibleSet = new Set(eligibleServiceIds || []);
+        const matches = [];
+
+        rules.forEach(function (rule, index) {
+          if (!eligibleSet.has(rule.service)) return;
+          if (!ruleMatches(normalized, rule.appliesWhen)) return;
+          matches.push({
+            service: rule.service,
+            dosing: rule.dosing,
+            rationale: rule.rationale,
+            priority: rule.priority,
+            _order: index
+          });
+        });
+
+        matches.sort(function (a, b) {
+          const pa = PRIORITY_RANK[a.priority] != null ? PRIORITY_RANK[a.priority] : 99;
+          const pb = PRIORITY_RANK[b.priority] != null ? PRIORITY_RANK[b.priority] : 99;
+          if (pa !== pb) return pa - pb;
+          return a._order - b._order;
+        });
+
+        return matches.map(function (m) {
+          const copy = {};
+          for (const k of Object.keys(m)) {
+            if (k !== '_order') copy[k] = m[k];
+          }
+          return copy;
+        });
+      }
+
+      function recommendationCost(rec) {
+        if (rec.dosing && typeof rec.dosing.totalCost === 'number') {
+          return rec.dosing.totalCost;
+        }
+        const sessions = (rec.dosing && rec.dosing.sessions) || 0;
+        if (sessions > 0 && !(rec.dosing && typeof rec.dosing.estimatedSessionCost === 'number')) {
+          throw new Error(
+            'Rule for "' + rec.service + '" must specify dosing.estimatedSessionCost or dosing.totalCost'
+          );
+        }
+        const cost = rec.dosing && typeof rec.dosing.estimatedSessionCost === 'number'
+          ? rec.dosing.estimatedSessionCost
+          : 0;
+        return sessions * cost;
+      }
+
+      function allocateFunding(recommendations, coverage, hsaBalance) {
+        let remainingHsa = typeof hsaBalance === 'number' ? hsaBalance : 0;
+        const cov = coverage || {};
+        return (recommendations || []).map(function (rec) {
+          const totalCost = recommendationCost(rec);
+          const c = cov[rec.service];
+          let covered = 0;
+          if (c && typeof c.amount === 'number') {
+            const reimbPct = typeof c.reimbursementPercent === 'number' ? c.reimbursementPercent : 100;
+            const maxCovered = c.amount * (reimbPct / 100);
+            covered = Math.min(totalCost, maxCovered);
+          }
+          const afterCoverage = Math.max(0, totalCost - covered);
+          const fromHsa = Math.min(afterCoverage, remainingHsa);
+          remainingHsa -= fromHsa;
+          const outOfPocket = Math.max(0, afterCoverage - fromHsa);
+          return Object.assign({}, rec, {
+            totalCost: totalCost,
+            covered: covered,
+            fromHsa: fromHsa,
+            outOfPocket: outOfPocket
+          });
+        });
+      }
+
+      function formatMoney(n) {
+        return '$' + Math.round(n);
+      }
+
+      function buildFundingStrategy(recommendations, coverage, hsaBalance, totalCovered) {
+        const lines = [];
+        const cov = coverage || {};
+
+        // Track which services were actually used in recommendations
+        const usedServices = new Set(recommendations.map(function (r) { return r.service; }));
+
+        for (const serviceId of usedServices) {
+          const c = cov[serviceId];
+          if (c && typeof c.amount === 'number' && c.amount > 0) {
+            const name = SERVICE_NAMES[serviceId] || serviceId;
+            lines.push('Use your ' + name + ' benefits — ' + formatMoney(c.amount) + ' available.');
+          }
+        }
+
+        const totalFromHsa = recommendations.reduce(function (s, r) { return s + (r.fromHsa || 0); }, 0);
+        if (totalFromHsa > 0) {
+          lines.push('Cover ' + formatMoney(totalFromHsa) + ' with your ' + formatMoney(hsaBalance) + ' HSA.');
+        }
+
+        const totalOop = recommendations.reduce(function (s, r) { return s + (r.outOfPocket || 0); }, 0);
+        if (totalOop > 0) {
+          lines.push(
+            '~' + formatMoney(totalOop) + ' out-of-pocket — consider adding Alma gift cards to your registry.'
+          );
+        }
+
+        if (totalCovered === 0 && (!hsaBalance || hsaBalance === 0)) {
+          lines.push('Most of your care will be out-of-pocket — here\'s how to plan smartly.');
+          lines.push('Consider Alma gift cards on your registry to offset costs.');
+        }
+
+        return lines;
+      }
+
+      function computeResults(rawInputs, rules, almaServices, today) {
+        if (!today) today = new Date();
+        const normalized = normalizeInputs(rawInputs, today);
+        const eligibleServiceIds = eligibilityFilter(normalized.coverage, almaServices);
+        const matched = applyRules(normalized, eligibleServiceIds, rules);
+        const recommendations = allocateFunding(matched, normalized.coverage, normalized.hsaBalance);
+
+        // totalCovered = sum of covered $ across recommendations
+        const totalCovered = recommendations.reduce(function (sum, r) { return sum + (r.covered || 0); }, 0);
+        const totalRecommendedCost = recommendations.reduce(function (sum, r) { return sum + (r.totalCost || 0); }, 0);
+
+        const fundingStrategy = buildFundingStrategy(
+          recommendations,
+          normalized.coverage,
+          normalized.hsaBalance,
+          totalCovered
+        );
+
+        return {
+          normalized: normalized,
+          eligibleServiceIds: eligibleServiceIds,
+          recommendations: recommendations,
+          totalCovered: totalCovered,
+          totalRecommendedCost: totalRecommendedCost,
+          fundingStrategy: fundingStrategy
+        };
+      }
+
+      // === END ENGINE ===
 
       const STORAGE_KEY = 'ap_benefits_state';
 
@@ -928,7 +1479,8 @@
         insurer: null,
         hasHsa: null,
         hsaBalance: null,
-        coverage: {}
+        coverage: {},
+        results: null
       };
 
       let currentStep = 1;
@@ -1358,9 +1910,9 @@
       continueBtn.addEventListener('click', () => {
         if (continueBtn.disabled) return;
         if (currentStep === TOTAL_STEPS) {
-          // Final intake step → advance to results placeholder. Engine wiring
-          // lands in task 6; for now we log state to confirm the shape.
-          console.log('Benefits wizard submitted:', state);
+          // Final intake step → run engine, render panels, then advance.
+          state.results = computeResults(state, RULES, ALMA_SERVICES, new Date());
+          renderResults(state.results);
           goToStep(TOTAL_STEPS + 1);
         } else if (currentStep < TOTAL_STEPS) {
           goToStep(currentStep + 1);
@@ -1421,6 +1973,177 @@
           closeCoverageModal();
         }
       });
+
+      // ---------- Results rendering ----------
+      function escapeHtml(str) {
+        if (str == null) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function dosingLine(dosing) {
+        if (!dosing) return '';
+        const sessions = dosing.sessions;
+        const win = dosing.window;
+        if (sessions && win) return sessions + ' session' + (sessions === 1 ? '' : 's') + ' — ' + win;
+        if (sessions) return sessions + ' session' + (sessions === 1 ? '' : 's');
+        if (win) return win;
+        return '';
+      }
+
+      function renderSnapshot(results) {
+        const total = results.totalCovered || 0;
+        const heroHtml = total > 0
+          ? '<div class="ap-snapshot-hero">' + formatMoney(total) + ' in benefits to use</div>'
+          : '<div class="ap-snapshot-hero ap-snapshot-hero--muted">No extended benefits — that\'s okay.</div>';
+
+        const showHsa = state.hasHsa === 'yes'
+          && typeof state.hsaBalance === 'number'
+          && state.hsaBalance > 0;
+        const hsaHtml = showHsa
+          ? '<div class="ap-hsa-callout">+ ' + formatMoney(state.hsaBalance) + ' flexible HSA spend</div>'
+          : '';
+
+        const coveredIds = Object.keys(state.coverage || {});
+        const coveredItems = coveredIds.map(function (id) {
+          const entry = state.coverage[id];
+          const amount = entry && typeof entry.amount === 'number' ? entry.amount : 0;
+          const name = SERVICE_NAMES[id] || id;
+          return '<li><span class="ap-coverage-list__check">✓</span>'
+            + escapeHtml(name) + ' — ' + formatMoney(amount) + '</li>';
+        }).join('');
+
+        const notCovered = ALMA_SERVICES.filter(function (id) { return coveredIds.indexOf(id) === -1; });
+        const notCoveredItems = notCovered.map(function (id) {
+          const name = SERVICE_NAMES[id] || id;
+          return '<li class="ap-coverage-list__item--muted"><span class="ap-coverage-list__dash">—</span>'
+            + escapeHtml(name) + '</li>';
+        }).join('');
+
+        const coveredColHtml = coveredItems
+          ? '<div class="ap-coverage-list__column"><h3>What\'s covered</h3><ul>' + coveredItems + '</ul></div>'
+          : '<div class="ap-coverage-list__column"><h3>What\'s covered</h3><ul><li class="ap-coverage-list__item--muted">Nothing selected.</li></ul></div>';
+
+        const notCoveredColHtml = notCoveredItems
+          ? '<div class="ap-coverage-list__column"><h3>What\'s not covered</h3><ul>' + notCoveredItems + '</ul></div>'
+          : '';
+
+        return (
+          '<section class="ap-panel ap-panel--snapshot">'
+          + '<h2>Your coverage at a glance</h2>'
+          + heroHtml
+          + hsaHtml
+          + '<div class="ap-coverage-list">' + coveredColHtml + notCoveredColHtml + '</div>'
+          + '</section>'
+        );
+      }
+
+      function renderCostBreakdown(rec) {
+        const rows = [];
+        rows.push(
+          '<div class="ap-cost-breakdown__row ap-cost-breakdown__row--total">'
+          + '<span>Estimated total</span><span>' + formatMoney(rec.totalCost || 0) + '</span></div>'
+        );
+        if ((rec.covered || 0) > 0) {
+          rows.push(
+            '<div class="ap-cost-breakdown__row ap-cost-breakdown__row--covered">'
+            + '<span>Covered by insurance</span><span>' + formatMoney(rec.covered) + '</span></div>'
+          );
+        }
+        if ((rec.fromHsa || 0) > 0) {
+          rows.push(
+            '<div class="ap-cost-breakdown__row ap-cost-breakdown__row--covered">'
+            + '<span>From HSA</span><span>' + formatMoney(rec.fromHsa) + '</span></div>'
+          );
+        }
+        if ((rec.outOfPocket || 0) > 0) {
+          rows.push(
+            '<div class="ap-cost-breakdown__row ap-cost-breakdown__row--oop">'
+            + '<span>Out-of-pocket</span><span>' + formatMoney(rec.outOfPocket) + '</span></div>'
+          );
+        }
+        return '<div class="ap-cost-breakdown">' + rows.join('') + '</div>';
+      }
+
+      function renderRecCard(rec) {
+        const name = SERVICE_NAMES[rec.service] || rec.service;
+        return (
+          '<div class="ap-rec-card">'
+          + '<div class="ap-rec-card__icon" aria-hidden="true">🌿</div>'
+          + '<div class="ap-rec-card__body">'
+          + '<div class="ap-rec-card__title">' + escapeHtml(name) + '</div>'
+          + (dosingLine(rec.dosing)
+              ? '<div class="ap-rec-card__dosing">' + escapeHtml(dosingLine(rec.dosing)) + '</div>'
+              : '')
+          + '<div class="ap-rec-card__rationale">' + escapeHtml(rec.rationale || '') + '</div>'
+          + renderCostBreakdown(rec)
+          + '</div>'
+          + '</div>'
+        );
+      }
+
+      function renderPlan(results) {
+        const recs = results.recommendations || [];
+        let body;
+        if (recs.length === 0) {
+          body = '<p class="ap-empty-rec">We didn\'t have enough info to build personalized recommendations — book a free consult and we\'ll walk through your options together.</p>';
+        } else {
+          body = recs.map(renderRecCard).join('');
+        }
+        return (
+          '<section class="ap-panel ap-panel--plan">'
+          + '<h2>Your personalized care plan</h2>'
+          + '<p>Recommendations based on your due date, benefits, and what you shared.</p>'
+          + body
+          + '</section>'
+        );
+      }
+
+      function renderFunding(results) {
+        const lines = results.fundingStrategy || [];
+        if (lines.length === 0) return '';
+        const items = lines.map(function (line) {
+          return '<li>' + escapeHtml(line) + '</li>';
+        }).join('');
+        return (
+          '<section class="ap-panel ap-panel--funding">'
+          + '<h2>How to fund your care</h2>'
+          + '<ul class="ap-funding-list">' + items + '</ul>'
+          + '</section>'
+        );
+      }
+
+      function renderCtaRow() {
+        return (
+          '<div class="ap-cta-row">'
+          + '<a class="ap-btn ap-btn--primary" href="https://calendly.com/almacare/consult" target="_blank" rel="noopener">Book a free consult</a>'
+          + '<button type="button" class="ap-btn ap-btn--secondary" id="ap-email-plan">Email me my care plan</button>'
+          + '</div>'
+          + '<div id="ap-lead-drawer" class="ap-hidden">Lead capture coming soon.</div>'
+        );
+      }
+
+      function renderResults(results) {
+        const container = document.getElementById('ap-results');
+        if (!container) return;
+        container.innerHTML =
+          renderSnapshot(results)
+          + renderPlan(results)
+          + renderFunding(results)
+          + renderCtaRow();
+
+        const emailBtn = document.getElementById('ap-email-plan');
+        const drawer = document.getElementById('ap-lead-drawer');
+        if (emailBtn && drawer) {
+          emailBtn.addEventListener('click', function () {
+            drawer.classList.remove('ap-hidden');
+          });
+        }
+      }
 
       // ---------- Init ----------
       setDueDateMax();
