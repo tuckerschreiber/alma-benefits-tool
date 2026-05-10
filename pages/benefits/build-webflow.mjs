@@ -39,7 +39,7 @@ const testOutPath = join(__dirname, 'webflow-test.html');
 // uploading app.js to his hosting (jsDelivr, Webflow assets, etc).
 // For the local test page, we override to a relative path so the Python server
 // serves the file directly.
-const APP_JS_URL_PROD = 'https://almacare.ca/files/alma-benefits-app.js';
+const APP_JS_URL_PROD = 'https://cdn.jsdelivr.net/gh/tuckerschreiber/alma-benefits-tool/pages/benefits/app.js';
 const APP_JS_URL_TEST = './app.js';
 
 const html = readFileSync(previewPath, 'utf8');
