@@ -1628,12 +1628,32 @@
             scale: 2,
             useCORS: true,
             backgroundColor: '#ffffff',
-            width: pdfSource.scrollWidth,
+            // Force a fixed 8.5in (816px) capture window regardless of the
+            // host page's viewport size. This decouples PDF rendering from
+            // whatever Webflow's body width / responsive rules are doing.
+            width: 816,
             height: pdfSource.scrollHeight,
-            windowWidth: pdfSource.scrollWidth,
+            windowWidth: 816,
             windowHeight: pdfSource.scrollHeight,
+            x: 0,
+            y: 0,
             scrollX: 0,
-            scrollY: 0
+            scrollY: 0,
+            logging: false,
+            // Clean clone before capture: drop fonts/styles inherited from
+            // the host page that don't apply inside our scoped block.
+            onclone: function (clonedDoc) {
+              const cloned = clonedDoc.getElementById('ap-pdf-source');
+              if (cloned) {
+                cloned.style.position = 'static';
+                cloned.style.top = 'auto';
+                cloned.style.left = 'auto';
+                cloned.style.zIndex = 'auto';
+                cloned.style.width = '816px';
+                cloned.style.maxWidth = '816px';
+                cloned.style.margin = '0';
+              }
+            }
           },
           jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
           pagebreak: { mode: ['css', 'legacy'] }

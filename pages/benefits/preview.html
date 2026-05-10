@@ -986,23 +986,30 @@
     }
 
     /* ---------- PDF source (on-screen render target) ----------
-       The element is rendered at top:0/left:0 with normal layout so
-       html2canvas can capture its full dimensions. The .ap-pdf-overlay
-       sits over it during capture so the user sees a loading state
-       instead of the raw PDF source. After save the source is removed. */
+       position:fixed (not absolute) so it's anchored to the viewport
+       rather than inheriting Webflow's body wrapper context, which on
+       some sites clips/scales the element via transform/overflow rules.
+       The .ap-pdf-overlay sits over it during capture so the user sees
+       a loading state instead of the raw PDF source. */
     .ap-pdf-source {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
       width: 8.5in;
+      max-width: 8.5in;
       background: #ffffff;
       color: #032215;
       font-family: 'Futura', 'Futura PT', 'Trebuchet MS', sans-serif;
       font-weight: 400;
       line-height: 1.5;
       padding: 0;
-      z-index: 1;
+      margin: 0;
+      z-index: 99998;
+      isolation: isolate;
+      contain: layout style;
+      box-sizing: border-box;
     }
+    .ap-pdf-source * { box-sizing: border-box; }
     .ap-pdf-overlay {
       position: fixed;
       inset: 0;
@@ -3311,12 +3318,32 @@
             scale: 2,
             useCORS: true,
             backgroundColor: '#ffffff',
-            width: pdfSource.scrollWidth,
+            // Force a fixed 8.5in (816px) capture window regardless of the
+            // host page's viewport size. This decouples PDF rendering from
+            // whatever Webflow's body width / responsive rules are doing.
+            width: 816,
             height: pdfSource.scrollHeight,
-            windowWidth: pdfSource.scrollWidth,
+            windowWidth: 816,
             windowHeight: pdfSource.scrollHeight,
+            x: 0,
+            y: 0,
             scrollX: 0,
-            scrollY: 0
+            scrollY: 0,
+            logging: false,
+            // Clean clone before capture: drop fonts/styles inherited from
+            // the host page that don't apply inside our scoped block.
+            onclone: function (clonedDoc) {
+              const cloned = clonedDoc.getElementById('ap-pdf-source');
+              if (cloned) {
+                cloned.style.position = 'static';
+                cloned.style.top = 'auto';
+                cloned.style.left = 'auto';
+                cloned.style.zIndex = 'auto';
+                cloned.style.width = '816px';
+                cloned.style.maxWidth = '816px';
+                cloned.style.margin = '0';
+              }
+            }
           },
           jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
           pagebreak: { mode: ['css', 'legacy'] }
