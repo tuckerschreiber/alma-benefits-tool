@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Benefits eligibility tool — Alma Care</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     /* ---------- Reset / base ---------- */
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -756,13 +757,306 @@
       line-height: 1.6;
     }
 
-    #ap-lead-drawer {
+    /* ---------- Lead capture drawer ---------- */
+    .ap-panel--lead {
       margin-top: 16px;
-      padding: 16px;
-      background: #F4E9DD;
-      border-radius: 8px;
-      color: #555;
+    }
+
+    .ap-panel--lead h2 {
+      font-size: 20px;
+    }
+
+    .ap-panel--lead .ap-field {
+      gap: 6px;
+    }
+
+    .ap-panel--lead label {
+      color: #032215;
+      font-weight: 500;
       font-size: 14px;
+    }
+
+    .ap-panel--lead input[type="text"],
+    .ap-panel--lead input[type="email"],
+    .ap-panel--lead textarea {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #032215;
+      width: 100%;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .ap-panel--lead textarea {
+      resize: vertical;
+      min-height: 88px;
+      line-height: 1.5;
+    }
+
+    .ap-panel--lead input:focus,
+    .ap-panel--lead textarea:focus {
+      outline: none;
+      border-color: #156146;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    .ap-panel--lead input[aria-invalid="true"],
+    .ap-panel--lead textarea[aria-invalid="true"] {
+      border-color: #B23A2E;
+      box-shadow: 0 0 0 3px rgba(178, 58, 46, 0.12);
+    }
+
+    .ap-panel--lead form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .ap-privacy {
+      font-size: 13px;
+      color: #777;
+    }
+
+    .ap-lead-status {
+      font-size: 14px;
+      min-height: 18px;
+      margin-top: 4px;
+    }
+
+    .ap-lead-status--error {
+      color: #B23A2E;
+    }
+
+    .ap-lead-status--success {
+      color: #156146;
+    }
+
+    .ap-lead-submit {
+      align-self: flex-start;
+    }
+
+    /* ---------- PDF source (off-screen render target) ---------- */
+    .ap-pdf-source {
+      position: fixed;
+      top: 0;
+      left: -10000px;
+      width: 8.5in;
+      background: #ffffff;
+      color: #032215;
+      font-family: 'Futura', 'Futura PT', 'Trebuchet MS', sans-serif;
+      font-weight: 400;
+      line-height: 1.5;
+      padding: 0;
+    }
+
+    .ap-pdf-source * {
+      box-sizing: border-box;
+    }
+
+    .ap-pdf__letterhead {
+      border-bottom: 2px solid #156146;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+
+    .ap-pdf__brand {
+      font-size: 28px;
+      font-weight: 500;
+      color: #156146;
+      letter-spacing: 0.02em;
+    }
+
+    .ap-pdf__brand-tag {
+      font-size: 12px;
+      color: #555;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .ap-pdf__meta {
+      margin-top: 14px;
+      font-size: 13px;
+      color: #555;
+      line-height: 1.55;
+    }
+
+    .ap-pdf__meta strong {
+      color: #032215;
+      font-weight: 500;
+    }
+
+    .ap-pdf__heading {
+      font-size: 22px;
+      font-weight: 500;
+      color: #032215;
+      margin-bottom: 20px;
+    }
+
+    .ap-pdf__panel {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 16px;
+      page-break-inside: avoid;
+    }
+
+    .ap-pdf__panel h3 {
+      font-size: 16px;
+      font-weight: 500;
+      color: #156146;
+      margin-bottom: 8px;
+    }
+
+    .ap-pdf__panel p {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .ap-pdf__hero {
+      font-size: 28px;
+      font-weight: 500;
+      color: #156146;
+      margin: 8px 0;
+    }
+
+    .ap-pdf__hero--muted {
+      color: #999;
+      font-size: 18px;
+      font-weight: 400;
+    }
+
+    .ap-pdf__hsa {
+      display: inline-block;
+      background: #F4E9DD;
+      color: #032215;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+
+    .ap-pdf__cov-grid {
+      margin-top: 8px;
+    }
+
+    .ap-pdf__cov-col {
+      margin-bottom: 10px;
+    }
+
+    .ap-pdf__cov-col h4 {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 4px;
+    }
+
+    .ap-pdf__cov-col ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .ap-pdf__cov-col li {
+      font-size: 13px;
+      color: #032215;
+      padding: 2px 0;
+    }
+
+    .ap-pdf__cov-col li.muted {
+      color: #999;
+    }
+
+    .ap-pdf__rec {
+      background: #FFFAF4;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 10px;
+      page-break-inside: avoid;
+    }
+
+    .ap-pdf__rec-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: #032215;
+      margin-bottom: 4px;
+    }
+
+    .ap-pdf__rec-dosing {
+      font-size: 12px;
+      color: #156146;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .ap-pdf__rec-rationale {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .ap-pdf__cost {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ap-pdf__cost-row {
+      padding: 2px 0;
+    }
+
+    .ap-pdf__cost-row span:last-child {
+      float: right;
+    }
+
+    .ap-pdf__cost-row--covered { color: #156146; }
+    .ap-pdf__cost-row--oop { color: #888; }
+    .ap-pdf__cost-row--total { color: #032215; font-weight: 500; }
+
+    .ap-pdf__funding {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .ap-pdf__funding li {
+      font-size: 13px;
+      color: #032215;
+      padding: 4px 0 4px 14px;
+      position: relative;
+    }
+
+    .ap-pdf__funding li::before {
+      content: '•';
+      color: #156146;
+      font-weight: 700;
+      position: absolute;
+      left: 0;
+    }
+
+    .ap-pdf__footer {
+      margin-top: 20px;
+      padding-top: 14px;
+      border-top: 1px solid rgb(235, 225, 213);
+      font-size: 11px;
+      color: #888;
+      line-height: 1.55;
+    }
+
+    .ap-pdf__footer-link {
+      color: #156146;
+      font-weight: 500;
     }
 
     /* ---------- Mobile ---------- */
@@ -1484,7 +1778,13 @@
         hasHsa: null,
         hsaBalance: null,
         coverage: {},
-        results: null
+        results: null,
+        lead: {
+          name: '',
+          email: '',
+          address: '',
+          leadConcerns: ''
+        }
       };
 
       let currentStep = 1;
@@ -1555,6 +1855,15 @@
           const saved = sessionStorage.getItem(STORAGE_KEY);
           if (saved) Object.assign(state, JSON.parse(saved));
         } catch (e) { /* sessionStorage unavailable — silent fail */ }
+        // Ensure lead object exists even if persisted state predates it.
+        if (!state.lead || typeof state.lead !== 'object') {
+          state.lead = { name: '', email: '', address: '', leadConcerns: '' };
+        } else {
+          state.lead.name = state.lead.name || '';
+          state.lead.email = state.lead.email || '';
+          state.lead.address = state.lead.address || '';
+          state.lead.leadConcerns = state.lead.leadConcerns || '';
+        }
       }
 
       function saveState() {
@@ -2128,8 +2437,336 @@
           + '<a class="ap-btn ap-btn--primary" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a free consult</a>'
           + '<button type="button" class="ap-btn ap-btn--secondary" id="ap-email-plan">Email me my care plan</button>'
           + '</div>'
-          + '<div id="ap-lead-drawer" class="ap-hidden">Lead capture coming soon.</div>'
+          + renderLeadDrawer()
         );
+      }
+
+      function renderLeadDrawer() {
+        return (
+          '<section id="ap-lead-drawer" class="ap-panel ap-panel--lead ap-hidden">'
+          + '<h2>Send your care plan</h2>'
+          + '<p>We\'ll email you a branded PDF estimate you can use for insurance pre-approval, and our care team will follow up.</p>'
+          + '<form id="ap-lead-form" novalidate>'
+          + '<div class="ap-field">'
+          + '<label for="ap-lead-name">Your name</label>'
+          + '<input type="text" id="ap-lead-name" name="name" autocomplete="name" required>'
+          + '</div>'
+          + '<div class="ap-field">'
+          + '<label for="ap-lead-email">Email</label>'
+          + '<input type="email" id="ap-lead-email" name="email" autocomplete="email" inputmode="email" required>'
+          + '</div>'
+          + '<div class="ap-field">'
+          + '<label for="ap-lead-address">Address (for the PDF letterhead)</label>'
+          + '<input type="text" id="ap-lead-address" name="address" autocomplete="street-address" required>'
+          + '</div>'
+          + '<div class="ap-field">'
+          + '<label for="ap-lead-concerns">Anything else we should know? <span class="ap-optional">(optional)</span></label>'
+          + '<textarea id="ap-lead-concerns" name="leadConcerns" rows="3"></textarea>'
+          + '</div>'
+          + '<p class="ap-privacy">We\'ll only use this to send your plan and follow up about your care. No spam.</p>'
+          + '<button type="submit" class="ap-btn ap-lead-submit">Send me my care plan</button>'
+          + '<p id="ap-lead-status" class="ap-lead-status" aria-live="polite"></p>'
+          + '</form>'
+          + '</section>'
+        );
+      }
+
+      // ---------- Lead capture form ----------
+      const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      function openLeadDrawer() {
+        const drawer = document.getElementById('ap-lead-drawer');
+        if (!drawer) return;
+        drawer.classList.remove('ap-hidden');
+
+        const nameInput = document.getElementById('ap-lead-name');
+        const emailInput = document.getElementById('ap-lead-email');
+        const addressInput = document.getElementById('ap-lead-address');
+        const concernsTextarea = document.getElementById('ap-lead-concerns');
+
+        if (nameInput) nameInput.value = state.lead.name || '';
+        if (emailInput) emailInput.value = state.lead.email || '';
+        if (addressInput) addressInput.value = state.lead.address || '';
+        // Concerns textarea pre-fills from state.concerns if leadConcerns is empty,
+        // otherwise keep what they previously typed in the drawer.
+        if (concernsTextarea) {
+          const existing = state.lead.leadConcerns;
+          concernsTextarea.value = existing && existing.length > 0
+            ? existing
+            : (state.concerns || '');
+          // Sync state so what's shown is also what we submit.
+          state.lead.leadConcerns = concernsTextarea.value;
+          saveState();
+        }
+
+        if (nameInput && typeof nameInput.focus === 'function') nameInput.focus();
+      }
+
+      function clearLeadInvalid() {
+        ['ap-lead-name', 'ap-lead-email', 'ap-lead-address'].forEach(function (id) {
+          const el = document.getElementById(id);
+          if (el) el.removeAttribute('aria-invalid');
+        });
+      }
+
+      function setLeadStatus(message, kind) {
+        const status = document.getElementById('ap-lead-status');
+        if (!status) return;
+        status.textContent = message || '';
+        status.classList.remove('ap-lead-status--error', 'ap-lead-status--success');
+        if (kind === 'error') status.classList.add('ap-lead-status--error');
+        if (kind === 'success') status.classList.add('ap-lead-status--success');
+      }
+
+      function wireLeadForm() {
+        const form = document.getElementById('ap-lead-form');
+        if (!form) return;
+
+        const fields = [
+          { id: 'ap-lead-name', key: 'name' },
+          { id: 'ap-lead-email', key: 'email' },
+          { id: 'ap-lead-address', key: 'address' },
+          { id: 'ap-lead-concerns', key: 'leadConcerns' }
+        ];
+
+        fields.forEach(function (f) {
+          const el = document.getElementById(f.id);
+          if (!el) return;
+          el.addEventListener('input', function (e) {
+            state.lead[f.key] = e.target.value;
+            saveState();
+          });
+        });
+
+        form.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          clearLeadInvalid();
+
+          const nameInput = document.getElementById('ap-lead-name');
+          const emailInput = document.getElementById('ap-lead-email');
+          const addressInput = document.getElementById('ap-lead-address');
+          const submitBtn = form.querySelector('.ap-lead-submit');
+
+          const name = (state.lead.name || '').trim();
+          const email = (state.lead.email || '').trim();
+          const address = (state.lead.address || '').trim();
+
+          let invalid = false;
+          if (!name) { nameInput && nameInput.setAttribute('aria-invalid', 'true'); invalid = true; }
+          if (!email || !EMAIL_RE.test(email)) {
+            emailInput && emailInput.setAttribute('aria-invalid', 'true');
+            invalid = true;
+          }
+          if (!address) { addressInput && addressInput.setAttribute('aria-invalid', 'true'); invalid = true; }
+
+          if (invalid) {
+            setLeadStatus('Please fill all required fields and enter a valid email.', 'error');
+            return;
+          }
+
+          setLeadStatus('Generating your care plan…', '');
+          if (submitBtn) submitBtn.disabled = true;
+
+          try {
+            await generatePdf();
+            // TODO Task 8: submit to Hubspot
+            setLeadStatus('Sent! Your care plan should be downloading now.', 'success');
+          } catch (err) {
+            // Surface PDF failures so the user isn't left wondering.
+            console.error('PDF generation failed', err);
+            setLeadStatus('Something went wrong generating your PDF. Please try again.', 'error');
+          } finally {
+            if (submitBtn) submitBtn.disabled = false;
+          }
+        });
+      }
+
+      // ---------- PDF generation ----------
+      function formatPdfDate(date) {
+        try {
+          return new Intl.DateTimeFormat('en-US', {
+            year: 'numeric', month: 'long', day: 'numeric'
+          }).format(date);
+        } catch (e) {
+          return date.toDateString();
+        }
+      }
+
+      function renderPdfSnapshot(results) {
+        const total = results.totalCovered || 0;
+        const heroHtml = total > 0
+          ? '<div class="ap-pdf__hero">' + formatMoney(total) + ' in benefits to use</div>'
+          : '<div class="ap-pdf__hero ap-pdf__hero--muted">No extended benefits — that\'s okay.</div>';
+
+        const showHsa = state.hasHsa === 'yes'
+          && typeof state.hsaBalance === 'number'
+          && state.hsaBalance > 0;
+        const hsaHtml = showHsa
+          ? '<div class="ap-pdf__hsa">+ ' + formatMoney(state.hsaBalance) + ' flexible HSA spend</div>'
+          : '';
+
+        const coveredIds = Object.keys(state.coverage || {});
+        const coveredItems = coveredIds.map(function (id) {
+          const entry = state.coverage[id];
+          const amount = entry && typeof entry.amount === 'number' ? entry.amount : 0;
+          const name = SERVICE_NAMES[id] || id;
+          return '<li>' + escapeHtml(name) + ' — ' + formatMoney(amount) + '</li>';
+        }).join('');
+
+        const notCovered = ALMA_SERVICES.filter(function (id) { return coveredIds.indexOf(id) === -1; });
+        const notCoveredItems = notCovered.map(function (id) {
+          const name = SERVICE_NAMES[id] || id;
+          return '<li class="muted">' + escapeHtml(name) + '</li>';
+        }).join('');
+
+        const coveredCol = coveredItems
+          ? '<div class="ap-pdf__cov-col"><h4>What\'s covered</h4><ul>' + coveredItems + '</ul></div>'
+          : '<div class="ap-pdf__cov-col"><h4>What\'s covered</h4><ul><li class="muted">Nothing selected.</li></ul></div>';
+
+        const notCoveredCol = notCoveredItems
+          ? '<div class="ap-pdf__cov-col"><h4>What\'s not covered</h4><ul>' + notCoveredItems + '</ul></div>'
+          : '';
+
+        return (
+          '<section class="ap-pdf__panel">'
+          + '<h3>Your coverage at a glance</h3>'
+          + heroHtml
+          + hsaHtml
+          + '<div class="ap-pdf__cov-grid">' + coveredCol + notCoveredCol + '</div>'
+          + '</section>'
+        );
+      }
+
+      function renderPdfCostBreakdown(rec) {
+        const rows = [];
+        rows.push(
+          '<div class="ap-pdf__cost-row ap-pdf__cost-row--total">'
+          + '<span>Estimated total</span><span>' + formatMoney(rec.totalCost || 0) + '</span></div>'
+        );
+        if ((rec.covered || 0) > 0) {
+          rows.push(
+            '<div class="ap-pdf__cost-row ap-pdf__cost-row--covered">'
+            + '<span>Covered by insurance</span><span>' + formatMoney(rec.covered) + '</span></div>'
+          );
+        }
+        if ((rec.fromHsa || 0) > 0) {
+          rows.push(
+            '<div class="ap-pdf__cost-row ap-pdf__cost-row--covered">'
+            + '<span>From HSA</span><span>' + formatMoney(rec.fromHsa) + '</span></div>'
+          );
+        }
+        if ((rec.outOfPocket || 0) > 0) {
+          rows.push(
+            '<div class="ap-pdf__cost-row ap-pdf__cost-row--oop">'
+            + '<span>Out-of-pocket</span><span>' + formatMoney(rec.outOfPocket) + '</span></div>'
+          );
+        }
+        return '<div class="ap-pdf__cost">' + rows.join('') + '</div>';
+      }
+
+      function renderPdfPlan(results) {
+        const recs = results.recommendations || [];
+        let body;
+        if (recs.length === 0) {
+          body = '<p>We didn\'t have enough info to build personalized recommendations — book a free consult and we\'ll walk through your options together.</p>';
+        } else {
+          body = recs.map(function (rec) {
+            const name = SERVICE_NAMES[rec.service] || rec.service;
+            const dosing = dosingLine(rec.dosing);
+            return (
+              '<div class="ap-pdf__rec">'
+              + '<div class="ap-pdf__rec-title">' + escapeHtml(name) + '</div>'
+              + (dosing ? '<div class="ap-pdf__rec-dosing">' + escapeHtml(dosing) + '</div>' : '')
+              + '<div class="ap-pdf__rec-rationale">' + escapeHtml(rec.rationale || '') + '</div>'
+              + renderPdfCostBreakdown(rec)
+              + '</div>'
+            );
+          }).join('');
+        }
+        return (
+          '<section class="ap-pdf__panel">'
+          + '<h3>Your personalized care plan</h3>'
+          + '<p>Recommendations based on your due date, benefits, and what you shared.</p>'
+          + body
+          + '</section>'
+        );
+      }
+
+      function renderPdfFunding(results) {
+        const lines = results.fundingStrategy || [];
+        if (lines.length === 0) return '';
+        const items = lines.map(function (line) {
+          return '<li>' + escapeHtml(line) + '</li>';
+        }).join('');
+        return (
+          '<section class="ap-pdf__panel">'
+          + '<h3>How to fund your care</h3>'
+          + '<ul class="ap-pdf__funding">' + items + '</ul>'
+          + '</section>'
+        );
+      }
+
+      function renderPdfSource(results) {
+        const today = formatPdfDate(new Date());
+        const name = (state.lead.name || '').trim();
+        const address = (state.lead.address || '').trim();
+
+        return (
+          '<div class="ap-pdf__letterhead">'
+          + '<div class="ap-pdf__brand">Alma Care</div>'
+          + '<div class="ap-pdf__brand-tag">Postpartum care, personalized</div>'
+          + '<div class="ap-pdf__meta">'
+          + '<div><strong>Prepared for:</strong> ' + escapeHtml(name) + '</div>'
+          + '<div>' + escapeHtml(address) + '</div>'
+          + '<div><strong>Date:</strong> ' + escapeHtml(today) + '</div>'
+          + '</div>'
+          + '</div>'
+          + '<h2 class="ap-pdf__heading">Your personalized postpartum care plan</h2>'
+          + renderPdfSnapshot(results)
+          + renderPdfPlan(results)
+          + renderPdfFunding(results)
+          + '<div class="ap-pdf__footer">'
+          + 'This estimate is based on the information you provided. Actual coverage and pricing may vary. Speak with your benefits provider for confirmation.'
+          + '<br>Book your free consult: <span class="ap-pdf__footer-link">almacare.ca/book</span>'
+          + '</div>'
+        );
+      }
+
+      async function generatePdf() {
+        if (!state.results) {
+          throw new Error('No results available to generate PDF.');
+        }
+        if (!window.html2pdf) {
+          throw new Error('html2pdf is not loaded.');
+        }
+
+        // Build (or replace) the off-screen PDF source element.
+        let pdfSource = document.getElementById('ap-pdf-source');
+        if (pdfSource && pdfSource.parentNode) {
+          pdfSource.parentNode.removeChild(pdfSource);
+        }
+        pdfSource = document.createElement('div');
+        pdfSource.id = 'ap-pdf-source';
+        pdfSource.className = 'ap-pdf-source';
+        pdfSource.innerHTML = renderPdfSource(state.results);
+        document.body.appendChild(pdfSource);
+
+        const safeName = (state.lead.name || '').toLowerCase().replace(/\s+/g, '-') || 'estimate';
+        const opts = {
+          margin: [15, 15, 20, 15], // top, right, bottom, left, mm
+          filename: 'alma-care-plan-' + safeName + '.pdf',
+          image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+        };
+
+        try {
+          await window.html2pdf().from(pdfSource).set(opts).save();
+        } finally {
+          if (pdfSource && pdfSource.parentNode) {
+            pdfSource.parentNode.removeChild(pdfSource);
+          }
+        }
       }
 
       function renderResults(results) {
@@ -2145,9 +2782,17 @@
         const drawer = document.getElementById('ap-lead-drawer');
         if (emailBtn && drawer) {
           emailBtn.addEventListener('click', function () {
-            drawer.classList.remove('ap-hidden');
+            const isHidden = drawer.classList.contains('ap-hidden');
+            if (isHidden) {
+              openLeadDrawer();
+              emailBtn.textContent = 'Hide';
+            } else {
+              drawer.classList.add('ap-hidden');
+              emailBtn.textContent = 'Email me my care plan';
+            }
           });
         }
+        wireLeadForm();
       }
 
       // ---------- Init ----------
