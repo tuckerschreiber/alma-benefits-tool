@@ -1767,6 +1767,10 @@
 
       const STORAGE_KEY = 'ap_benefits_state';
       const CONSULT_URL = 'https://calendly.com/almacare/consult';
+      const HUBSPOT = {
+        portalId: 'TODO_FILL_IN',
+        formId: 'TODO_FILL_IN'
+      };
 
       const state = {
         dueDate: null,
@@ -2519,6 +2523,106 @@
         if (kind === 'success') status.classList.add('ap-lead-status--success');
       }
 
+      // ---------- Hubspot submission ----------
+      // Coerce any field value to a Hubspot-friendly string. Booleans become
+      // 'true'/'false', numbers become numeric strings, null/undefined become ''.
+      function hsValue(v) {
+        if (v === null || typeof v === 'undefined') return '';
+        if (typeof v === 'boolean') return v ? 'true' : 'false';
+        if (typeof v === 'number') return String(v);
+        return String(v);
+      }
+
+      function buildHubspotFields(state) {
+        const fullName = (state.lead && state.lead.name) ? state.lead.name.trim() : '';
+        const firstName = fullName ? fullName.split(/\s+/)[0] : '';
+
+        // Recompute normalized weeksUntilDue so Hubspot sees the same number
+        // the engine used when generating recommendations.
+        const normalized = normalizeInputs(state, new Date());
+        const weeksUntilDue = typeof normalized.weeksUntilDue === 'number'
+          ? normalized.weeksUntilDue
+          : '';
+
+        const coverageKeys = state.coverage ? Object.keys(state.coverage) : [];
+        const servicesCovered = coverageKeys.join(';');
+        const totalCoverageValue = coverageKeys.reduce(function (sum, id) {
+          const entry = state.coverage[id];
+          const amount = entry && typeof entry.amount === 'number' ? entry.amount : 0;
+          return sum + amount;
+        }, 0);
+
+        // Combine step-1 concerns with the lead-form concerns when both are
+        // present; otherwise use whichever the user actually filled in.
+        const stepConcerns = (state.concerns || '').trim();
+        const leadConcerns = (state.lead && state.lead.leadConcerns ? state.lead.leadConcerns : '').trim();
+        let concernsText = '';
+        if (stepConcerns && leadConcerns) {
+          concernsText = stepConcerns + '\n\n' + leadConcerns;
+        } else if (stepConcerns) {
+          concernsText = stepConcerns;
+        } else if (leadConcerns) {
+          concernsText = leadConcerns;
+        }
+
+        const recs = (state.results && state.results.recommendations) || [];
+        const recommendedServices = recs
+          .map(function (r) { return SERVICE_NAMES[r.service] || r.service; })
+          .join(';');
+        const recommendedTotalCost = state.results && typeof state.results.totalRecommendedCost === 'number'
+          ? state.results.totalRecommendedCost
+          : 0;
+
+        return [
+          { name: 'firstname',             value: hsValue(firstName) },
+          { name: 'email',                 value: hsValue(state.lead && state.lead.email) },
+          { name: 'address',               value: hsValue(state.lead && state.lead.address) },
+          { name: 'due_date',              value: hsValue(state.dueDate) },
+          { name: 'weeks_until_due',       value: hsValue(weeksUntilDue) },
+          { name: 'is_postpartum',         value: hsValue(state.isPostpartum) },
+          { name: 'weeks_postpartum',      value: hsValue(state.weeksPostpartum) },
+          { name: 'first_time_parent',     value: hsValue(state.firstTimeParent) },
+          { name: 'insurer',               value: hsValue(state.insurer) },
+          { name: 'has_hsa',               value: hsValue(state.hasHsa) },
+          { name: 'hsa_balance',           value: hsValue(state.hsaBalance) },
+          { name: 'services_covered',      value: hsValue(servicesCovered) },
+          { name: 'total_coverage_value',  value: hsValue(totalCoverageValue) },
+          { name: 'concerns_text',         value: hsValue(concernsText) },
+          { name: 'recommended_services',  value: hsValue(recommendedServices) },
+          { name: 'recommended_total_cost', value: hsValue(recommendedTotalCost) }
+        ];
+      }
+
+      async function submitToHubspot(state) {
+        if (!HUBSPOT.portalId || HUBSPOT.portalId === 'TODO_FILL_IN' || !HUBSPOT.formId || HUBSPOT.formId === 'TODO_FILL_IN') {
+          console.warn('Hubspot config not set — skipping submission');
+          return { ok: false, reason: 'not_configured' };
+        }
+
+        const fields = buildHubspotFields(state);
+        const url = 'https://api.hsforms.com/submissions/v3/integrations/submit/' + HUBSPOT.portalId + '/' + HUBSPOT.formId;
+
+        const payload = {
+          fields: fields,
+          context: {
+            pageUri: window.location.href,
+            pageName: 'Benefits Eligibility Tool'
+          }
+        };
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text().catch(function () { return ''; });
+          return { ok: false, reason: 'http_error', status: res.status, body: errorText };
+        }
+        return { ok: true };
+      }
+
       function wireLeadForm() {
         const form = document.getElementById('ap-lead-form');
         if (!form) return;
@@ -2570,8 +2674,23 @@
 
           try {
             await generatePdf();
-            // TODO Task 8: submit to Hubspot
-            setLeadStatus('Your care plan is downloading.', 'success');
+
+            // PDF succeeded — try to notify our care team via Hubspot. We don't
+            // abort the success state on Hubspot failure: the user got their
+            // care plan, which is the most important thing.
+            let hubspotResult;
+            try {
+              hubspotResult = await submitToHubspot(state);
+            } catch (err) {
+              console.error('Hubspot submit failed:', err);
+              hubspotResult = { ok: false, reason: 'network_error' };
+            }
+
+            if (hubspotResult && hubspotResult.ok) {
+              setLeadStatus('Your care plan is downloading and we\'ve notified our care team.', 'success');
+            } else {
+              setLeadStatus('Your care plan is downloading. We had trouble notifying our care team — feel free to email care@almacare.ca and we\'ll follow up.', 'success');
+            }
           } catch (err) {
             // Surface PDF failures so the user isn't left wondering.
             console.error('PDF generation failed', err);
