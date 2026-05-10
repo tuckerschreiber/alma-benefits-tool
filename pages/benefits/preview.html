@@ -2688,6 +2688,8 @@
 
             if (hubspotResult && hubspotResult.ok) {
               setLeadStatus('Your care plan is downloading and we\'ve notified our care team.', 'success');
+            } else if (hubspotResult && hubspotResult.reason === 'not_configured') {
+              setLeadStatus('Your care plan is downloading.', 'success');
             } else {
               setLeadStatus('Your care plan is downloading. We had trouble notifying our care team — feel free to email care@almacare.ca and we\'ll follow up.', 'success');
             }
