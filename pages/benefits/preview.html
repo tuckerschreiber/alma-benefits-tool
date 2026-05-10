@@ -3350,7 +3350,29 @@
         };
 
         try {
-          await window.html2pdf().from(pdfSource).set(opts).save();
+          // Debug — confirm source + canvas dimensions on the live page
+          console.log('[pdf-debug] pdfSource rect:', pdfSource.getBoundingClientRect());
+          console.log('[pdf-debug] pdfSource computed width:', getComputedStyle(pdfSource).width);
+          console.log('[pdf-debug] window inner:', window.innerWidth, 'x', window.innerHeight);
+          console.log('[pdf-debug] body width:', document.body.offsetWidth);
+          const worker = window.html2pdf().from(pdfSource).set(opts);
+          const canvas = await worker.toCanvas().get('canvas');
+          console.log('[pdf-debug] canvas dimensions:', canvas.width, 'x', canvas.height);
+          // Sample pixels at 5 spots so we can see where the content actually is
+          const ctx = canvas.getContext('2d');
+          const samples = [
+            [canvas.width * 0.1, canvas.height * 0.1, 'top-left 10%'],
+            [canvas.width * 0.5, canvas.height * 0.1, 'top-center'],
+            [canvas.width * 0.9, canvas.height * 0.1, 'top-right'],
+            [canvas.width * 0.1, canvas.height * 0.5, 'mid-left'],
+            [canvas.width * 0.5, canvas.height * 0.5, 'mid-center'],
+            [canvas.width * 0.9, canvas.height * 0.5, 'mid-right']
+          ];
+          samples.forEach(function (s) {
+            const p = ctx.getImageData(s[0], s[1], 1, 1).data;
+            console.log('[pdf-debug] ' + s[2] + ':', Array.from(p));
+          });
+          await worker.save();
           track('pdf_downloaded', {
             has_recommendations: (state.results.recommendations || []).length > 0
           });
