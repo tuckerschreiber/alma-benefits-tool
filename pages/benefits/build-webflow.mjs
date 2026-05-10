@@ -4,19 +4,25 @@
 // Splits preview.html into Webflow-ready snippets:
 //   - webflow-head.html  → paste into Webflow Page Settings → Custom Code → Inside <head>
 //   - webflow-body.html  → paste into a single Webflow Embed element on the page
+//   - app.js             → host externally (jsDelivr / Webflow asset / your CDN)
+//   - webflow-test.html  → local-only test page for Cmd+R prod-faithful preview
 //
-// preview.html is the source of truth during development. Run this script
-// after any change to preview.html to regenerate the split files:
+// preview.html is the source of truth. Run after any change:
 //   node build-webflow.mjs
 //
 // The script extracts:
 //   - The html2pdf CDN <script> tag from preview's <head>
 //   - The full <style>…</style> block from preview's <head>
 //   - A static JSON-LD <script type="application/ld+json"> block (WebApplication)
-//   - Everything between <body>…</body> (the <main> markup + inline <script>)
+//   - The inline IIFE <script> from <body> → written to app.js (NOT inlined in body)
+//   - The <main class="ap-app"> markup from <body> → written to webflow-body.html
 //
-// It NEVER emits <html>, <head>, or <body> tags — both outputs are pure
-// fragments meant to be embedded inside an existing Webflow page.
+// It NEVER emits <html>, <head>, or <body> tags — both Webflow outputs are
+// pure fragments meant to be embedded inside an existing Webflow page.
+//
+// IMPORTANT — Webflow's Embed element caps content at ~50,000 chars. The full
+// inline IIFE is way larger than that, so we MUST split the JS into a separate
+// file (app.js) and reference it from webflow-head.html via <script src="...">.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -26,7 +32,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const previewPath = join(__dirname, 'preview.html');
 const headOutPath = join(__dirname, 'webflow-head.html');
 const bodyOutPath = join(__dirname, 'webflow-body.html');
+const appJsPath = join(__dirname, 'app.js');
 const testOutPath = join(__dirname, 'webflow-test.html');
+
+// URL where the hosted app.js lives in production. Tucker swaps this after
+// uploading app.js to his hosting (jsDelivr, Webflow assets, etc).
+// For the local test page, we override to a relative path so the Python server
+// serves the file directly.
+const APP_JS_URL_PROD = 'https://almacare.ca/files/alma-benefits-app.js';
+const APP_JS_URL_TEST = './app.js';
 
 const html = readFileSync(previewPath, 'utf8');
 
@@ -52,8 +66,19 @@ if (!bodyMatch) {
   console.error('build-webflow: could not find <body>…</body> in preview.html');
   process.exit(1);
 }
-// Trim leading/trailing newlines but preserve internal indentation.
-const bodyContent = bodyMatch[1].replace(/^\n+|\n+$/g, '\n').trim() + '\n';
+const rawBody = bodyMatch[1];
+
+// --- Split the body: extract the inline IIFE <script> from the markup -------
+// The inline IIFE is the LAST <script>…</script> in the body (no src attribute).
+const inlineScriptMatch = rawBody.match(/<script>([\s\S]*?)<\/script>\s*$/);
+if (!inlineScriptMatch) {
+  console.error('build-webflow: could not find inline IIFE <script> in body');
+  process.exit(1);
+}
+const appJsBody = inlineScriptMatch[1].replace(/^\n+|\n+$/g, '\n').trim() + '\n';
+
+// Body markup is everything BEFORE the inline script.
+const bodyMarkup = rawBody.slice(0, inlineScriptMatch.index).replace(/^\n+|\n+$/g, '\n').trim() + '\n';
 
 // --- Static JSON-LD block ---------------------------------------------------
 const jsonLd = {
@@ -79,15 +104,35 @@ const jsonLd = {
 const jsonLdBlock = `<script type="application/ld+json">\n${JSON.stringify(jsonLd, null, 2)}\n</script>`;
 
 // --- Compose outputs --------------------------------------------------------
-const headOut = `${html2pdfTag}\n\n${styleBlock}\n\n${jsonLdBlock}\n`;
-const bodyOut = bodyContent;
+// Webflow head: html2pdf CDN + styles + JSON-LD + app.js script (deferred so
+// it loads after DOM is parsed).
+const headOut = `${html2pdfTag}
+<script defer src="${APP_JS_URL_PROD}"></script>
+
+${styleBlock}
+
+${jsonLdBlock}
+`;
+
+// Webflow body: just the markup. No inline script — that's hosted externally.
+const bodyOut = bodyMarkup;
+
+// app.js: just the IIFE contents (no <script> wrapper).
+const appJsOut = `// Alma Care — Benefits Eligibility Tool
+// Generated from preview.html by build-webflow.mjs — do not edit by hand.
+${appJsBody}`;
 
 writeFileSync(headOutPath, headOut, 'utf8');
 writeFileSync(bodyOutPath, bodyOut, 'utf8');
+writeFileSync(appJsPath, appJsOut, 'utf8');
 
 // --- Compose a prod-faithful test page --------------------------------------
 // Mirrors how Webflow assembles the page: head custom code lives inside <head>,
 // the Embed element sits between a placeholder nav and footer in <body>.
+// We rewrite the prod app.js URL to a relative path so the local Python server
+// serves the file directly.
+const headForTest = headOut.replace(APP_JS_URL_PROD, APP_JS_URL_TEST);
+
 const testOut = `<!doctype html>
 <html lang="en">
 <head>
@@ -105,7 +150,7 @@ const testOut = `<!doctype html>
   .test-footer { padding: 32px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid rgb(235, 225, 213); margin-top: 64px; }
   .test-banner { background: #F4E9DD; color: #032215; padding: 8px 16px; text-align: center; font-size: 12px; }
 </style>
-${headOut}</head>
+${headForTest}</head>
 <body>
 <div class="test-banner">LOCAL TEST PAGE — mirrors prod Webflow output. Nav + footer here are placeholders only.</div>
 <nav class="test-nav">
@@ -120,5 +165,6 @@ writeFileSync(testOutPath, testOut, 'utf8');
 
 console.log('build-webflow: wrote');
 console.log(`  ${headOutPath}  (${headOut.length} bytes)`);
-console.log(`  ${bodyOutPath}  (${bodyOut.length} bytes)`);
+console.log(`  ${bodyOutPath}  (${bodyOut.length} bytes)  ← Embed element (50k limit)`);
+console.log(`  ${appJsPath}     (${appJsOut.length} bytes)  ← host externally, update APP_JS_URL_PROD in this script`);
 console.log(`  ${testOutPath}  (${testOut.length} bytes — local test page)`);
