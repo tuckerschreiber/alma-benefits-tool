@@ -37,6 +37,14 @@ test('normalizeInputs: returns weeksPostpartum when isPostpartum is true', () =>
   assert.equal(result.weeksUntilDue, undefined);
 });
 
+test('normalizeInputs: due date in the past auto-flips to postpartum', () => {
+  const today = new Date('2026-05-10');
+  const result = normalizeInputs({ dueDate: '2026-04-26' }, today);
+  assert.equal(result.isPostpartum, true);
+  assert.equal(result.weeksPostpartum, 2);
+  assert.equal(result.weeksUntilDue, undefined);
+});
+
 test('normalizeInputs: defaults missing optional fields', () => {
   const today = new Date('2026-05-10');
   const result = normalizeInputs(
@@ -205,6 +213,13 @@ test('applyRules: postpartum window conditions match weeksPostpartum, not weeksU
   assert.equal(prenatal.length, 1);
 });
 
+test('applyRules: postpartum user matches rule with weeksUntilDueMax (prenatal condition skipped)', () => {
+  const normalized = { isPostpartum: true, weeksPostpartum: 4 };
+  const rules = [{ service: 'massage_therapy', appliesWhen: { weeksUntilDueMax: 8 }, dosing: {sessions:1, estimatedSessionCost:120}, rationale:'x', priority:'medium' }];
+  const result = applyRules(normalized, ['massage_therapy'], rules);
+  assert.equal(result.length, 1);
+});
+
 // ----- allocateFunding -----
 
 test('allocateFunding: coverage fully covers cost', () => {
@@ -285,6 +300,11 @@ test('allocateFunding: out-of-pocket = remainder when neither covers fully', () 
   assert.equal(result[0].covered, 100);
   assert.equal(result[0].fromHsa, 50);
   assert.equal(result[0].outOfPocket, 250);
+});
+
+test('allocateFunding: throws when rule has neither estimatedSessionCost nor totalCost', () => {
+  const recs = [{ service: 'massage_therapy', dosing: { sessions: 4 } }];
+  assert.throws(() => allocateFunding(recs, {}, 0), /must specify dosing.estimatedSessionCost or dosing.totalCost/);
 });
 
 test('allocateFunding: does not mutate input array', () => {

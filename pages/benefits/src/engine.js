@@ -15,7 +15,6 @@ export const SERVICE_NAMES = {
 
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
 const MS_PER_WEEK = 1000 * 60 * 60 * 24 * 7;
-const DEFAULT_SESSION_COST = 120;
 
 /**
  * Normalize raw wizard inputs into a flat shape the rule engine can match against.
@@ -52,6 +51,16 @@ export function normalizeInputs(inputs, today = new Date()) {
   if (dueDate) {
     const due = new Date(dueDate);
     weeksUntilDue = Math.round((due - today) / MS_PER_WEEK);
+  }
+
+  // If the due date is in the past, the user is actually postpartum — auto-flip
+  // rather than letting a negative weeksUntilDue silently match prenatal rules.
+  if (weeksUntilDue < 0) {
+    return {
+      isPostpartum: true,
+      weeksPostpartum: -weeksUntilDue,
+      ...base
+    };
   }
 
   return {
@@ -146,10 +155,14 @@ function recommendationCost(rec) {
     return rec.dosing.totalCost;
   }
   const sessions = (rec.dosing && rec.dosing.sessions) || 0;
-  const cost =
-    rec.dosing && typeof rec.dosing.estimatedSessionCost === 'number'
-      ? rec.dosing.estimatedSessionCost
-      : DEFAULT_SESSION_COST;
+  if (sessions > 0 && !(rec.dosing && typeof rec.dosing.estimatedSessionCost === 'number')) {
+    throw new Error(
+      `Rule for "${rec.service}" must specify dosing.estimatedSessionCost or dosing.totalCost`
+    );
+  }
+  const cost = rec.dosing && typeof rec.dosing.estimatedSessionCost === 'number'
+    ? rec.dosing.estimatedSessionCost
+    : 0;
   return sessions * cost;
 }
 
