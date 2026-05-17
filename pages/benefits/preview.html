@@ -695,6 +695,11 @@
     .ap-hsa li { padding: 3px 0; }
     .ap-hsa__footnote { font-size: 13px; color: #4a5a52; margin-top: 12px; }
 
+    .ap-next { padding: 24px 0; border-top: 1px solid rgb(235, 225, 213); }
+    .ap-next h2 { font-size: 20px; margin-bottom: 12px; }
+    .ap-next ol { padding-left: 24px; color: #2a3a32; }
+    .ap-next li { padding: 6px 0; }
+
     .ap-snapshot-hero {
       font-size: clamp(28px, 7vw, 44px);
       line-height: 1.1;
@@ -2946,6 +2951,21 @@
         );
       }
 
+      function renderWhatHappensNext() {
+        return (
+          '<section class="ap-next">'
+          + '<h2>What happens next</h2>'
+          + '<ol>'
+          + '<li>Complete your coverage assessment</li>'
+          + '<li>Review your personalized care recommendations</li>'
+          + '<li>Speak with an Alma Care specialist</li>'
+          + '<li>Build a postpartum support plan tailored to your family</li>'
+          + '<li>Begin care with trusted practitioners and guidance on eligible reimbursement pathways</li>'
+          + '</ol>'
+          + '</section>'
+        );
+      }
+
       function renderFunding(results) {
         const lines = results.fundingStrategy || [];
         const items = lines.length === 0
@@ -3438,6 +3458,7 @@
           + renderIntro(results)
           + renderPlan(results)
           + renderHsaEligible(results)
+          + renderWhatHappensNext()
           + renderFunding(results)
           + renderCtaRow();
 
