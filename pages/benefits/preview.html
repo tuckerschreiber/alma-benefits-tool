@@ -787,6 +787,13 @@
       line-height: 44px;
     }
 
+    .ap-rec-card__rank { display: inline-flex; align-items: center; justify-content: center; background: #156146; color: #fff; width: 28px; height: 28px; border-radius: 50%; font-weight: 500; font-size: 14px; margin-right: 10px; flex-shrink: 0; }
+    .ap-recs__more { border-top: 1px solid rgb(235, 225, 213); padding-top: 12px; margin-top: 8px; }
+    .ap-recs__more > summary { cursor: pointer; color: #156146; font-weight: 500; padding: 8px 0; list-style: none; }
+    .ap-recs__more > summary::-webkit-details-marker { display: none; }
+    .ap-recs__more > summary::before { content: '▾ '; }
+    .ap-recs__more[open] > summary::before { content: '▴ '; }
+
     .ap-rec-card__body {
       flex: 1;
       min-width: 0;
@@ -2866,12 +2873,15 @@
         );
       }
 
-      function renderRecCard(rec) {
+      function renderRecCard(rec, rank) {
         const name = SERVICE_NAMES[rec.service] || rec.service;
         const initial = (name || '').trim().charAt(0).toUpperCase();
+        const badgeHtml = (typeof rank === 'number')
+          ? '<div class="ap-rec-card__rank" aria-hidden="true">' + rank + '</div>'
+          : '<div class="ap-rec-card__icon" aria-hidden="true">' + escapeHtml(initial) + '</div>';
         return (
           '<div class="ap-rec-card">'
-          + '<div class="ap-rec-card__icon" aria-hidden="true">' + escapeHtml(initial) + '</div>'
+          + badgeHtml
           + '<div class="ap-rec-card__body">'
           + '<div class="ap-rec-card__title">' + escapeHtml(name) + '</div>'
           + (dosingLine(rec.dosing)
@@ -2893,12 +2903,19 @@
         if (recs.length === 0) {
           body = '<p class="ap-empty-rec">We didn\'t have enough info to build personalized recommendations — book a free consult and we\'ll walk through your options together.</p>';
         } else {
-          body = recs.map(renderRecCard).join('');
+          const topThree = recs.slice(0, 3);
+          const rest = recs.slice(3);
+          body = topThree.map(function (rec, i) { return renderRecCard(rec, i + 1); }).join('');
+          if (rest.length) {
+            body += '<details class="ap-recs__more">';
+            body += '<summary>See additional recommendations</summary>';
+            body += rest.map(function (rec, i) { return renderRecCard(rec, i + 4); }).join('');
+            body += '</details>';
+          }
         }
         return (
           '<section class="ap-panel ap-panel--plan">'
-          + '<h2>Your personalized care plan</h2>'
-          + '<p>Recommendations based on your due date, benefits, and what you shared.</p>'
+          + '<h2>Your highest-priority postpartum supports</h2>'
           + body
           + '</section>'
         );
