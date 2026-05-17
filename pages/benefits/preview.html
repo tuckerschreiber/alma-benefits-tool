@@ -685,6 +685,10 @@
       font-size: 15px;
     }
 
+    .ap-results__intro { margin: 24px 0 24px; }
+    .ap-results__intro h2 { font-size: 22px; line-height: 1.3; margin-bottom: 8px; }
+    .ap-results__intro p { color: #2a3a32; }
+
     .ap-snapshot-hero {
       font-size: clamp(28px, 7vw, 44px);
       line-height: 1.1;
@@ -2853,6 +2857,15 @@
         return '<div class="ap-cost-breakdown">' + rows.join('') + '</div>';
       }
 
+      function renderIntro(/* results */) {
+        return (
+          '<header class="ap-results__intro">'
+          + '<h2>You may have more support available to you than you think.</h2>'
+          + '<p>Based on your responses, there appear to be several potential pathways to offset postpartum care through extended health benefits and/or HSA funding. We\'ve outlined the options most relevant to your stage of recovery and care goals below.</p>'
+          + '</header>'
+        );
+      }
+
       function renderRecCard(rec) {
         const name = SERVICE_NAMES[rec.service] || rec.service;
         const initial = (name || '').trim().charAt(0).toUpperCase();
@@ -3380,6 +3393,7 @@
         if (!container) return;
         container.innerHTML =
           renderSnapshot(results)
+          + renderIntro(results)
           + renderPlan(results)
           + renderFunding(results)
           + renderCtaRow();
