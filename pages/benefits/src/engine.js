@@ -9,8 +9,7 @@ export const SERVICE_NAMES = {
   registered_nursing: 'Registered nursing',
   psw: 'Personal support worker',
   mental_health: 'Mental health support',
-  nutritionist: 'Nutritionist',
-  dietician: 'Dietician'
+  nutritionist: 'Nutritionist'
 };
 
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
