@@ -454,7 +454,7 @@ test('detectConcerns: does not match "twin bed" as twins', () => {
   assert.deepEqual(detectConcerns('We have a twin bed in the nursery'), []);
 });
 
-test('computeResults: each rec has covered boolean reflecting state.coveredServices', () => {
+test('computeResults: each rec has isCovered boolean reflecting state.coveredServices', () => {
   const state = {
     isPostpartum: true,
     weeksPostpartum: 2,
@@ -466,8 +466,8 @@ test('computeResults: each rec has covered boolean reflecting state.coveredServi
   const results = computeResults(state, RULES, ALMA_SERVICES, new Date());
   const doulaRec = results.recommendations.find(r => r.service === 'postpartum_doula_care');
   const otherRec = results.recommendations.find(r => r.service !== 'postpartum_doula_care');
-  assert.equal(doulaRec.covered, true);
-  if (otherRec) assert.equal(otherRec.covered, false);
+  assert.equal(doulaRec.isCovered, true);
+  if (otherRec) assert.equal(otherRec.isCovered, false);
 });
 
 test('computeResults: covered services rank above uncovered at the same priority', () => {
@@ -480,8 +480,8 @@ test('computeResults: covered services rank above uncovered at the same priority
     concerns: ''
   };
   const results = computeResults(state, RULES, ALMA_SERVICES, new Date());
-  const firstCoveredIdx = results.recommendations.findIndex(r => r.covered);
-  const firstUncoveredIdx = results.recommendations.findIndex(r => !r.covered);
+  const firstCoveredIdx = results.recommendations.findIndex(r => r.isCovered);
+  const firstUncoveredIdx = results.recommendations.findIndex(r => !r.isCovered);
   if (firstCoveredIdx !== -1 && firstUncoveredIdx !== -1) {
     assert.ok(firstCoveredIdx < firstUncoveredIdx, 'covered must precede uncovered');
   }
@@ -514,8 +514,8 @@ test('computeResults: within the covered group, higher priority outranks lower p
   assert.ok(acuIdx !== -1, 'acupuncture must be present');
   const lactationRec = results.recommendations[lactationIdx];
   const acuRec = results.recommendations[acuIdx];
-  assert.equal(lactationRec.covered, true);
-  assert.equal(acuRec.covered, true);
+  assert.equal(lactationRec.isCovered, true);
+  assert.equal(acuRec.isCovered, true);
   assert.equal(lactationRec.priority, 'high');
   assert.equal(acuRec.priority, 'low');
   assert.ok(lactationIdx < acuIdx, 'high priority must outrank low priority within covered group');

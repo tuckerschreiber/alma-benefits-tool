@@ -2134,23 +2134,22 @@
         const recommendations = allocateFunding(matched, normalized.coverage, normalized.hsaBalance);
 
         // totalCovered = sum of covered $ across recommendations
-        // (compute BEFORE we overwrite rec.covered with the covered-boolean below)
         const totalCovered = recommendations.reduce(function (sum, r) { return sum + (r.covered || 0); }, 0);
         const totalRecommendedCost = recommendations.reduce(function (sum, r) { return sum + (r.totalCost || 0); }, 0);
 
-        // ----- Annotate recs with covered (boolean) + windowRank for the hybrid sort -----
-        // Overwrite `covered` (the dollar amount from allocateFunding) with a boolean
-        // per the concierge upgrade spec. `totalCovered` is summed above before this overwrite.
+        // ----- Annotate recs with isCovered (boolean) + windowRank for the hybrid sort -----
+        // `rec.covered` stays as the dollar amount written by allocateFunding; we add a
+        // separate `isCovered` boolean so the UI's dollar-amount reads keep working.
         const coverageMap = normalized.coverage || {};
         for (const rec of recommendations) {
-          rec.covered = !!coverageMap[rec.service];
+          rec.isCovered = !!coverageMap[rec.service];
           const dosingWindow = rec.dosing && rec.dosing.window;
           rec.windowRank = isInWindow(normalized.weeksPostpartum, dosingWindow) ? 0 : 1;
         }
 
-        // ----- Hybrid final sort: covered (true first) -> priority asc -> windowRank asc -----
+        // ----- Hybrid final sort: isCovered (true first) -> priority asc -> windowRank asc -----
         recommendations.sort(function (a, b) {
-          if (a.covered !== b.covered) return a.covered ? -1 : 1;
+          if (a.isCovered !== b.isCovered) return a.isCovered ? -1 : 1;
           const pa = PRIORITY_RANK[a.priority] != null ? PRIORITY_RANK[a.priority] : 99;
           const pb = PRIORITY_RANK[b.priority] != null ? PRIORITY_RANK[b.priority] : 99;
           if (pa !== pb) return pa - pb;
