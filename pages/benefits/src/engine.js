@@ -15,6 +15,18 @@ export const SERVICE_NAMES = {
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
 const MS_PER_WEEK = 1000 * 60 * 60 * 24 * 7;
 
+/**
+ * Returns true iff `weeksPostpartum` falls inside a dosing.window phrased like
+ * "first 3 weeks postpartum" or "first 12 weeks postpartum". Returns false for
+ * any other window shape or missing inputs (so unparseable windows rank lower).
+ */
+function isInWindow(weeksPostpartum, window) {
+  if (typeof weeksPostpartum !== 'number' || !window) return false;
+  const m = /first\s+(\d+)\s+weeks?/i.exec(window);
+  if (!m) return false;
+  return weeksPostpartum <= parseInt(m[1], 10);
+}
+
 export const CONCERN_KEYWORDS = {
   ppd: ['ppd', 'depression', 'postpartum depression', 'mood', 'anxious', 'anxiety'],
   hbp: ['blood pressure', 'preeclampsia', 'hypertension'],
@@ -103,14 +115,18 @@ export function normalizeInputs(inputs, today = new Date()) {
     weeksPostpartum,
     firstTimeParent,
     coverage,
+    coveredServices,
     hasHsa,
     hsaBalance,
     concerns
   } = inputs || {};
 
+  // `coveredServices` is an alias for `coverage` accepted by newer callers.
+  const resolvedCoverage = coverage || coveredServices || {};
+
   const base = {
     firstTimeParent,
-    coverage: coverage || {},
+    coverage: resolvedCoverage,
     hasHsa,
     hsaBalance: typeof hsaBalance === 'number' ? hsaBalance : 0,
     concerns: typeof concerns === 'string' ? concerns : ''
@@ -311,8 +327,20 @@ export function computeResults(rawInputs, rules, almaServices, today = new Date(
   const recommendations = allocateFunding(matched, normalized.coverage, normalized.hsaBalance);
 
   // totalCovered = sum of covered $ across recommendations
+  // (compute BEFORE we overwrite rec.covered with the covered-boolean below)
   const totalCovered = recommendations.reduce((sum, r) => sum + (r.covered || 0), 0);
   const totalRecommendedCost = recommendations.reduce((sum, r) => sum + (r.totalCost || 0), 0);
+
+  // ----- Annotate recs with covered (boolean) + windowRank for the hybrid sort -----
+  // Preserve the dollar amount from allocateFunding under `coveredAmount` before
+  // overwriting `covered` with a boolean per the concierge upgrade spec.
+  const coverageMap = normalized.coverage || {};
+  for (const rec of recommendations) {
+    rec.coveredAmount = rec.covered || 0;
+    rec.covered = !!coverageMap[rec.service];
+    const dosingWindow = rec.dosing && rec.dosing.window;
+    rec.windowRank = isInWindow(normalized.weeksPostpartum, dosingWindow) ? 0 : 1;
+  }
 
   const fundingStrategy = buildFundingStrategy(
     recommendations,

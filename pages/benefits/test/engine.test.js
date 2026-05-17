@@ -453,3 +453,19 @@ test('detectConcerns: does not match "older child" as AMA', () => {
 test('detectConcerns: does not match "twin bed" as twins', () => {
   assert.deepEqual(detectConcerns('We have a twin bed in the nursery'), []);
 });
+
+test('computeResults: each rec has covered boolean reflecting state.coveredServices', () => {
+  const state = {
+    isPostpartum: true,
+    weeksPostpartum: 2,
+    coveredServices: { postpartum_doula_care: { limit: 1000 } },
+    hsaBalance: 0,
+    firstTimeParent: true,
+    concerns: ''
+  };
+  const results = computeResults(state, RULES, ALMA_SERVICES, new Date());
+  const doulaRec = results.recommendations.find(r => r.service === 'postpartum_doula_care');
+  const otherRec = results.recommendations.find(r => r.service !== 'postpartum_doula_care');
+  assert.equal(doulaRec.covered, true);
+  if (otherRec) assert.equal(otherRec.covered, false);
+});
