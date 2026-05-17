@@ -689,6 +689,12 @@
     .ap-results__intro h2 { font-size: 22px; line-height: 1.3; margin-bottom: 8px; }
     .ap-results__intro p { color: #2a3a32; }
 
+    .ap-hsa { background: rgba(21, 97, 70, 0.04); border: 1px solid rgb(235, 225, 213); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+    .ap-hsa h2 { font-size: 18px; margin-bottom: 12px; }
+    .ap-hsa ul { padding-left: 20px; margin: 12px 0; color: #2a3a32; }
+    .ap-hsa li { padding: 3px 0; }
+    .ap-hsa__footnote { font-size: 13px; color: #4a5a52; margin-top: 12px; }
+
     .ap-snapshot-hero {
       font-size: clamp(28px, 7vw, 44px);
       line-height: 1.1;
@@ -2921,6 +2927,25 @@
         );
       }
 
+      function renderHsaEligible(/* results */) {
+        const coveredIds = Object.keys(state.coverage || {});
+        const uncovered = ALMA_SERVICES.filter(function (id) { return coveredIds.indexOf(id) === -1; });
+        if (uncovered.length === 0) return '';
+        return (
+          '<section class="ap-hsa">'
+          + '<h2>Additional services that may be eligible through your HSA</h2>'
+          + '<p>Even when a practitioner category is not included in your extended health benefits, many families are still able to use Health Spending Account (HSA) funds toward eligible care providers. Depending on your plan, this may include:</p>'
+          + '<ul>'
+          + '<li>Private duty nursing</li>'
+          + '<li>Nursing-led postpartum support</li>'
+          + '<li>Lactation support provided by eligible practitioners</li>'
+          + '<li>Select wellness and recovery services</li>'
+          + '</ul>'
+          + '<p class="ap-hsa__footnote">We recommend confirming practitioner eligibility directly with your benefits provider before booking care.</p>'
+          + '</section>'
+        );
+      }
+
       function renderFunding(results) {
         const lines = results.fundingStrategy || [];
         const items = lines.length === 0
@@ -3412,6 +3437,7 @@
           renderSnapshot(results)
           + renderIntro(results)
           + renderPlan(results)
+          + renderHsaEligible(results)
           + renderFunding(results)
           + renderCtaRow();
 
