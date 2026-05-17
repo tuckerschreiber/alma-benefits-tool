@@ -2,7 +2,7 @@
 export const ALMA_SERVICES = [
   'massage_therapy', 'acupuncture', 'lactation_consulting',
   'postpartum_doula_care', 'registered_nursing', 'psw',
-  'mental_health', 'nutritionist', 'dietician'
+  'mental_health', 'nutritionist'
 ];
 
 export const RULES = [
