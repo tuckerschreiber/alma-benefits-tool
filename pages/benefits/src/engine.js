@@ -2,14 +2,14 @@
 // Pure functions only: no DOM, no globals, no I/O. Runs identically in Node and browser.
 
 export const SERVICE_NAMES = {
-  massage_therapy: 'Massage therapy',
+  massage_therapy: 'Registered Massage Therapy (RMT)',
   acupuncture: 'Acupuncture',
-  lactation_consulting: 'Lactation consulting',
-  postpartum_doula_care: 'Postpartum doula care',
-  registered_nursing: 'Registered nursing',
-  psw: 'Personal support worker',
-  mental_health: 'Mental health support',
-  nutritionist: 'Nutritionist'
+  lactation_consulting: 'Lactation Consultant / IBCLC',
+  postpartum_doula_care: 'Certified Postpartum Doula',
+  registered_nursing: 'Private Duty Nursing',
+  psw: 'Personal Support Worker (PSW)',
+  mental_health: 'Psychotherapy / Mental Health Support',
+  nutritionist: 'Nutrition Counselling'
 };
 
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
