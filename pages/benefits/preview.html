@@ -700,6 +700,11 @@
     .ap-next ol { padding-left: 24px; color: #2a3a32; }
     .ap-next li { padding: 6px 0; }
 
+    .ap-navigate { background: #ffffff; border: 1px solid rgb(235, 225, 213); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+    .ap-navigate h2 { font-size: 18px; margin-bottom: 8px; }
+    .ap-navigate ul { padding-left: 20px; color: #2a3a32; }
+    .ap-navigate li { padding: 4px 0; }
+
     .ap-snapshot-hero {
       font-size: clamp(28px, 7vw, 44px);
       line-height: 1.1;
@@ -2966,6 +2971,22 @@
         );
       }
 
+      function renderNavigateDetails() {
+        return (
+          '<section class="ap-navigate">'
+          + '<h2>We help families navigate the details</h2>'
+          + '<p>Our team regularly helps families:</p>'
+          + '<ul>'
+          + '<li>Understand eligible practitioner categories</li>'
+          + '<li>Maximize extended health benefits</li>'
+          + '<li>Utilize HSA and wellness spending accounts</li>'
+          + '<li>Prepare documentation for reimbursement</li>'
+          + '<li>Coordinate layered postpartum support plans</li>'
+          + '</ul>'
+          + '</section>'
+        );
+      }
+
       function renderFunding(results) {
         const lines = results.fundingStrategy || [];
         const items = lines.length === 0
@@ -3459,6 +3480,7 @@
           + renderPlan(results)
           + renderHsaEligible(results)
           + renderWhatHappensNext()
+          + renderNavigateDetails()
           + renderFunding(results)
           + renderCtaRow();
 
