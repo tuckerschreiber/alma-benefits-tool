@@ -705,6 +705,10 @@
     .ap-navigate ul { padding-left: 20px; color: #2a3a32; }
     .ap-navigate li { padding: 4px 0; }
 
+    .ap-permission { background: #FFFAF4; padding: 24px 0; }
+    .ap-permission h2 { font-size: 18px; margin-bottom: 10px; color: #2a3a32; font-weight: 500; }
+    .ap-permission p { color: #2a3a32; line-height: 1.65; }
+
     .ap-snapshot-hero {
       font-size: clamp(28px, 7vw, 44px);
       line-height: 1.1;
@@ -2987,6 +2991,15 @@
         );
       }
 
+      function renderEmotionalPermission() {
+        return (
+          '<section class="ap-permission">'
+          + '<h2>Support is not a luxury during postpartum recovery</h2>'
+          + '<p>Families often prepare extensively for birth — but far less for recovery, healing, feeding support, sleep, and the realities of the first weeks at home. Increasingly, families are choosing to include postpartum care support as part of their baby registry, allowing loved ones to contribute meaningfully to recovery and wellbeing during one of life\'s most important transitions.</p>'
+          + '</section>'
+        );
+      }
+
       function renderFunding(results) {
         const lines = results.fundingStrategy || [];
         const items = lines.length === 0
@@ -3481,6 +3494,7 @@
           + renderHsaEligible(results)
           + renderWhatHappensNext()
           + renderNavigateDetails()
+          + renderEmotionalPermission()
           + renderFunding(results)
           + renderCtaRow();
 
