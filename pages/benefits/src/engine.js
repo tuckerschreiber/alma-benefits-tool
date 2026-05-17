@@ -332,8 +332,8 @@ export function computeResults(rawInputs, rules, almaServices, today = new Date(
   const totalRecommendedCost = recommendations.reduce((sum, r) => sum + (r.totalCost || 0), 0);
 
   // ----- Annotate recs with covered (boolean) + windowRank for the hybrid sort -----
-  // Preserve the dollar amount from allocateFunding under `coveredAmount` before
-  // overwriting `covered` with a boolean per the concierge upgrade spec.
+  // Overwrite `covered` (the dollar amount from allocateFunding) with a boolean
+  // per the concierge upgrade spec. `totalCovered` is summed above before this overwrite.
   const coverageMap = normalized.coverage || {};
   for (const rec of recommendations) {
     rec.covered = !!coverageMap[rec.service];
@@ -344,10 +344,10 @@ export function computeResults(rawInputs, rules, almaServices, today = new Date(
   // ----- Hybrid final sort: covered (true first) -> priority asc -> windowRank asc -----
   recommendations.sort((a, b) => {
     if (a.covered !== b.covered) return a.covered ? -1 : 1;
-    const pa = PRIORITY_RANK[a.priority] ?? 9;
-    const pb = PRIORITY_RANK[b.priority] ?? 9;
+    const pa = PRIORITY_RANK[a.priority] ?? 99;
+    const pb = PRIORITY_RANK[b.priority] ?? 99;
     if (pa !== pb) return pa - pb;
-    return (a.windowRank ?? 9) - (b.windowRank ?? 9);
+    return (a.windowRank ?? 99) - (b.windowRank ?? 99);
   });
 
   const fundingStrategy = buildFundingStrategy(
