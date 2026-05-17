@@ -1091,6 +1091,10 @@
         page-break-inside: avoid;
         break-inside: avoid;
       }
+      .ap-next, .ap-navigate {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
     }
 
     .ap-pdf-source * {
@@ -1149,10 +1153,9 @@
     }
 
     .ap-pdf__panel {
-      background: #ffffff;
       border: 1px solid rgb(235, 225, 213);
       border-radius: 10px;
-      padding: 20px;
+      padding: 16px;
       margin-bottom: 16px;
       page-break-inside: avoid;
       break-inside: avoid;
@@ -1300,12 +1303,12 @@
     }
 
     .ap-pdf__footer {
-      margin-top: 20px;
-      padding-top: 14px;
+      margin-top: 24px;
+      padding-top: 12px;
       border-top: 1px solid rgb(235, 225, 213);
       font-size: 11px;
-      color: #888;
-      line-height: 1.55;
+      color: #777;
+      text-align: center;
     }
 
     .ap-pdf__footer-link {
@@ -3482,6 +3485,7 @@
           + 'This estimate is based on the information you provided. Actual coverage and pricing may vary. Speak with your benefits provider for confirmation.'
           + '<br>Book your free consult: <span class="ap-pdf__footer-link">almacare.ca/booking/book-a-call</span>'
           + '</div>'
+          + '<footer class="ap-pdf__footer">Alma Care — care@almacare.ca — almacare.ca/benefits</footer>'
         );
       }
 
@@ -3502,6 +3506,17 @@
           printRoot.id = 'ap-print-root';
           printRoot.innerHTML = renderPdfSource(state.results);
           document.body.appendChild(printRoot);
+
+          // Set a clean document title so Chrome's PDF picker pre-fills with
+          // "Alma Care plan — [first name]" instead of the page URL.
+          const originalTitle = document.title;
+          const leadName = (state.lead && state.lead.name) ? state.lead.name : '';
+          const firstName = state.firstName
+            || (leadName ? leadName.split(/\s+/)[0] : '')
+            || '';
+          document.title = 'Alma Care plan' + (firstName ? ' — ' + firstName : '');
+          const restoreTitle = function () { document.title = originalTitle; };
+          window.addEventListener('afterprint', restoreTitle, { once: true });
 
           let cleaned = false;
           function cleanup() {
