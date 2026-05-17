@@ -2672,6 +2672,20 @@
         if (currentStep > 1) goToStep(currentStep - 1);
       });
 
+      // ---------- Landing → Begin assessment ----------
+      const beginBtn = document.getElementById('ap-landing-begin');
+      const landingEl = document.getElementById('ap-landing');
+      const assessmentEl = document.getElementById('ap-assessment');
+      if (beginBtn && landingEl && assessmentEl) {
+        beginBtn.addEventListener('click', function () {
+          landingEl.classList.add('ap-landing--hidden');
+          assessmentEl.classList.remove('ap-assessment--hidden');
+          if (typeof track === 'function') track('assessment_started');
+          const firstFocusable = document.querySelector('#ap-step-1 input, #ap-step-1 button:not([disabled]), #ap-step-1 select');
+          if (firstFocusable) firstFocusable.focus();
+        });
+      }
+
       // ---------- Service cards (step 3) ----------
       serviceCards.forEach((card) => {
         card.addEventListener('click', () => {
