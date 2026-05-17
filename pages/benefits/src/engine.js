@@ -342,6 +342,15 @@ export function computeResults(rawInputs, rules, almaServices, today = new Date(
     rec.windowRank = isInWindow(normalized.weeksPostpartum, dosingWindow) ? 0 : 1;
   }
 
+  // ----- Hybrid final sort: covered (true first) -> priority asc -> windowRank asc -----
+  recommendations.sort((a, b) => {
+    if (a.covered !== b.covered) return a.covered ? -1 : 1;
+    const pa = PRIORITY_RANK[a.priority] ?? 9;
+    const pb = PRIORITY_RANK[b.priority] ?? 9;
+    if (pa !== pb) return pa - pb;
+    return (a.windowRank ?? 9) - (b.windowRank ?? 9);
+  });
+
   const fundingStrategy = buildFundingStrategy(
     recommendations,
     normalized.coverage,

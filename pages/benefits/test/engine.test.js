@@ -469,3 +469,89 @@ test('computeResults: each rec has covered boolean reflecting state.coveredServi
   assert.equal(doulaRec.covered, true);
   if (otherRec) assert.equal(otherRec.covered, false);
 });
+
+test('computeResults: covered services rank above uncovered at the same priority', () => {
+  const state = {
+    isPostpartum: true,
+    weeksPostpartum: 4,
+    coveredServices: { massage_therapy: { limit: 500 } },
+    hsaBalance: 0,
+    firstTimeParent: true,
+    concerns: ''
+  };
+  const results = computeResults(state, RULES, ALMA_SERVICES, new Date());
+  const firstCoveredIdx = results.recommendations.findIndex(r => r.covered);
+  const firstUncoveredIdx = results.recommendations.findIndex(r => !r.covered);
+  if (firstCoveredIdx !== -1 && firstUncoveredIdx !== -1) {
+    assert.ok(firstCoveredIdx < firstUncoveredIdx, 'covered must precede uncovered');
+  }
+});
+
+test('computeResults: within the covered group, higher priority outranks lower priority', () => {
+  // At ~6 weeks until due (prenatal, first-time parent), RULES matches:
+  //   - lactation_consulting (high)
+  //   - postpartum_doula_care (high)
+  //   - mental_health (medium)
+  //   - acupuncture (low)
+  //   - massage_therapy (medium)
+  // We cover lactation_consulting (high) and acupuncture (low) so both are
+  // in the "covered" tier, and the high-priority service must come first.
+  const today = new Date('2026-05-10');
+  const state = {
+    dueDate: '2026-06-21', // ~6 weeks out
+    firstTimeParent: true,
+    coverage: {
+      lactation_consulting: { amount: 500, perVisitCap: 0, reimbursementPercent: 100 },
+      acupuncture: { amount: 300, perVisitCap: 0, reimbursementPercent: 100 }
+    },
+    hsaBalance: 0,
+    concerns: ''
+  };
+  const results = computeResults(state, RULES, ALMA_SERVICES, today);
+  const lactationIdx = results.recommendations.findIndex(r => r.service === 'lactation_consulting');
+  const acuIdx = results.recommendations.findIndex(r => r.service === 'acupuncture');
+  assert.ok(lactationIdx !== -1, 'lactation_consulting must be present');
+  assert.ok(acuIdx !== -1, 'acupuncture must be present');
+  const lactationRec = results.recommendations[lactationIdx];
+  const acuRec = results.recommendations[acuIdx];
+  assert.equal(lactationRec.covered, true);
+  assert.equal(acuRec.covered, true);
+  assert.equal(lactationRec.priority, 'high');
+  assert.equal(acuRec.priority, 'low');
+  assert.ok(lactationIdx < acuIdx, 'high priority must outrank low priority within covered group');
+});
+
+test('computeResults: within same covered+priority tier, in-window outranks out-of-window', () => {
+  // Postpartum at wp=2, firstTimeParent, covering three "high" services:
+  //   - registered_nursing  window "first 2 weeks postpartum"  -> in-window  (rank 0)
+  //   - lactation_consulting window "first 4 weeks postpartum" -> in-window  (rank 0)
+  //   - postpartum_doula_care window "weeks 1–6 postpartum"    -> NOT parseable (rank 1)
+  // All three are covered + high priority; the windowRank=1 doula rec must sort
+  // LAST within the high tier, after both rank-0 services. Without the hybrid
+  // sort (priority-only), doula would land between nursing and lactation by
+  // rule-insertion order — so this assertion fails without Task 5's sort.
+  const state = {
+    isPostpartum: true,
+    weeksPostpartum: 2,
+    firstTimeParent: true,
+    coveredServices: {
+      registered_nursing: { amount: 500 },
+      postpartum_doula_care: { amount: 500 },
+      lactation_consulting: { amount: 500 }
+    },
+    hsaBalance: 0,
+    concerns: ''
+  };
+  const results = computeResults(state, RULES, ALMA_SERVICES, new Date());
+  const nursingIdx = results.recommendations.findIndex(r => r.service === 'registered_nursing');
+  const lactationIdx = results.recommendations.findIndex(r => r.service === 'lactation_consulting');
+  const doulaIdx = results.recommendations.findIndex(r => r.service === 'postpartum_doula_care');
+  assert.ok(nursingIdx !== -1 && lactationIdx !== -1 && doulaIdx !== -1, 'all three high-priority covered recs must be present');
+  // Sanity: ranks line up with what we expect.
+  assert.equal(results.recommendations[nursingIdx].windowRank, 0);
+  assert.equal(results.recommendations[lactationIdx].windowRank, 0);
+  assert.equal(results.recommendations[doulaIdx].windowRank, 1);
+  // The actual ordering claim:
+  assert.ok(nursingIdx < doulaIdx, 'in-window nursing must precede out-of-window doula');
+  assert.ok(lactationIdx < doulaIdx, 'in-window lactation must precede out-of-window doula');
+});
