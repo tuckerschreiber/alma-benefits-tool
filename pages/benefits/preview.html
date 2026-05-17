@@ -709,6 +709,19 @@
     .ap-permission h2 { font-size: 18px; margin-bottom: 10px; color: #2a3a32; font-weight: 500; }
     .ap-permission p { color: #2a3a32; line-height: 1.65; }
 
+    .ap-final-cta { padding: 24px 0; }
+    .ap-final-cta h2 { font-size: 22px; margin-bottom: 8px; }
+    .ap-final-cta p { color: #2a3a32; margin-bottom: 8px; }
+    .ap-final-cta ul { padding-left: 20px; margin-bottom: 16px; color: #2a3a32; }
+    .ap-final-cta li { padding: 3px 0; }
+    .ap-trust { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; padding-top: 24px; border-top: 1px solid rgb(235, 225, 213); }
+    .ap-trust__item { text-align: center; font-size: 13px; color: #4a5a52; }
+    .ap-trust__item strong { display: block; color: #032215; font-weight: 500; margin-bottom: 4px; }
+    @media (max-width: 600px) {
+      .ap-trust { grid-template-columns: 1fr; gap: 8px; text-align: left; }
+      .ap-trust__item { text-align: left; }
+    }
+
     .ap-snapshot-hero {
       font-size: clamp(28px, 7vw, 44px);
       line-height: 1.1;
@@ -3015,13 +3028,33 @@
         );
       }
 
-      function renderCtaRow() {
+      function renderFinalCta() {
         return (
-          '<div class="ap-cta-row">'
+          '<section class="ap-final-cta">'
+          + '<h2>Review your options with an Alma Care specialist</h2>'
+          + '<p>Our team can help you:</p>'
+          + '<ul>'
+          + '<li>Understand eligible coverage pathways</li>'
+          + '<li>Maximize HSA utilization</li>'
+          + '<li>Navigate documentation requirements</li>'
+          + '<li>Build a personalized postpartum support plan</li>'
+          + '</ul>'
+          + '<div class="ap-cta-row">'
           + '<a class="ap-btn ap-btn--primary" id="ap-consult-cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a free consult</a>'
           + '<button type="button" class="ap-btn ap-btn--secondary" id="ap-email-plan">Email me my care plan</button>'
           + '</div>'
+          + '</section>'
           + renderLeadDrawer()
+        );
+      }
+
+      function renderTrustStrip() {
+        return (
+          '<aside class="ap-trust">'
+          + '<div class="ap-trust__item"><strong>Trusted postpartum professionals</strong></div>'
+          + '<div class="ap-trust__item"><strong>Personalized practitioner matching</strong></div>'
+          + '<div class="ap-trust__item"><strong>Guided care coordination across Canada</strong></div>'
+          + '</aside>'
         );
       }
 
@@ -3496,7 +3529,8 @@
           + renderNavigateDetails()
           + renderEmotionalPermission()
           + renderFunding(results)
-          + renderCtaRow();
+          + renderFinalCta()
+          + renderTrustStrip();
 
         const emailBtn = document.getElementById('ap-email-plan');
         const drawer = document.getElementById('ap-lead-drawer');
