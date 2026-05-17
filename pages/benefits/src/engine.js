@@ -336,7 +336,6 @@ export function computeResults(rawInputs, rules, almaServices, today = new Date(
   // overwriting `covered` with a boolean per the concierge upgrade spec.
   const coverageMap = normalized.coverage || {};
   for (const rec of recommendations) {
-    rec.coveredAmount = rec.covered || 0;
     rec.covered = !!coverageMap[rec.service];
     const dosingWindow = rec.dosing && rec.dosing.window;
     rec.windowRank = isInWindow(normalized.weeksPostpartum, dosingWindow) ? 0 : 1;
