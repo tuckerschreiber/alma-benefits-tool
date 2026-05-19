@@ -82,6 +82,19 @@
       background: #156146;
     }
 
+    /* ---------- Landing screen ---------- */
+    .ap-landing { display: flex; flex-direction: column; gap: 28px; }
+    .ap-landing--hidden { display: none; }
+    .ap-landing__hero h1 { font-size: 32px; line-height: 1.2; margin-bottom: 16px; }
+    .ap-landing__hero p { color: #2a3a32; margin-bottom: 16px; }
+    .ap-landing__chips { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0 0 16px 0; }
+    .ap-landing__chips li { background: rgb(235, 225, 213); color: #032215; padding: 6px 14px; border-radius: 999px; font-size: 14px; }
+    .ap-landing__registry { font-style: italic; color: #4a5a52; }
+    .ap-landing__panel { background: rgba(21, 97, 70, 0.04); border: 1px solid rgb(235, 225, 213); border-radius: 12px; padding: 24px; }
+    .ap-landing__panel h2 { font-size: 20px; margin-bottom: 10px; }
+    .ap-landing__disclaimer { font-size: 12px; color: #777; line-height: 1.5; }
+    .ap-assessment--hidden { display: none; }
+
     /* ---------- Step sections ---------- */
     .ap-step {
       display: none;
@@ -97,6 +110,13 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+    }
+
+    .ap-step__header h2 {
+      font-size: 28px;
+      line-height: 1.25;
+      font-weight: 500;
+      color: #032215;
     }
 
     .ap-step__subhead {
@@ -665,6 +685,43 @@
       font-size: 15px;
     }
 
+    .ap-results__intro { margin: 24px 0 24px; }
+    .ap-results__intro h2 { font-size: 22px; line-height: 1.3; margin-bottom: 8px; }
+    .ap-results__intro p { color: #2a3a32; }
+
+    .ap-hsa { background: rgba(21, 97, 70, 0.04); border: 1px solid rgb(235, 225, 213); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+    .ap-hsa h2 { font-size: 18px; margin-bottom: 12px; }
+    .ap-hsa ul { padding-left: 20px; margin: 12px 0; color: #2a3a32; }
+    .ap-hsa li { padding: 3px 0; }
+    .ap-hsa__footnote { font-size: 13px; color: #4a5a52; margin-top: 12px; }
+
+    .ap-next { padding: 24px 0; border-top: 1px solid rgb(235, 225, 213); }
+    .ap-next h2 { font-size: 20px; margin-bottom: 12px; }
+    .ap-next ol { padding-left: 24px; color: #2a3a32; }
+    .ap-next li { padding: 6px 0; }
+
+    .ap-navigate { background: #ffffff; border: 1px solid rgb(235, 225, 213); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+    .ap-navigate h2 { font-size: 18px; margin-bottom: 8px; }
+    .ap-navigate ul { padding-left: 20px; color: #2a3a32; }
+    .ap-navigate li { padding: 4px 0; }
+
+    .ap-permission { background: #FFFAF4; padding: 24px 0; }
+    .ap-permission h2 { font-size: 18px; margin-bottom: 10px; color: #2a3a32; font-weight: 500; }
+    .ap-permission p { color: #2a3a32; line-height: 1.65; }
+
+    .ap-final-cta { padding: 24px 0; }
+    .ap-final-cta h2 { font-size: 22px; margin-bottom: 8px; }
+    .ap-final-cta p { color: #2a3a32; margin-bottom: 8px; }
+    .ap-final-cta ul { padding-left: 20px; margin-bottom: 16px; color: #2a3a32; }
+    .ap-final-cta li { padding: 3px 0; }
+    .ap-trust { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; padding-top: 24px; border-top: 1px solid rgb(235, 225, 213); }
+    .ap-trust__item { text-align: center; font-size: 13px; color: #4a5a52; }
+    .ap-trust__item strong { display: block; color: #032215; font-weight: 500; margin-bottom: 4px; }
+    @media (max-width: 600px) {
+      .ap-trust { grid-template-columns: 1fr; gap: 8px; text-align: left; }
+      .ap-trust__item { text-align: left; }
+    }
+
     .ap-snapshot-hero {
       font-size: clamp(28px, 7vw, 44px);
       line-height: 1.1;
@@ -762,6 +819,13 @@
       text-align: center;
       line-height: 44px;
     }
+
+    .ap-rec-card__rank { display: inline-flex; align-items: center; justify-content: center; background: #156146; color: #fff; width: 28px; height: 28px; border-radius: 50%; font-weight: 500; font-size: 14px; margin-right: 10px; flex-shrink: 0; }
+    .ap-recs__more { border-top: 1px solid rgb(235, 225, 213); padding-top: 12px; margin-top: 8px; }
+    .ap-recs__more > summary { cursor: pointer; color: #156146; font-weight: 500; padding: 8px 0; list-style: none; }
+    .ap-recs__more > summary::-webkit-details-marker { display: none; }
+    .ap-recs__more > summary::before { content: '▾ '; }
+    .ap-recs__more[open] > summary::before { content: '▴ '; }
 
     .ap-rec-card__body {
       flex: 1;
@@ -984,6 +1048,14 @@
       align-self: flex-start;
     }
 
+    .ap-print-tip {
+      font-size: 12px;
+      color: #777;
+      font-style: italic;
+      margin-top: 8px;
+      margin-bottom: 0;
+    }
+
     /* ---------- Print-only care plan ----------
        Hidden on screen. When the user clicks "send my care plan", we
        populate #ap-print-root with the same markup the PDF used to use
@@ -1004,7 +1076,7 @@
         display: block !important;
         width: 100% !important;
         margin: 0 !important;
-        padding: 0 !important;
+        padding: 0.6in 0.6in 0.75in 0.6in !important;
         color: #032215 !important;
         font-family: 'Futura', 'Futura PT', 'Trebuchet MS', sans-serif !important;
         font-weight: 400 !important;
@@ -1013,9 +1085,13 @@
       }
       @page {
         size: letter;
-        margin: 0.6in 0.6in 0.75in 0.6in;
+        margin: 0;
       }
       .ap-pdf__panel, .ap-pdf__rec, .ap-pdf__letterhead {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      .ap-next, .ap-navigate {
         page-break-inside: avoid;
         break-inside: avoid;
       }
@@ -1077,10 +1153,9 @@
     }
 
     .ap-pdf__panel {
-      background: #ffffff;
       border: 1px solid rgb(235, 225, 213);
       border-radius: 10px;
-      padding: 20px;
+      padding: 16px;
       margin-bottom: 16px;
       page-break-inside: avoid;
       break-inside: avoid;
@@ -1241,6 +1316,9 @@
       font-weight: 500;
     }
 
+    .ap-pdf__brandline { margin-top: 16px; padding-top: 8px; border-top: 1px solid rgb(235, 225, 213); font-size: 11px; color: #777; text-align: center; }
+    .ap-pdf__footer + .ap-pdf__brandline { border-top: none; margin-top: 8px; padding-top: 0; }
+
     /* ---------- Mobile ---------- */
     @media (max-width: 640px) {
       .ap-app {
@@ -1260,6 +1338,22 @@
 
       h1 {
         font-size: 24px;
+      }
+
+      .ap-step__header h2 {
+        font-size: 24px;
+      }
+
+      .ap-landing__hero h1 {
+        font-size: 26px;
+      }
+
+      .ap-landing {
+        gap: 20px;
+      }
+
+      .ap-landing__panel {
+        padding: 20px;
       }
 
       .ap-panel {
@@ -1319,6 +1413,31 @@
 </head>
 <body>
   <main class="ap-app">
+    <section class="ap-landing" id="ap-landing">
+      <header class="ap-landing__hero">
+        <h1>Understand what care may already be available to you</h1>
+        <p>Many families are surprised to learn that their extended health benefits, HSA, or employer-sponsored coverage can help offset the cost of postpartum and newborn support. This guided tool helps you explore potential eligibility for services like:</p>
+        <ul class="ap-landing__chips" aria-label="Example services">
+          <li>Certified postpartum doula care</li>
+          <li>Private duty nursing</li>
+          <li>Registered massage therapy</li>
+          <li>Lactation support</li>
+          <li>Mental health support</li>
+        </ul>
+        <p class="ap-landing__registry">And if benefits coverage isn't available, many families choose to add Alma Care gift cards to their baby registry — making meaningful postpartum support part of the care ecosystem from day one.</p>
+      </header>
+
+      <section class="ap-landing__panel">
+        <h2>Personalized postpartum support, thoughtfully coordinated</h2>
+        <p>Alma Care connects families with trusted postpartum professionals — including certified doulas, nurses, lactation consultants, and recovery specialists — to support recovery, newborn care, feeding, sleep, and the transition into early parenthood. Care is personalized to your family's needs and can often be coordinated alongside eligible insurance or HSA coverage pathways.</p>
+      </section>
+
+      <p class="ap-landing__disclaimer">This tool is intended for educational and planning purposes only and is not a pre-determination of insurance coverage or eligibility. Coverage varies by provider and individual plan. We recommend confirming all details directly with your insurance provider or benefits administrator.</p>
+
+      <button type="button" class="ap-btn ap-btn--continue" id="ap-landing-begin">Begin assessment</button>
+    </section>
+
+    <div class="ap-assessment ap-assessment--hidden" id="ap-assessment">
     <header class="ap-progress" aria-label="Progress">
       <div class="ap-progress__label">Step 1 of 3</div>
       <div class="ap-progress__bar" role="progressbar" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1">
@@ -1330,8 +1449,8 @@
 
     <section id="ap-step-1" class="ap-step ap-step--active">
       <div class="ap-step__header">
-        <h1>Tell us about you</h1>
-        <p class="ap-step__subhead">A few quick questions so we can build your care plan.</p>
+        <h2>Let's personalize your care recommendations</h2>
+        <p class="ap-step__subhead">A few thoughtful details help us identify the most relevant coverage pathways and postpartum support options for your family.</p>
       </div>
 
       <div id="ap-due-date-field" class="ap-field">
@@ -1365,8 +1484,8 @@
 
     <section id="ap-step-2" class="ap-step">
       <div class="ap-step__header">
-        <h1>Your insurance</h1>
-        <p class="ap-step__subhead">This helps us figure out what's covered.</p>
+        <h2>Let's explore your coverage options</h2>
+        <p class="ap-step__subhead">We'll help identify which services may be eligible through your extended health benefits or HSA.</p>
       </div>
 
       <div class="ap-field">
@@ -1407,18 +1526,18 @@
 
     <section id="ap-step-3" class="ap-step">
       <div class="ap-step__header">
-        <h1>What's covered under your benefits?</h1>
-        <p class="ap-step__subhead">Check the services your plan covers. We'll only ask for details on what's checked.</p>
+        <h2>Which services are included in your extended health benefits?</h2>
+        <p class="ap-step__subhead">Select the practitioner categories included in your plan. If you're unsure, we'll help guide you.</p>
       </div>
 
       <div id="ap-service-grid" class="ap-service-grid" role="group" aria-label="Covered services">
-        <!-- 9 service cards, each followed by a hidden coverage-detail block -->
+        <!-- 8 service cards, each followed by a hidden coverage-detail block -->
         <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="massage_therapy">
           <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
-          <span class="ap-service-card__label">Massage therapy</span>
+          <span class="ap-service-card__label">Registered Massage Therapy (RMT)</span>
         </button>
         <div class="ap-coverage-detail ap-hidden" data-coverage-detail="massage_therapy">
-          <div class="ap-coverage-detail__title">Massage therapy coverage</div>
+          <div class="ap-coverage-detail__title">Registered Massage Therapy (RMT) coverage</div>
           <div class="ap-field">
             <label class="ap-label" for="ap-cov-amount-massage_therapy">Annual amount</label>
             <div class="ap-input-currency">
@@ -1467,10 +1586,10 @@
 
         <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="lactation_consulting">
           <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
-          <span class="ap-service-card__label">Lactation consulting</span>
+          <span class="ap-service-card__label">Lactation Consultant / IBCLC</span>
         </button>
         <div class="ap-coverage-detail ap-hidden" data-coverage-detail="lactation_consulting">
-          <div class="ap-coverage-detail__title">Lactation consulting coverage</div>
+          <div class="ap-coverage-detail__title">Lactation Consultant / IBCLC coverage</div>
           <div class="ap-field">
             <label class="ap-label" for="ap-cov-amount-lactation_consulting">Annual amount</label>
             <div class="ap-input-currency">
@@ -1493,10 +1612,10 @@
 
         <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="postpartum_doula_care">
           <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
-          <span class="ap-service-card__label">Postpartum doula care</span>
+          <span class="ap-service-card__label">Certified Postpartum Doula</span>
         </button>
         <div class="ap-coverage-detail ap-hidden" data-coverage-detail="postpartum_doula_care">
-          <div class="ap-coverage-detail__title">Postpartum doula care coverage</div>
+          <div class="ap-coverage-detail__title">Certified Postpartum Doula coverage</div>
           <div class="ap-field">
             <label class="ap-label" for="ap-cov-amount-postpartum_doula_care">Annual amount</label>
             <div class="ap-input-currency">
@@ -1519,10 +1638,10 @@
 
         <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="registered_nursing">
           <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
-          <span class="ap-service-card__label">Registered nursing</span>
+          <span class="ap-service-card__label">Private Duty Nursing</span>
         </button>
         <div class="ap-coverage-detail ap-hidden" data-coverage-detail="registered_nursing">
-          <div class="ap-coverage-detail__title">Registered nursing coverage</div>
+          <div class="ap-coverage-detail__title">Private Duty Nursing coverage</div>
           <div class="ap-field">
             <label class="ap-label" for="ap-cov-amount-registered_nursing">Annual amount</label>
             <div class="ap-input-currency">
@@ -1545,10 +1664,10 @@
 
         <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="psw">
           <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
-          <span class="ap-service-card__label">Personal support worker (PSW)</span>
+          <span class="ap-service-card__label">Personal Support Worker (PSW)</span>
         </button>
         <div class="ap-coverage-detail ap-hidden" data-coverage-detail="psw">
-          <div class="ap-coverage-detail__title">Personal support worker coverage</div>
+          <div class="ap-coverage-detail__title">Personal Support Worker (PSW) coverage</div>
           <div class="ap-field">
             <label class="ap-label" for="ap-cov-amount-psw">Annual amount</label>
             <div class="ap-input-currency">
@@ -1571,10 +1690,10 @@
 
         <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="mental_health">
           <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
-          <span class="ap-service-card__label">Mental health support</span>
+          <span class="ap-service-card__label">Psychotherapy / Mental Health Support</span>
         </button>
         <div class="ap-coverage-detail ap-hidden" data-coverage-detail="mental_health">
-          <div class="ap-coverage-detail__title">Mental health support coverage</div>
+          <div class="ap-coverage-detail__title">Psychotherapy / Mental Health Support coverage</div>
           <div class="ap-field">
             <label class="ap-label" for="ap-cov-amount-mental_health">Annual amount</label>
             <div class="ap-input-currency">
@@ -1597,10 +1716,10 @@
 
         <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="nutritionist">
           <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
-          <span class="ap-service-card__label">Nutritionist</span>
+          <span class="ap-service-card__label">Nutrition Counselling</span>
         </button>
         <div class="ap-coverage-detail ap-hidden" data-coverage-detail="nutritionist">
-          <div class="ap-coverage-detail__title">Nutritionist coverage</div>
+          <div class="ap-coverage-detail__title">Nutrition Counselling coverage</div>
           <div class="ap-field">
             <label class="ap-label" for="ap-cov-amount-nutritionist">Annual amount</label>
             <div class="ap-input-currency">
@@ -1621,34 +1740,9 @@
           </div>
         </div>
 
-        <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="dietician">
-          <span class="ap-service-card__check" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"></polyline></svg></span>
-          <span class="ap-service-card__label">Dietician</span>
-        </button>
-        <div class="ap-coverage-detail ap-hidden" data-coverage-detail="dietician">
-          <div class="ap-coverage-detail__title">Dietician coverage</div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-amount-dietician">Annual amount</label>
-            <div class="ap-input-currency">
-              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
-              <input type="number" id="ap-cov-amount-dietician" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="dietician">
-            </div>
-          </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-cap-dietician">Per-visit cap <span class="ap-optional">(optional)</span></label>
-            <div class="ap-input-currency">
-              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
-              <input type="number" id="ap-cov-cap-dietician" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="dietician">
-            </div>
-          </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-pct-dietician">Reimbursement % <span class="ap-optional">(optional)</span></label>
-            <input type="number" id="ap-cov-pct-dietician" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="dietician">
-          </div>
-        </div>
       </div>
 
-      <button type="button" id="ap-coverage-help-trigger" class="ap-help-link">I'm not sure what's covered</button>
+      <button type="button" id="ap-coverage-help-trigger" class="ap-help-link">Help me understand my coverage</button>
     </section>
 
     <!-- Coverage help modal -->
@@ -1667,8 +1761,9 @@
 
     <nav class="ap-nav" aria-label="Wizard navigation">
       <button type="button" class="ap-btn ap-btn--back" disabled>Back</button>
-      <button type="button" class="ap-btn ap-btn--continue" disabled>Continue</button>
+      <button type="button" class="ap-btn ap-btn--continue" disabled>Continue assessment</button>
     </nav>
+    </div>
   </main>
 
   <script>
@@ -1679,25 +1774,36 @@
       // Pure functions only: no DOM, no globals, no I/O. Runs identically in Node and browser.
 
       const SERVICE_NAMES = {
-        massage_therapy: 'Massage therapy',
+        massage_therapy: 'Registered Massage Therapy (RMT)',
         acupuncture: 'Acupuncture',
-        lactation_consulting: 'Lactation consulting',
-        postpartum_doula_care: 'Postpartum doula care',
-        registered_nursing: 'Registered nursing',
-        psw: 'Personal support worker',
-        mental_health: 'Mental health support',
-        nutritionist: 'Nutritionist',
-        dietician: 'Dietician'
+        lactation_consulting: 'Lactation Consultant / IBCLC',
+        postpartum_doula_care: 'Certified Postpartum Doula',
+        registered_nursing: 'Private Duty Nursing',
+        psw: 'Personal Support Worker (PSW)',
+        mental_health: 'Psychotherapy / Mental Health Support',
+        nutritionist: 'Nutrition Counselling'
       };
 
       const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
       const MS_PER_WEEK = 1000 * 60 * 60 * 24 * 7;
 
+      /**
+       * Returns true iff `weeksPostpartum` falls inside a dosing.window phrased like
+       * "first 3 weeks postpartum" or "first 12 weeks postpartum". Returns false for
+       * any other window shape or missing inputs (so unparseable windows rank lower).
+       */
+      function isInWindow(weeksPostpartum, window) {
+        if (typeof weeksPostpartum !== 'number' || !window) return false;
+        const m = /first\s+(\d+)\s+weeks?/i.exec(window);
+        if (!m) return false;
+        return weeksPostpartum <= parseInt(m[1], 10);
+      }
+
       // DRAFT v1 — Awaiting Alma clinical sign-off (see docs/clinical/benefits-tool-rule-matrix-DRAFT.md)
       const ALMA_SERVICES = [
         'massage_therapy', 'acupuncture', 'lactation_consulting',
         'postpartum_doula_care', 'registered_nursing', 'psw',
-        'mental_health', 'nutritionist', 'dietician'
+        'mental_health', 'nutritionist'
       ];
 
       const RULES = [
@@ -1856,13 +1962,17 @@
         const weeksPostpartum = raw.weeksPostpartum;
         const firstTimeParent = raw.firstTimeParent;
         const coverage = raw.coverage;
+        const coveredServices = raw.coveredServices;
         const hasHsa = raw.hasHsa;
         const hsaBalance = raw.hsaBalance;
         const concerns = raw.concerns;
 
+        // `coveredServices` is an alias for `coverage` accepted by newer callers.
+        const resolvedCoverage = coverage || coveredServices || {};
+
         const base = {
           firstTimeParent: firstTimeParent,
-          coverage: coverage || {},
+          coverage: resolvedCoverage,
           hasHsa: hasHsa,
           hsaBalance: typeof hsaBalance === 'number' ? hsaBalance : 0,
           concerns: typeof concerns === 'string' ? concerns : ''
@@ -2085,6 +2195,25 @@
         const totalCovered = recommendations.reduce(function (sum, r) { return sum + (r.covered || 0); }, 0);
         const totalRecommendedCost = recommendations.reduce(function (sum, r) { return sum + (r.totalCost || 0); }, 0);
 
+        // ----- Annotate recs with isCovered (boolean) + windowRank for the hybrid sort -----
+        // `rec.covered` stays as the dollar amount written by allocateFunding; we add a
+        // separate `isCovered` boolean so the UI's dollar-amount reads keep working.
+        const coverageMap = normalized.coverage || {};
+        for (const rec of recommendations) {
+          rec.isCovered = !!coverageMap[rec.service];
+          const dosingWindow = rec.dosing && rec.dosing.window;
+          rec.windowRank = isInWindow(normalized.weeksPostpartum, dosingWindow) ? 0 : 1;
+        }
+
+        // ----- Hybrid final sort: isCovered (true first) -> priority asc -> windowRank asc -----
+        recommendations.sort(function (a, b) {
+          if (a.isCovered !== b.isCovered) return a.isCovered ? -1 : 1;
+          const pa = PRIORITY_RANK[a.priority] != null ? PRIORITY_RANK[a.priority] : 99;
+          const pb = PRIORITY_RANK[b.priority] != null ? PRIORITY_RANK[b.priority] : 99;
+          if (pa !== pb) return pa - pb;
+          return (a.windowRank != null ? a.windowRank : 99) - (b.windowRank != null ? b.windowRank : 99);
+        });
+
         const fundingStrategy = buildFundingStrategy(
           recommendations,
           normalized.coverage,
@@ -2163,8 +2292,7 @@
         'registered_nursing',
         'psw',
         'mental_health',
-        'nutritionist',
-        'dietician'
+        'nutritionist'
       ];
 
       // ---------- Element refs ----------
@@ -2487,7 +2615,7 @@
         if (n === 3) {
           continueBtn.textContent = 'See my care plan →';
         } else {
-          continueBtn.textContent = 'Continue';
+          continueBtn.textContent = 'Continue assessment';
         }
 
         // Back disabled on step 1
@@ -2623,6 +2751,20 @@
         if (backBtn.disabled) return;
         if (currentStep > 1) goToStep(currentStep - 1);
       });
+
+      // ---------- Landing → Begin assessment ----------
+      const beginBtn = document.getElementById('ap-landing-begin');
+      const landingEl = document.getElementById('ap-landing');
+      const assessmentEl = document.getElementById('ap-assessment');
+      if (beginBtn && landingEl && assessmentEl) {
+        beginBtn.addEventListener('click', function () {
+          landingEl.classList.add('ap-landing--hidden');
+          assessmentEl.classList.remove('ap-assessment--hidden');
+          if (typeof track === 'function') track('assessment_started');
+          const firstFocusable = document.querySelector('#ap-step-1 input, #ap-step-1 button:not([disabled]), #ap-step-1 select');
+          if (firstFocusable) firstFocusable.focus();
+        });
+      }
 
       // ---------- Service cards (step 3) ----------
       serviceCards.forEach((card) => {
@@ -2769,12 +2911,24 @@
         return '<div class="ap-cost-breakdown">' + rows.join('') + '</div>';
       }
 
-      function renderRecCard(rec) {
+      function renderIntro(/* results */) {
+        return (
+          '<header class="ap-results__intro">'
+          + '<h2>You may have more support available to you than you think.</h2>'
+          + '<p>Based on your responses, there appear to be several potential pathways to offset postpartum care through extended health benefits and/or HSA funding. We\'ve outlined the options most relevant to your stage of recovery and care goals below.</p>'
+          + '</header>'
+        );
+      }
+
+      function renderRecCard(rec, rank) {
         const name = SERVICE_NAMES[rec.service] || rec.service;
         const initial = (name || '').trim().charAt(0).toUpperCase();
+        const badgeHtml = (typeof rank === 'number')
+          ? '<div class="ap-rec-card__rank" aria-hidden="true">' + rank + '</div>'
+          : '<div class="ap-rec-card__icon" aria-hidden="true">' + escapeHtml(initial) + '</div>';
         return (
           '<div class="ap-rec-card">'
-          + '<div class="ap-rec-card__icon" aria-hidden="true">' + escapeHtml(initial) + '</div>'
+          + badgeHtml
           + '<div class="ap-rec-card__body">'
           + '<div class="ap-rec-card__title">' + escapeHtml(name) + '</div>'
           + (dosingLine(rec.dosing)
@@ -2796,13 +2950,79 @@
         if (recs.length === 0) {
           body = '<p class="ap-empty-rec">We didn\'t have enough info to build personalized recommendations — book a free consult and we\'ll walk through your options together.</p>';
         } else {
-          body = recs.map(renderRecCard).join('');
+          const topThree = recs.slice(0, 3);
+          const rest = recs.slice(3);
+          body = topThree.map(function (rec, i) { return renderRecCard(rec, i + 1); }).join('');
+          if (rest.length) {
+            body += '<details class="ap-recs__more">';
+            body += '<summary>See additional recommendations</summary>';
+            body += rest.map(function (rec, i) { return renderRecCard(rec, i + 4); }).join('');
+            body += '</details>';
+          }
         }
         return (
           '<section class="ap-panel ap-panel--plan">'
-          + '<h2>Your personalized care plan</h2>'
-          + '<p>Recommendations based on your due date, benefits, and what you shared.</p>'
+          + '<h2>Your highest-priority postpartum supports</h2>'
           + body
+          + '</section>'
+        );
+      }
+
+      function renderHsaEligible(/* results */) {
+        const coveredIds = Object.keys(state.coverage || {});
+        const uncovered = ALMA_SERVICES.filter(function (id) { return coveredIds.indexOf(id) === -1; });
+        if (uncovered.length === 0) return '';
+        return (
+          '<section class="ap-hsa">'
+          + '<h2>Additional services that may be eligible through your HSA</h2>'
+          + '<p>Even when a practitioner category is not included in your extended health benefits, many families are still able to use Health Spending Account (HSA) funds toward eligible care providers. Depending on your plan, this may include:</p>'
+          + '<ul>'
+          + '<li>Private duty nursing</li>'
+          + '<li>Nursing-led postpartum support</li>'
+          + '<li>Lactation support provided by eligible practitioners</li>'
+          + '<li>Select wellness and recovery services</li>'
+          + '</ul>'
+          + '<p class="ap-hsa__footnote">We recommend confirming practitioner eligibility directly with your benefits provider before booking care.</p>'
+          + '</section>'
+        );
+      }
+
+      function renderWhatHappensNext() {
+        return (
+          '<section class="ap-next">'
+          + '<h2>What happens next</h2>'
+          + '<ol>'
+          + '<li>Complete your coverage assessment</li>'
+          + '<li>Review your personalized care recommendations</li>'
+          + '<li>Speak with an Alma Care specialist</li>'
+          + '<li>Build a postpartum support plan tailored to your family</li>'
+          + '<li>Begin care with trusted practitioners and guidance on eligible reimbursement pathways</li>'
+          + '</ol>'
+          + '</section>'
+        );
+      }
+
+      function renderNavigateDetails() {
+        return (
+          '<section class="ap-navigate">'
+          + '<h2>We help families navigate the details</h2>'
+          + '<p>Our team regularly helps families:</p>'
+          + '<ul>'
+          + '<li>Understand eligible practitioner categories</li>'
+          + '<li>Maximize extended health benefits</li>'
+          + '<li>Utilize HSA and wellness spending accounts</li>'
+          + '<li>Prepare documentation for reimbursement</li>'
+          + '<li>Coordinate layered postpartum support plans</li>'
+          + '</ul>'
+          + '</section>'
+        );
+      }
+
+      function renderEmotionalPermission() {
+        return (
+          '<section class="ap-permission">'
+          + '<h2>Support is not a luxury during postpartum recovery</h2>'
+          + '<p>Families often prepare extensively for birth — but far less for recovery, healing, feeding support, sleep, and the realities of the first weeks at home. Increasingly, families are choosing to include postpartum care support as part of their baby registry, allowing loved ones to contribute meaningfully to recovery and wellbeing during one of life\'s most important transitions.</p>'
           + '</section>'
         );
       }
@@ -2822,13 +3042,33 @@
         );
       }
 
-      function renderCtaRow() {
+      function renderFinalCta() {
         return (
-          '<div class="ap-cta-row">'
+          '<section class="ap-final-cta">'
+          + '<h2>Review your options with an Alma Care specialist</h2>'
+          + '<p>Our team can help you:</p>'
+          + '<ul>'
+          + '<li>Understand eligible coverage pathways</li>'
+          + '<li>Maximize HSA utilization</li>'
+          + '<li>Navigate documentation requirements</li>'
+          + '<li>Build a personalized postpartum support plan</li>'
+          + '</ul>'
+          + '<div class="ap-cta-row">'
           + '<a class="ap-btn ap-btn--primary" id="ap-consult-cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a free consult</a>'
           + '<button type="button" class="ap-btn ap-btn--secondary" id="ap-email-plan">Email me my care plan</button>'
           + '</div>'
+          + '</section>'
           + renderLeadDrawer()
+        );
+      }
+
+      function renderTrustStrip() {
+        return (
+          '<aside class="ap-trust">'
+          + '<div class="ap-trust__item"><strong>Trusted postpartum professionals</strong></div>'
+          + '<div class="ap-trust__item"><strong>Personalized practitioner matching</strong></div>'
+          + '<div class="ap-trust__item"><strong>Guided care coordination across Canada</strong></div>'
+          + '</aside>'
         );
       }
 
@@ -2856,6 +3096,7 @@
           + '</div>'
           + '<p class="ap-privacy">We\'ll only use this to send your plan and follow up about your care. No spam.</p>'
           + '<button type="submit" class="ap-btn ap-lead-submit">Send me my care plan</button>'
+          + '<p class="ap-print-tip">Tip: in the print dialog, expand "More settings" and uncheck "Headers and footers" for a cleaner PDF.</p>'
           + '<p id="ap-lead-status" class="ap-lead-status" aria-live="polite"></p>'
           + '</form>'
           + '</section>'
@@ -3247,6 +3488,7 @@
           + 'This estimate is based on the information you provided. Actual coverage and pricing may vary. Speak with your benefits provider for confirmation.'
           + '<br>Book your free consult: <span class="ap-pdf__footer-link">almacare.ca/booking/book-a-call</span>'
           + '</div>'
+          + '<footer class="ap-pdf__brandline">Alma Care — care@almacare.ca — almacare.ca/benefits</footer>'
         );
       }
 
@@ -3267,6 +3509,17 @@
           printRoot.id = 'ap-print-root';
           printRoot.innerHTML = renderPdfSource(state.results);
           document.body.appendChild(printRoot);
+
+          // Set a clean document title so Chrome's PDF picker pre-fills with
+          // "Alma Care plan — [first name]" instead of the page URL.
+          const originalTitle = document.title;
+          const leadName = (state.lead && state.lead.name) ? state.lead.name : '';
+          const firstName = state.firstName
+            || (leadName ? leadName.split(/\s+/)[0] : '')
+            || '';
+          document.title = 'Alma Care plan' + (firstName ? ' — ' + firstName : '');
+          const restoreTitle = function () { document.title = originalTitle; };
+          window.addEventListener('afterprint', restoreTitle, { once: true });
 
           let cleaned = false;
           function cleanup() {
@@ -3296,9 +3549,15 @@
         if (!container) return;
         container.innerHTML =
           renderSnapshot(results)
+          + renderIntro(results)
           + renderPlan(results)
+          + renderHsaEligible(results)
+          + renderWhatHappensNext()
+          + renderNavigateDetails()
+          + renderEmotionalPermission()
           + renderFunding(results)
-          + renderCtaRow();
+          + renderFinalCta()
+          + renderTrustStrip();
 
         const emailBtn = document.getElementById('ap-email-plan');
         const drawer = document.getElementById('ap-lead-drawer');

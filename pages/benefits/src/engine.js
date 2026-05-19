@@ -2,19 +2,30 @@
 // Pure functions only: no DOM, no globals, no I/O. Runs identically in Node and browser.
 
 export const SERVICE_NAMES = {
-  massage_therapy: 'Massage therapy',
+  massage_therapy: 'Registered Massage Therapy (RMT)',
   acupuncture: 'Acupuncture',
-  lactation_consulting: 'Lactation consulting',
-  postpartum_doula_care: 'Postpartum doula care',
-  registered_nursing: 'Registered nursing',
-  psw: 'Personal support worker',
-  mental_health: 'Mental health support',
-  nutritionist: 'Nutritionist',
-  dietician: 'Dietician'
+  lactation_consulting: 'Lactation Consultant / IBCLC',
+  postpartum_doula_care: 'Certified Postpartum Doula',
+  registered_nursing: 'Private Duty Nursing',
+  psw: 'Personal Support Worker (PSW)',
+  mental_health: 'Psychotherapy / Mental Health Support',
+  nutritionist: 'Nutrition Counselling'
 };
 
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
 const MS_PER_WEEK = 1000 * 60 * 60 * 24 * 7;
+
+/**
+ * Returns true iff `weeksPostpartum` falls inside a dosing.window phrased like
+ * "first 3 weeks postpartum" or "first 12 weeks postpartum". Returns false for
+ * any other window shape or missing inputs (so unparseable windows rank lower).
+ */
+function isInWindow(weeksPostpartum, window) {
+  if (typeof weeksPostpartum !== 'number' || !window) return false;
+  const m = /first\s+(\d+)\s+weeks?/i.exec(window);
+  if (!m) return false;
+  return weeksPostpartum <= parseInt(m[1], 10);
+}
 
 export const CONCERN_KEYWORDS = {
   ppd: ['ppd', 'depression', 'postpartum depression', 'mood', 'anxious', 'anxiety'],
@@ -104,14 +115,18 @@ export function normalizeInputs(inputs, today = new Date()) {
     weeksPostpartum,
     firstTimeParent,
     coverage,
+    coveredServices,
     hasHsa,
     hsaBalance,
     concerns
   } = inputs || {};
 
+  // `coveredServices` is an alias for `coverage` accepted by newer callers.
+  const resolvedCoverage = coverage || coveredServices || {};
+
   const base = {
     firstTimeParent,
-    coverage: coverage || {},
+    coverage: resolvedCoverage,
     hasHsa,
     hsaBalance: typeof hsaBalance === 'number' ? hsaBalance : 0,
     concerns: typeof concerns === 'string' ? concerns : ''
@@ -314,6 +329,25 @@ export function computeResults(rawInputs, rules, almaServices, today = new Date(
   // totalCovered = sum of covered $ across recommendations
   const totalCovered = recommendations.reduce((sum, r) => sum + (r.covered || 0), 0);
   const totalRecommendedCost = recommendations.reduce((sum, r) => sum + (r.totalCost || 0), 0);
+
+  // ----- Annotate recs with isCovered (boolean) + windowRank for the hybrid sort -----
+  // `rec.covered` stays as the dollar amount written by allocateFunding; we add a
+  // separate `isCovered` boolean so the UI's dollar-amount reads keep working.
+  const coverageMap = normalized.coverage || {};
+  for (const rec of recommendations) {
+    rec.isCovered = !!coverageMap[rec.service];
+    const dosingWindow = rec.dosing && rec.dosing.window;
+    rec.windowRank = isInWindow(normalized.weeksPostpartum, dosingWindow) ? 0 : 1;
+  }
+
+  // ----- Hybrid final sort: isCovered (true first) -> priority asc -> windowRank asc -----
+  recommendations.sort((a, b) => {
+    if (a.isCovered !== b.isCovered) return a.isCovered ? -1 : 1;
+    const pa = PRIORITY_RANK[a.priority] ?? 99;
+    const pb = PRIORITY_RANK[b.priority] ?? 99;
+    if (pa !== pb) return pa - pb;
+    return (a.windowRank ?? 99) - (b.windowRank ?? 99);
+  });
 
   const fundingStrategy = buildFundingStrategy(
     recommendations,

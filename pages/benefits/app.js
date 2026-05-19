@@ -7,25 +7,36 @@
       // Pure functions only: no DOM, no globals, no I/O. Runs identically in Node and browser.
 
       const SERVICE_NAMES = {
-        massage_therapy: 'Massage therapy',
+        massage_therapy: 'Registered Massage Therapy (RMT)',
         acupuncture: 'Acupuncture',
-        lactation_consulting: 'Lactation consulting',
-        postpartum_doula_care: 'Postpartum doula care',
-        registered_nursing: 'Registered nursing',
-        psw: 'Personal support worker',
-        mental_health: 'Mental health support',
-        nutritionist: 'Nutritionist',
-        dietician: 'Dietician'
+        lactation_consulting: 'Lactation Consultant / IBCLC',
+        postpartum_doula_care: 'Certified Postpartum Doula',
+        registered_nursing: 'Private Duty Nursing',
+        psw: 'Personal Support Worker (PSW)',
+        mental_health: 'Psychotherapy / Mental Health Support',
+        nutritionist: 'Nutrition Counselling'
       };
 
       const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
       const MS_PER_WEEK = 1000 * 60 * 60 * 24 * 7;
 
+      /**
+       * Returns true iff `weeksPostpartum` falls inside a dosing.window phrased like
+       * "first 3 weeks postpartum" or "first 12 weeks postpartum". Returns false for
+       * any other window shape or missing inputs (so unparseable windows rank lower).
+       */
+      function isInWindow(weeksPostpartum, window) {
+        if (typeof weeksPostpartum !== 'number' || !window) return false;
+        const m = /first\s+(\d+)\s+weeks?/i.exec(window);
+        if (!m) return false;
+        return weeksPostpartum <= parseInt(m[1], 10);
+      }
+
       // DRAFT v1 — Awaiting Alma clinical sign-off (see docs/clinical/benefits-tool-rule-matrix-DRAFT.md)
       const ALMA_SERVICES = [
         'massage_therapy', 'acupuncture', 'lactation_consulting',
         'postpartum_doula_care', 'registered_nursing', 'psw',
-        'mental_health', 'nutritionist', 'dietician'
+        'mental_health', 'nutritionist'
       ];
 
       const RULES = [
@@ -184,13 +195,17 @@
         const weeksPostpartum = raw.weeksPostpartum;
         const firstTimeParent = raw.firstTimeParent;
         const coverage = raw.coverage;
+        const coveredServices = raw.coveredServices;
         const hasHsa = raw.hasHsa;
         const hsaBalance = raw.hsaBalance;
         const concerns = raw.concerns;
 
+        // `coveredServices` is an alias for `coverage` accepted by newer callers.
+        const resolvedCoverage = coverage || coveredServices || {};
+
         const base = {
           firstTimeParent: firstTimeParent,
-          coverage: coverage || {},
+          coverage: resolvedCoverage,
           hasHsa: hasHsa,
           hsaBalance: typeof hsaBalance === 'number' ? hsaBalance : 0,
           concerns: typeof concerns === 'string' ? concerns : ''
@@ -413,6 +428,25 @@
         const totalCovered = recommendations.reduce(function (sum, r) { return sum + (r.covered || 0); }, 0);
         const totalRecommendedCost = recommendations.reduce(function (sum, r) { return sum + (r.totalCost || 0); }, 0);
 
+        // ----- Annotate recs with isCovered (boolean) + windowRank for the hybrid sort -----
+        // `rec.covered` stays as the dollar amount written by allocateFunding; we add a
+        // separate `isCovered` boolean so the UI's dollar-amount reads keep working.
+        const coverageMap = normalized.coverage || {};
+        for (const rec of recommendations) {
+          rec.isCovered = !!coverageMap[rec.service];
+          const dosingWindow = rec.dosing && rec.dosing.window;
+          rec.windowRank = isInWindow(normalized.weeksPostpartum, dosingWindow) ? 0 : 1;
+        }
+
+        // ----- Hybrid final sort: isCovered (true first) -> priority asc -> windowRank asc -----
+        recommendations.sort(function (a, b) {
+          if (a.isCovered !== b.isCovered) return a.isCovered ? -1 : 1;
+          const pa = PRIORITY_RANK[a.priority] != null ? PRIORITY_RANK[a.priority] : 99;
+          const pb = PRIORITY_RANK[b.priority] != null ? PRIORITY_RANK[b.priority] : 99;
+          if (pa !== pb) return pa - pb;
+          return (a.windowRank != null ? a.windowRank : 99) - (b.windowRank != null ? b.windowRank : 99);
+        });
+
         const fundingStrategy = buildFundingStrategy(
           recommendations,
           normalized.coverage,
@@ -491,8 +525,7 @@
         'registered_nursing',
         'psw',
         'mental_health',
-        'nutritionist',
-        'dietician'
+        'nutritionist'
       ];
 
       // ---------- Element refs ----------
@@ -815,7 +848,7 @@
         if (n === 3) {
           continueBtn.textContent = 'See my care plan →';
         } else {
-          continueBtn.textContent = 'Continue';
+          continueBtn.textContent = 'Continue assessment';
         }
 
         // Back disabled on step 1
@@ -951,6 +984,20 @@
         if (backBtn.disabled) return;
         if (currentStep > 1) goToStep(currentStep - 1);
       });
+
+      // ---------- Landing → Begin assessment ----------
+      const beginBtn = document.getElementById('ap-landing-begin');
+      const landingEl = document.getElementById('ap-landing');
+      const assessmentEl = document.getElementById('ap-assessment');
+      if (beginBtn && landingEl && assessmentEl) {
+        beginBtn.addEventListener('click', function () {
+          landingEl.classList.add('ap-landing--hidden');
+          assessmentEl.classList.remove('ap-assessment--hidden');
+          if (typeof track === 'function') track('assessment_started');
+          const firstFocusable = document.querySelector('#ap-step-1 input, #ap-step-1 button:not([disabled]), #ap-step-1 select');
+          if (firstFocusable) firstFocusable.focus();
+        });
+      }
 
       // ---------- Service cards (step 3) ----------
       serviceCards.forEach((card) => {
@@ -1097,12 +1144,24 @@
         return '<div class="ap-cost-breakdown">' + rows.join('') + '</div>';
       }
 
-      function renderRecCard(rec) {
+      function renderIntro(/* results */) {
+        return (
+          '<header class="ap-results__intro">'
+          + '<h2>You may have more support available to you than you think.</h2>'
+          + '<p>Based on your responses, there appear to be several potential pathways to offset postpartum care through extended health benefits and/or HSA funding. We\'ve outlined the options most relevant to your stage of recovery and care goals below.</p>'
+          + '</header>'
+        );
+      }
+
+      function renderRecCard(rec, rank) {
         const name = SERVICE_NAMES[rec.service] || rec.service;
         const initial = (name || '').trim().charAt(0).toUpperCase();
+        const badgeHtml = (typeof rank === 'number')
+          ? '<div class="ap-rec-card__rank" aria-hidden="true">' + rank + '</div>'
+          : '<div class="ap-rec-card__icon" aria-hidden="true">' + escapeHtml(initial) + '</div>';
         return (
           '<div class="ap-rec-card">'
-          + '<div class="ap-rec-card__icon" aria-hidden="true">' + escapeHtml(initial) + '</div>'
+          + badgeHtml
           + '<div class="ap-rec-card__body">'
           + '<div class="ap-rec-card__title">' + escapeHtml(name) + '</div>'
           + (dosingLine(rec.dosing)
@@ -1124,13 +1183,79 @@
         if (recs.length === 0) {
           body = '<p class="ap-empty-rec">We didn\'t have enough info to build personalized recommendations — book a free consult and we\'ll walk through your options together.</p>';
         } else {
-          body = recs.map(renderRecCard).join('');
+          const topThree = recs.slice(0, 3);
+          const rest = recs.slice(3);
+          body = topThree.map(function (rec, i) { return renderRecCard(rec, i + 1); }).join('');
+          if (rest.length) {
+            body += '<details class="ap-recs__more">';
+            body += '<summary>See additional recommendations</summary>';
+            body += rest.map(function (rec, i) { return renderRecCard(rec, i + 4); }).join('');
+            body += '</details>';
+          }
         }
         return (
           '<section class="ap-panel ap-panel--plan">'
-          + '<h2>Your personalized care plan</h2>'
-          + '<p>Recommendations based on your due date, benefits, and what you shared.</p>'
+          + '<h2>Your highest-priority postpartum supports</h2>'
           + body
+          + '</section>'
+        );
+      }
+
+      function renderHsaEligible(/* results */) {
+        const coveredIds = Object.keys(state.coverage || {});
+        const uncovered = ALMA_SERVICES.filter(function (id) { return coveredIds.indexOf(id) === -1; });
+        if (uncovered.length === 0) return '';
+        return (
+          '<section class="ap-hsa">'
+          + '<h2>Additional services that may be eligible through your HSA</h2>'
+          + '<p>Even when a practitioner category is not included in your extended health benefits, many families are still able to use Health Spending Account (HSA) funds toward eligible care providers. Depending on your plan, this may include:</p>'
+          + '<ul>'
+          + '<li>Private duty nursing</li>'
+          + '<li>Nursing-led postpartum support</li>'
+          + '<li>Lactation support provided by eligible practitioners</li>'
+          + '<li>Select wellness and recovery services</li>'
+          + '</ul>'
+          + '<p class="ap-hsa__footnote">We recommend confirming practitioner eligibility directly with your benefits provider before booking care.</p>'
+          + '</section>'
+        );
+      }
+
+      function renderWhatHappensNext() {
+        return (
+          '<section class="ap-next">'
+          + '<h2>What happens next</h2>'
+          + '<ol>'
+          + '<li>Complete your coverage assessment</li>'
+          + '<li>Review your personalized care recommendations</li>'
+          + '<li>Speak with an Alma Care specialist</li>'
+          + '<li>Build a postpartum support plan tailored to your family</li>'
+          + '<li>Begin care with trusted practitioners and guidance on eligible reimbursement pathways</li>'
+          + '</ol>'
+          + '</section>'
+        );
+      }
+
+      function renderNavigateDetails() {
+        return (
+          '<section class="ap-navigate">'
+          + '<h2>We help families navigate the details</h2>'
+          + '<p>Our team regularly helps families:</p>'
+          + '<ul>'
+          + '<li>Understand eligible practitioner categories</li>'
+          + '<li>Maximize extended health benefits</li>'
+          + '<li>Utilize HSA and wellness spending accounts</li>'
+          + '<li>Prepare documentation for reimbursement</li>'
+          + '<li>Coordinate layered postpartum support plans</li>'
+          + '</ul>'
+          + '</section>'
+        );
+      }
+
+      function renderEmotionalPermission() {
+        return (
+          '<section class="ap-permission">'
+          + '<h2>Support is not a luxury during postpartum recovery</h2>'
+          + '<p>Families often prepare extensively for birth — but far less for recovery, healing, feeding support, sleep, and the realities of the first weeks at home. Increasingly, families are choosing to include postpartum care support as part of their baby registry, allowing loved ones to contribute meaningfully to recovery and wellbeing during one of life\'s most important transitions.</p>'
           + '</section>'
         );
       }
@@ -1150,13 +1275,33 @@
         );
       }
 
-      function renderCtaRow() {
+      function renderFinalCta() {
         return (
-          '<div class="ap-cta-row">'
+          '<section class="ap-final-cta">'
+          + '<h2>Review your options with an Alma Care specialist</h2>'
+          + '<p>Our team can help you:</p>'
+          + '<ul>'
+          + '<li>Understand eligible coverage pathways</li>'
+          + '<li>Maximize HSA utilization</li>'
+          + '<li>Navigate documentation requirements</li>'
+          + '<li>Build a personalized postpartum support plan</li>'
+          + '</ul>'
+          + '<div class="ap-cta-row">'
           + '<a class="ap-btn ap-btn--primary" id="ap-consult-cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a free consult</a>'
           + '<button type="button" class="ap-btn ap-btn--secondary" id="ap-email-plan">Email me my care plan</button>'
           + '</div>'
+          + '</section>'
           + renderLeadDrawer()
+        );
+      }
+
+      function renderTrustStrip() {
+        return (
+          '<aside class="ap-trust">'
+          + '<div class="ap-trust__item"><strong>Trusted postpartum professionals</strong></div>'
+          + '<div class="ap-trust__item"><strong>Personalized practitioner matching</strong></div>'
+          + '<div class="ap-trust__item"><strong>Guided care coordination across Canada</strong></div>'
+          + '</aside>'
         );
       }
 
@@ -1184,6 +1329,7 @@
           + '</div>'
           + '<p class="ap-privacy">We\'ll only use this to send your plan and follow up about your care. No spam.</p>'
           + '<button type="submit" class="ap-btn ap-lead-submit">Send me my care plan</button>'
+          + '<p class="ap-print-tip">Tip: in the print dialog, expand "More settings" and uncheck "Headers and footers" for a cleaner PDF.</p>'
           + '<p id="ap-lead-status" class="ap-lead-status" aria-live="polite"></p>'
           + '</form>'
           + '</section>'
@@ -1575,6 +1721,7 @@
           + 'This estimate is based on the information you provided. Actual coverage and pricing may vary. Speak with your benefits provider for confirmation.'
           + '<br>Book your free consult: <span class="ap-pdf__footer-link">almacare.ca/booking/book-a-call</span>'
           + '</div>'
+          + '<footer class="ap-pdf__brandline">Alma Care — care@almacare.ca — almacare.ca/benefits</footer>'
         );
       }
 
@@ -1595,6 +1742,17 @@
           printRoot.id = 'ap-print-root';
           printRoot.innerHTML = renderPdfSource(state.results);
           document.body.appendChild(printRoot);
+
+          // Set a clean document title so Chrome's PDF picker pre-fills with
+          // "Alma Care plan — [first name]" instead of the page URL.
+          const originalTitle = document.title;
+          const leadName = (state.lead && state.lead.name) ? state.lead.name : '';
+          const firstName = state.firstName
+            || (leadName ? leadName.split(/\s+/)[0] : '')
+            || '';
+          document.title = 'Alma Care plan' + (firstName ? ' — ' + firstName : '');
+          const restoreTitle = function () { document.title = originalTitle; };
+          window.addEventListener('afterprint', restoreTitle, { once: true });
 
           let cleaned = false;
           function cleanup() {
@@ -1624,9 +1782,15 @@
         if (!container) return;
         container.innerHTML =
           renderSnapshot(results)
+          + renderIntro(results)
           + renderPlan(results)
+          + renderHsaEligible(results)
+          + renderWhatHappensNext()
+          + renderNavigateDetails()
+          + renderEmotionalPermission()
           + renderFunding(results)
-          + renderCtaRow();
+          + renderFinalCta()
+          + renderTrustStrip();
 
         const emailBtn = document.getElementById('ap-email-plan');
         const drawer = document.getElementById('ap-lead-drawer');
