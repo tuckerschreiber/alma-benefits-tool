@@ -1453,19 +1453,17 @@
         <p class="ap-step__subhead">A few thoughtful details help us identify the most relevant coverage pathways and postpartum support options for your family.</p>
       </div>
 
-      <div id="ap-due-date-field" class="ap-field">
-        <label class="ap-label" for="ap-due-date">When are you due?</label>
-        <input type="date" id="ap-due-date" name="dueDate" class="ap-input">
-        <div class="ap-field__footer">
-          <button type="button" id="ap-postpartum-toggle" class="ap-link-toggle" aria-pressed="false">
-            Already had your baby? <strong>Switch to postpartum</strong>
-          </button>
+      <div class="ap-field">
+        <label class="ap-label">Are you currently pregnant or postpartum?</label>
+        <div class="ap-toggle-group" role="group" aria-label="Stage">
+          <button type="button" class="ap-toggle" data-toggle="stage" data-value="pregnant" aria-pressed="false">Currently pregnant</button>
+          <button type="button" class="ap-toggle" data-toggle="stage" data-value="postpartum" aria-pressed="false">Postpartum (baby already born)</button>
         </div>
       </div>
 
-      <div id="ap-weeks-postpartum-field" class="ap-field ap-hidden">
-        <label class="ap-label" for="ap-weeks-postpartum">How many weeks ago did you give birth?</label>
-        <input type="number" id="ap-weeks-postpartum" name="weeksPostpartum" min="0" max="52" class="ap-input">
+      <div id="ap-due-date-field" class="ap-field ap-hidden">
+        <label class="ap-label" for="ap-due-date" id="ap-due-date-label">When are you due?</label>
+        <input type="date" id="ap-due-date" name="dueDate" class="ap-input">
       </div>
 
       <div class="ap-field">
@@ -1479,6 +1477,28 @@
       <div class="ap-field">
         <label class="ap-label" for="ap-concerns">Anything we should know? <span class="ap-optional">(optional)</span></label>
         <textarea id="ap-concerns" name="concerns" rows="4" class="ap-textarea" placeholder="e.g. diagnosed with PPD, advanced maternal age, twin pregnancy, recovering from C-section…"></textarea>
+      </div>
+
+      <div class="ap-step__header" style="margin-top: 32px;">
+        <h3 style="font-size:18px; margin:0 0 6px;">Your contact details</h3>
+        <p class="ap-step__subhead" style="margin:0;">We'll email your personalized care plan and a friendly follow-up from our team.</p>
+      </div>
+
+      <div class="ap-field">
+        <label class="ap-label" for="ap-first-name">First name</label>
+        <input type="text" id="ap-first-name" name="firstName" autocomplete="given-name" class="ap-input" required>
+      </div>
+      <div class="ap-field">
+        <label class="ap-label" for="ap-last-name">Last name</label>
+        <input type="text" id="ap-last-name" name="lastName" autocomplete="family-name" class="ap-input" required>
+      </div>
+      <div class="ap-field">
+        <label class="ap-label" for="ap-email">Email</label>
+        <input type="email" id="ap-email" name="email" autocomplete="email" inputmode="email" class="ap-input" required>
+      </div>
+      <div class="ap-field">
+        <label class="ap-label" for="ap-phone">Phone</label>
+        <input type="tel" id="ap-phone" name="phone" autocomplete="tel" inputmode="tel" class="ap-input" required placeholder="(416) 555-1234">
       </div>
     </section>
 
@@ -2181,8 +2201,7 @@
 
       const state = {
         dueDate: null,
-        isPostpartum: false,
-        weeksPostpartum: null,
+        isPostpartum: null,
         firstTimeParent: null,
         concerns: '',
         insurer: null,
@@ -2191,10 +2210,10 @@
         coverage: {},
         results: null,
         lead: {
-          name: '',
+          firstName: '',
+          lastName: '',
           email: '',
-          address: '',
-          leadConcerns: ''
+          phone: ''
         }
       };
 
@@ -2214,10 +2233,13 @@
       // ---------- Element refs ----------
       const dueDateInput = document.getElementById('ap-due-date');
       const dueDateField = document.getElementById('ap-due-date-field');
-      const weeksInput = document.getElementById('ap-weeks-postpartum');
-      const weeksField = document.getElementById('ap-weeks-postpartum-field');
+      const dueDateLabel = document.getElementById('ap-due-date-label');
       const concernsInput = document.getElementById('ap-concerns');
-      const postpartumToggle = document.getElementById('ap-postpartum-toggle');
+      const stageButtons = document.querySelectorAll('[data-toggle="stage"]');
+      const firstNameInput = document.getElementById('ap-first-name');
+      const lastNameInput = document.getElementById('ap-last-name');
+      const emailInput = document.getElementById('ap-email');
+      const phoneInput = document.getElementById('ap-phone');
       const firstTimeButtons = document.querySelectorAll('[data-toggle="firstTimeParent"]');
       const insurerSelect = document.getElementById('ap-insurer');
       const hsaButtons = document.querySelectorAll('[data-toggle="hasHsa"]');
@@ -2237,26 +2259,25 @@
       const coverageModal = document.getElementById('ap-coverage-modal');
       const coverageModalClose = document.getElementById('ap-coverage-modal-close');
 
-      // ---------- Set max on due date input (1 year from today) ----------
-      function setDueDateMax() {
-        const today = new Date();
-        const maxDate = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
-        const yyyy = maxDate.getFullYear();
-        const mm = String(maxDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(maxDate.getDate()).padStart(2, '0');
-        dueDateInput.setAttribute('max', `${yyyy}-${mm}-${dd}`);
+      function isoDate(d) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
       }
 
-      // ---------- Set min on due date input (today) ----------
-      // Prevents picking a past date in the UI. The engine still auto-flips
-      // past dates to postpartum as a safety net for any path that bypasses
-      // the picker (e.g. hydrated state).
-      function setDueDateMin() {
+      // Apply date-input min/max constraints based on stage.
+      // Pregnant: today → today+1yr. Postpartum: no constraints (past dates allowed).
+      function applyDueDateConstraints() {
+        if (state.isPostpartum) {
+          dueDateInput.removeAttribute('max');
+          dueDateInput.removeAttribute('min');
+          return;
+        }
         const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        dueDateInput.setAttribute('min', `${yyyy}-${mm}-${dd}`);
+        const oneYear = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+        dueDateInput.setAttribute('min', isoDate(today));
+        dueDateInput.setAttribute('max', isoDate(oneYear));
       }
 
       // ---------- Persistence ----------
@@ -2265,14 +2286,17 @@
           const saved = sessionStorage.getItem(STORAGE_KEY);
           if (saved) Object.assign(state, JSON.parse(saved));
         } catch (e) { /* sessionStorage unavailable — silent fail */ }
-        // Ensure lead object exists even if persisted state predates it.
+        // Ensure lead object exists with current shape even if persisted state predates it.
+        const fresh = { firstName: '', lastName: '', email: '', phone: '' };
         if (!state.lead || typeof state.lead !== 'object') {
-          state.lead = { name: '', email: '', address: '', leadConcerns: '' };
+          state.lead = fresh;
         } else {
-          state.lead.name = state.lead.name || '';
-          state.lead.email = state.lead.email || '';
-          state.lead.address = state.lead.address || '';
-          state.lead.leadConcerns = state.lead.leadConcerns || '';
+          state.lead = Object.assign(fresh, {
+            firstName: state.lead.firstName || '',
+            lastName: state.lead.lastName || '',
+            email: state.lead.email || '',
+            phone: state.lead.phone || ''
+          });
         }
       }
 
@@ -2283,35 +2307,27 @@
       }
 
       // ---------- UI updates ----------
-      // `opts.clearOther` clears the value of the field we're switching *away* from.
-      // We pass false during hydration so persisted values aren't wiped on reload.
-      function togglePostpartum(toPostpartum, opts) {
-        const clearOther = !opts || opts.clearOther !== false;
-        state.isPostpartum = !!toPostpartum;
-        if (state.isPostpartum) {
-          dueDateField.classList.add('ap-hidden');
-          weeksField.classList.remove('ap-hidden');
-          postpartumToggle.innerHTML = 'Still expecting? <strong>Switch back</strong>';
-          if (clearOther) {
-            state.dueDate = null;
-            dueDateInput.value = '';
-          }
-        } else {
-          dueDateField.classList.remove('ap-hidden');
-          weeksField.classList.add('ap-hidden');
-          postpartumToggle.innerHTML = 'Already had your baby? <strong>Switch to postpartum</strong>';
-          if (clearOther) {
-            state.weeksPostpartum = null;
-            weeksInput.value = '';
-          }
+      // Apply a stage selection. `clearDate` is true when the user clicked a
+      // stage button (we want to discard the prior date because it likely
+      // belongs to the other stage), false during hydration so persisted
+      // values survive a reload.
+      function applyStage(stageValue, opts) {
+        const clearDate = !opts || opts.clearDate !== false;
+        state.isPostpartum = (stageValue === 'postpartum');
+        stageButtons.forEach((b) => {
+          const isSelected = b.getAttribute('data-value') === stageValue;
+          b.classList.toggle('ap-toggle--selected', isSelected);
+          b.setAttribute('aria-pressed', String(isSelected));
+        });
+        dueDateField.classList.remove('ap-hidden');
+        dueDateLabel.textContent = state.isPostpartum
+          ? "What was baby's original due date?"
+          : 'When are you due?';
+        applyDueDateConstraints();
+        if (clearDate) {
+          state.dueDate = null;
+          dueDateInput.value = '';
         }
-        // Move the toggle link into whichever field is currently visible
-        const visibleField = state.isPostpartum ? weeksField : dueDateField;
-        const footer = postpartumToggle.parentElement;
-        if (footer && footer.classList.contains('ap-field__footer') && footer.parentElement !== visibleField) {
-          visibleField.appendChild(footer);
-        }
-        postpartumToggle.setAttribute('aria-pressed', String(state.isPostpartum));
         saveState();
         updateContinueButton();
       }
@@ -2457,17 +2473,20 @@
         });
       }
 
-      function hasValidTimingAnswer() {
-        if (state.isPostpartum) {
-          return typeof state.weeksPostpartum === 'number' && !Number.isNaN(state.weeksPostpartum);
-        }
-        return !!state.dueDate;
-      }
+      const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const PHONE_RE = /^[\d\s()+\-]{7,}$/;
 
       function updateContinueButton() {
         let canContinue;
         if (currentStep === 1) {
-          canContinue = hasValidTimingAnswer() && state.firstTimeParent !== null;
+          canContinue =
+            state.isPostpartum !== null &&
+            !!state.dueDate &&
+            state.firstTimeParent !== null &&
+            !!state.lead.firstName.trim() &&
+            !!state.lead.lastName.trim() &&
+            EMAIL_RE.test(state.lead.email) &&
+            PHONE_RE.test(state.lead.phone);
         } else if (currentStep === 2) {
           canContinue = !!state.insurer;
         } else if (currentStep === 3) {
@@ -2480,10 +2499,14 @@
 
       function hydrateUI() {
         dueDateInput.value = state.dueDate || '';
-        weeksInput.value = state.weeksPostpartum != null ? state.weeksPostpartum : '';
         concernsInput.value = state.concerns || '';
-        if (state.isPostpartum) togglePostpartum(true, { clearOther: false });
+        if (state.isPostpartum === true) applyStage('postpartum', { clearDate: false });
+        else if (state.isPostpartum === false) applyStage('pregnant', { clearDate: false });
         if (state.firstTimeParent !== null) applyFirstTimeParentUI(state.firstTimeParent);
+        firstNameInput.value = state.lead.firstName || '';
+        lastNameInput.value = state.lead.lastName || '';
+        emailInput.value = state.lead.email || '';
+        phoneInput.value = state.lead.phone || '';
         // Step 2
         insurerSelect.value = state.insurer || '';
         if (state.hasHsa !== null) applyHsaUI(state.hasHsa);
@@ -2558,25 +2581,30 @@
         updateContinueButton();
       });
 
-      weeksInput.addEventListener('input', (e) => {
-        const raw = e.target.value;
-        if (raw === '') {
-          state.weeksPostpartum = null;
-        } else {
-          const num = parseInt(raw, 10);
-          state.weeksPostpartum = Number.isNaN(num) ? null : num;
-        }
-        saveState();
-        updateContinueButton();
-      });
-
       concernsInput.addEventListener('input', (e) => {
         state.concerns = e.target.value;
         saveState();
       });
 
-      postpartumToggle.addEventListener('click', () => {
-        togglePostpartum(!state.isPostpartum);
+      stageButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          applyStage(btn.getAttribute('data-value'));
+        });
+      });
+
+      const LEAD_INPUT_BINDINGS = [
+        { el: firstNameInput, key: 'firstName' },
+        { el: lastNameInput, key: 'lastName' },
+        { el: emailInput, key: 'email' },
+        { el: phoneInput, key: 'phone' }
+      ];
+      LEAD_INPUT_BINDINGS.forEach(({ el, key }) => {
+        if (!el) return;
+        el.addEventListener('input', (e) => {
+          state.lead[key] = e.target.value;
+          saveState();
+          updateContinueButton();
+        });
       });
 
       firstTimeButtons.forEach((btn) => {
@@ -3020,7 +3048,6 @@
       }
 
       // ---------- Lead capture form ----------
-      const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
       function openLeadDrawer() {
         const drawer = document.getElementById('ap-lead-drawer');
@@ -3502,8 +3529,6 @@
       }
 
       // ---------- Init ----------
-      setDueDateMax();
-      setDueDateMin();
       loadState();
       hydrateUI();
     })();
