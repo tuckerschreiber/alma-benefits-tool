@@ -241,52 +241,18 @@ export function applyRules(normalized, eligibleServiceIds, rules) {
 }
 
 /**
- * Compute the cost of a single recommendation.
+ * Compute the eligible $ amount per service from the user's coverage inputs.
+ * eligible = amount × (reimbursementPercent ?? 100) / 100
  */
-function recommendationCost(rec) {
-  if (rec.dosing && typeof rec.dosing.totalCost === 'number') {
-    return rec.dosing.totalCost;
+export function computeEligibleAmounts(coverage) {
+  const out = {};
+  if (!coverage) return out;
+  for (const [serviceId, c] of Object.entries(coverage)) {
+    if (!c || typeof c.amount !== 'number') continue;
+    const pct = typeof c.reimbursementPercent === 'number' ? c.reimbursementPercent : 100;
+    out[serviceId] = c.amount * (pct / 100);
   }
-  const sessions = (rec.dosing && rec.dosing.sessions) || 0;
-  if (sessions > 0 && !(rec.dosing && typeof rec.dosing.estimatedSessionCost === 'number')) {
-    throw new Error(
-      `Rule for "${rec.service}" must specify dosing.estimatedSessionCost or dosing.totalCost`
-    );
-  }
-  const cost = rec.dosing && typeof rec.dosing.estimatedSessionCost === 'number'
-    ? rec.dosing.estimatedSessionCost
-    : 0;
-  return sessions * cost;
-}
-
-/**
- * Allocate insurance coverage + HSA against each recommendation in order. Returns a new
- * array; does not mutate.
- */
-export function allocateFunding(recommendations, coverage, hsaBalance) {
-  let remainingHsa = typeof hsaBalance === 'number' ? hsaBalance : 0;
-  const cov = coverage || {};
-  return (recommendations || []).map((rec) => {
-    const totalCost = recommendationCost(rec);
-    const c = cov[rec.service];
-    let covered = 0;
-    if (c && typeof c.amount === 'number') {
-      const reimbPct = typeof c.reimbursementPercent === 'number' ? c.reimbursementPercent : 100;
-      const maxCovered = c.amount * (reimbPct / 100);
-      covered = Math.min(totalCost, maxCovered);
-    }
-    const afterCoverage = Math.max(0, totalCost - covered);
-    const fromHsa = Math.min(afterCoverage, remainingHsa);
-    remainingHsa -= fromHsa;
-    const outOfPocket = Math.max(0, afterCoverage - fromHsa);
-    return {
-      ...rec,
-      totalCost,
-      covered,
-      fromHsa,
-      outOfPocket
-    };
-  });
+  return out;
 }
 
 /**
@@ -305,7 +271,6 @@ export function computeResults(rawInputs, rules, almaServices, today = new Date(
   for (const tag of detectedConcerns) {
     const concernRule = CONCERN_TO_SERVICE_RULE[tag];
     if (!concernRule) continue;
-    // Only inject if user is covered for the service AND it's not already recommended.
     if (!eligibleSet.has(concernRule.service)) continue;
     if (existingServices.has(concernRule.service)) continue;
     matched.push({
@@ -317,22 +282,13 @@ export function computeResults(rawInputs, rules, almaServices, today = new Date(
     });
     existingServices.add(concernRule.service);
   }
-  // Re-sort by priority (preserving the order added among ties).
   matched.sort((a, b) => {
     const pa = PRIORITY_RANK[a.priority] ?? 99;
     const pb = PRIORITY_RANK[b.priority] ?? 99;
     return pa - pb;
   });
 
-  const recommendations = allocateFunding(matched, normalized.coverage, normalized.hsaBalance);
-
-  // totalCovered = sum of covered $ across recommendations
-  const totalCovered = recommendations.reduce((sum, r) => sum + (r.covered || 0), 0);
-  const totalRecommendedCost = recommendations.reduce((sum, r) => sum + (r.totalCost || 0), 0);
-
-  // ----- Annotate recs with isCovered (boolean) + windowRank for the hybrid sort -----
-  // `rec.covered` stays as the dollar amount written by allocateFunding; we add a
-  // separate `isCovered` boolean so the UI's dollar-amount reads keep working.
+  const recommendations = matched;
   const coverageMap = normalized.coverage || {};
   for (const rec of recommendations) {
     rec.isCovered = !!coverageMap[rec.service];
@@ -340,7 +296,6 @@ export function computeResults(rawInputs, rules, almaServices, today = new Date(
     rec.windowRank = isInWindow(normalized.weeksPostpartum, dosingWindow) ? 0 : 1;
   }
 
-  // ----- Hybrid final sort: isCovered (true first) -> priority asc -> windowRank asc -----
   recommendations.sort((a, b) => {
     if (a.isCovered !== b.isCovered) return a.isCovered ? -1 : 1;
     const pa = PRIORITY_RANK[a.priority] ?? 99;
@@ -349,59 +304,13 @@ export function computeResults(rawInputs, rules, almaServices, today = new Date(
     return (a.windowRank ?? 99) - (b.windowRank ?? 99);
   });
 
-  const fundingStrategy = buildFundingStrategy(
-    recommendations,
-    normalized.coverage,
-    normalized.hsaBalance,
-    totalCovered
-  );
+  const eligibleAmounts = computeEligibleAmounts(normalized.coverage);
 
   return {
     normalized,
     eligibleServiceIds,
     recommendations,
-    totalCovered,
-    totalRecommendedCost,
-    fundingStrategy,
+    eligibleAmounts,
     detectedConcerns
   };
-}
-
-function formatMoney(n) {
-  return `$${Math.round(n)}`;
-}
-
-function buildFundingStrategy(recommendations, coverage, hsaBalance, totalCovered) {
-  const lines = [];
-  const cov = coverage || {};
-
-  // Track which services were actually used in recommendations
-  const usedServices = new Set(recommendations.map((r) => r.service));
-
-  for (const serviceId of usedServices) {
-    const c = cov[serviceId];
-    if (c && typeof c.amount === 'number' && c.amount > 0) {
-      const name = SERVICE_NAMES[serviceId] || serviceId;
-      lines.push(`Use your ${name} benefits — ${formatMoney(c.amount)} available.`);
-    }
-  }
-
-  const totalFromHsa = recommendations.reduce((s, r) => s + (r.fromHsa || 0), 0);
-  if (totalFromHsa > 0) {
-    lines.push(`Cover ${formatMoney(totalFromHsa)} with your ${formatMoney(hsaBalance)} HSA.`);
-  }
-
-  const totalOop = recommendations.reduce((s, r) => s + (r.outOfPocket || 0), 0);
-  if (totalOop > 0) {
-    lines.push(
-      `~${formatMoney(totalOop)} out-of-pocket — consider adding Alma gift cards to your registry.`
-    );
-  }
-
-  if (totalCovered === 0 && (!hsaBalance || hsaBalance === 0)) {
-    lines.push(`Most of your care will be out-of-pocket — here's how to plan smartly.`);
-    lines.push(`Consider Alma gift cards on your registry to offset costs.`);
-  }
-
-  return lines;
 }

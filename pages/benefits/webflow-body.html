@@ -39,19 +39,17 @@
         <p class="ap-step__subhead">A few thoughtful details help us identify the most relevant coverage pathways and postpartum support options for your family.</p>
       </div>
 
-      <div id="ap-due-date-field" class="ap-field">
-        <label class="ap-label" for="ap-due-date">When are you due?</label>
-        <input type="date" id="ap-due-date" name="dueDate" class="ap-input">
-        <div class="ap-field__footer">
-          <button type="button" id="ap-postpartum-toggle" class="ap-link-toggle" aria-pressed="false">
-            Already had your baby? <strong>Switch to postpartum</strong>
-          </button>
+      <div class="ap-field">
+        <label class="ap-label">Are you currently pregnant or postpartum?</label>
+        <div class="ap-toggle-group" role="group" aria-label="Stage">
+          <button type="button" class="ap-toggle" data-toggle="stage" data-value="pregnant" aria-pressed="false">Currently pregnant</button>
+          <button type="button" class="ap-toggle" data-toggle="stage" data-value="postpartum" aria-pressed="false">Postpartum (baby already born)</button>
         </div>
       </div>
 
-      <div id="ap-weeks-postpartum-field" class="ap-field ap-hidden">
-        <label class="ap-label" for="ap-weeks-postpartum">How many weeks ago did you give birth?</label>
-        <input type="number" id="ap-weeks-postpartum" name="weeksPostpartum" min="0" max="52" class="ap-input">
+      <div id="ap-due-date-field" class="ap-field ap-hidden">
+        <label class="ap-label" for="ap-due-date" id="ap-due-date-label">When are you due?</label>
+        <input type="date" id="ap-due-date" name="dueDate" class="ap-input">
       </div>
 
       <div class="ap-field">
@@ -66,6 +64,28 @@
         <label class="ap-label" for="ap-concerns">Anything we should know? <span class="ap-optional">(optional)</span></label>
         <textarea id="ap-concerns" name="concerns" rows="4" class="ap-textarea" placeholder="e.g. diagnosed with PPD, advanced maternal age, twin pregnancy, recovering from C-section…"></textarea>
       </div>
+
+      <div class="ap-step__header" style="margin-top: 32px;">
+        <h3 style="font-size:18px; margin:0 0 6px;">Your contact details</h3>
+        <p class="ap-step__subhead" style="margin:0;">We'll email your personalized care plan and a friendly follow-up from our team.</p>
+      </div>
+
+      <div class="ap-field">
+        <label class="ap-label" for="ap-first-name">First name</label>
+        <input type="text" id="ap-first-name" name="firstName" autocomplete="given-name" class="ap-input" required>
+      </div>
+      <div class="ap-field">
+        <label class="ap-label" for="ap-last-name">Last name</label>
+        <input type="text" id="ap-last-name" name="lastName" autocomplete="family-name" class="ap-input" required>
+      </div>
+      <div class="ap-field">
+        <label class="ap-label" for="ap-email">Email</label>
+        <input type="email" id="ap-email" name="email" autocomplete="email" inputmode="email" class="ap-input" required>
+      </div>
+      <div class="ap-field">
+        <label class="ap-label" for="ap-phone">Phone</label>
+        <input type="tel" id="ap-phone" name="phone" autocomplete="tel" inputmode="tel" class="ap-input" required placeholder="(416) 555-1234">
+      </div>
     </section>
 
     <section id="ap-step-2" class="ap-step">
@@ -78,13 +98,22 @@
         <label class="ap-label" for="ap-insurer">Insurance provider</label>
         <select id="ap-insurer" name="insurer" class="ap-select">
           <option value="">Select your insurer</option>
-          <option value="sun_life">Sun Life</option>
-          <option value="manulife">Manulife</option>
-          <option value="canada_life">Canada Life</option>
-          <option value="green_shield">GreenShield</option>
-          <option value="equitable">Equitable</option>
-          <option value="desjardins">Desjardins</option>
-          <option value="other">Other / not sure</option>
+          <optgroup label="Benefits platforms">
+            <option value="maven">Maven Clinic</option>
+            <option value="carrot_fertility">Carrot Fertility</option>
+            <option value="forma">Forma</option>
+          </optgroup>
+          <optgroup label="Insurance carriers">
+            <option value="canada_life">Canada Life</option>
+            <option value="desjardins">Desjardins</option>
+            <option value="equitable">Equitable</option>
+            <option value="green_shield">GreenShield</option>
+            <option value="manulife">Manulife</option>
+            <option value="sun_life">Sun Life</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="other">My plan isn't listed</option>
+          </optgroup>
         </select>
       </div>
 
@@ -108,6 +137,12 @@
           <input type="number" id="ap-hsa-balance" name="hsaBalance" min="0" step="50" placeholder="e.g. 1500" class="ap-input">
         </div>
       </div>
+
+      <aside class="ap-gift-callout">
+        <h3>No coverage? Or covering the gap?</h3>
+        <p>Postpartum care makes one of the most meaningful registry gifts. Add Alma Care gift cards to your baby registry — friends and family can contribute directly to your recovery support.</p>
+        <a class="ap-gift-callout__cta" href="https://www.almacare.ca/gift-cards" target="_blank" rel="noopener">Learn about Alma Care gift cards →</a>
+      </aside>
     </section>
 
     <section id="ap-step-3" class="ap-step">

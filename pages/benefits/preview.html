@@ -662,6 +662,29 @@
       margin-top: 8px;
     }
 
+    /* ---------- Gift cards callout (Step 2 + results) ---------- */
+    .ap-gift-callout {
+      margin-top: 32px;
+      padding: 20px 24px;
+      background: #f5f1ea;
+      border-left: 4px solid #032215;
+      border-radius: 8px;
+    }
+    .ap-gift-callout h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      color: #032215;
+    }
+    .ap-gift-callout p {
+      margin: 0 0 12px;
+      color: #2a3a32;
+    }
+    .ap-gift-callout__cta {
+      color: #032215;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
     /* ---------- Results panels ---------- */
     .ap-panel {
       background: #ffffff;
@@ -747,23 +770,21 @@
       align-self: flex-start;
     }
 
-    .ap-coverage-list {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin-top: 8px;
+    /* ---------- Stacked coverage cards ---------- */
+    .ap-coverage-card {
+      margin-top: 16px;
+      padding: 20px 24px;
+      background: #fbf9f4;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
     }
-
-    .ap-coverage-list__column h3 {
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #555;
-      margin-bottom: 8px;
+    .ap-coverage-card h3 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #032215;
     }
-
-    .ap-coverage-list ul {
+    .ap-coverage-card ul {
       list-style: none;
       padding: 0;
       margin: 0;
@@ -771,27 +792,89 @@
       flex-direction: column;
       gap: 6px;
     }
-
-    .ap-coverage-list li {
+    .ap-coverage-card li {
       font-size: 15px;
       color: #032215;
       overflow-wrap: break-word;
-      word-wrap: break-word;
+    }
+    .ap-coverage-card li.ap-coverage-list__item--muted,
+    .ap-coverage-card .ap-coverage-list__item--muted {
+      color: #888;
+    }
+    .ap-coverage-list__check { color: #156146; font-weight: 700; margin-right: 8px; }
+    .ap-coverage-list__dash { color: #bbb; margin-right: 8px; }
+    .ap-coverage-list__total {
+      margin: 12px 0 0;
+      padding-top: 12px;
+      border-top: 1px solid rgb(235, 225, 213);
+      color: #032215;
+      font-size: 15px;
+    }
+    .ap-coverage-card--hsa {
+      border-left: 4px solid #032215;
+    }
+    .ap-coverage-card--hsa p {
+      margin: 0;
+      color: #555;
+      font-size: 14px;
     }
 
-    .ap-coverage-list li.ap-coverage-list__item--muted {
-      color: #999;
+    /* ---------- Results-page clarifier + footnote + priority badges ---------- */
+    .ap-results__clarifier {
+      font-size: 15px;
+      color: #444;
+      margin: 8px 0 24px;
+      line-height: 1.6;
     }
-
-    .ap-coverage-list__check {
-      color: #156146;
+    .ap-rec-card__asterisk {
+      color: #b8860b;
+      font-weight: 700;
+    }
+    .ap-rec-card__priority {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #e6efe9;
+      color: #032215;
+      vertical-align: middle;
       font-weight: 600;
-      margin-right: 6px;
+    }
+    .ap-rec-card__priority--medium { background: #f4ecdc; }
+    .ap-rec-card__priority--low    { background: #f0f0f0; }
+    .ap-rec__footnote {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: #fafaf6;
+      border-left: 3px solid #b8860b;
+      font-size: 14px;
+      color: #2a3a32;
+      line-height: 1.55;
+      border-radius: 4px;
+    }
+    .ap-rec__footnote a {
+      color: #032215;
+      font-weight: 600;
     }
 
-    .ap-coverage-list__dash {
-      color: #bbb;
-      margin-right: 6px;
+    /* ---------- New What Happens Next list ---------- */
+    .ap-next__list {
+      padding-left: 24px;
+      margin: 0;
+    }
+    .ap-next__list li {
+      margin: 12px 0;
+      line-height: 1.55;
+      font-size: 15px;
+    }
+    .ap-next__cta {
+      display: inline-block;
+      margin-left: 12px;
+      padding: 6px 14px;
+      font-size: 14px;
     }
 
     .ap-rec-card {
@@ -1364,10 +1447,6 @@
         font-size: 20px;
       }
 
-      .ap-coverage-list {
-        grid-template-columns: 1fr;
-      }
-
       .ap-cta-row {
         flex-direction: column;
       }
@@ -1453,19 +1532,17 @@
         <p class="ap-step__subhead">A few thoughtful details help us identify the most relevant coverage pathways and postpartum support options for your family.</p>
       </div>
 
-      <div id="ap-due-date-field" class="ap-field">
-        <label class="ap-label" for="ap-due-date">When are you due?</label>
-        <input type="date" id="ap-due-date" name="dueDate" class="ap-input">
-        <div class="ap-field__footer">
-          <button type="button" id="ap-postpartum-toggle" class="ap-link-toggle" aria-pressed="false">
-            Already had your baby? <strong>Switch to postpartum</strong>
-          </button>
+      <div class="ap-field">
+        <label class="ap-label">Are you currently pregnant or postpartum?</label>
+        <div class="ap-toggle-group" role="group" aria-label="Stage">
+          <button type="button" class="ap-toggle" data-toggle="stage" data-value="pregnant" aria-pressed="false">Currently pregnant</button>
+          <button type="button" class="ap-toggle" data-toggle="stage" data-value="postpartum" aria-pressed="false">Postpartum (baby already born)</button>
         </div>
       </div>
 
-      <div id="ap-weeks-postpartum-field" class="ap-field ap-hidden">
-        <label class="ap-label" for="ap-weeks-postpartum">How many weeks ago did you give birth?</label>
-        <input type="number" id="ap-weeks-postpartum" name="weeksPostpartum" min="0" max="52" class="ap-input">
+      <div id="ap-due-date-field" class="ap-field ap-hidden">
+        <label class="ap-label" for="ap-due-date" id="ap-due-date-label">When are you due?</label>
+        <input type="date" id="ap-due-date" name="dueDate" class="ap-input">
       </div>
 
       <div class="ap-field">
@@ -1480,6 +1557,28 @@
         <label class="ap-label" for="ap-concerns">Anything we should know? <span class="ap-optional">(optional)</span></label>
         <textarea id="ap-concerns" name="concerns" rows="4" class="ap-textarea" placeholder="e.g. diagnosed with PPD, advanced maternal age, twin pregnancy, recovering from C-section…"></textarea>
       </div>
+
+      <div class="ap-step__header" style="margin-top: 32px;">
+        <h3 style="font-size:18px; margin:0 0 6px;">Your contact details</h3>
+        <p class="ap-step__subhead" style="margin:0;">We'll email your personalized care plan and a friendly follow-up from our team.</p>
+      </div>
+
+      <div class="ap-field">
+        <label class="ap-label" for="ap-first-name">First name</label>
+        <input type="text" id="ap-first-name" name="firstName" autocomplete="given-name" class="ap-input" required>
+      </div>
+      <div class="ap-field">
+        <label class="ap-label" for="ap-last-name">Last name</label>
+        <input type="text" id="ap-last-name" name="lastName" autocomplete="family-name" class="ap-input" required>
+      </div>
+      <div class="ap-field">
+        <label class="ap-label" for="ap-email">Email</label>
+        <input type="email" id="ap-email" name="email" autocomplete="email" inputmode="email" class="ap-input" required>
+      </div>
+      <div class="ap-field">
+        <label class="ap-label" for="ap-phone">Phone</label>
+        <input type="tel" id="ap-phone" name="phone" autocomplete="tel" inputmode="tel" class="ap-input" required placeholder="(416) 555-1234">
+      </div>
     </section>
 
     <section id="ap-step-2" class="ap-step">
@@ -1492,13 +1591,22 @@
         <label class="ap-label" for="ap-insurer">Insurance provider</label>
         <select id="ap-insurer" name="insurer" class="ap-select">
           <option value="">Select your insurer</option>
-          <option value="sun_life">Sun Life</option>
-          <option value="manulife">Manulife</option>
-          <option value="canada_life">Canada Life</option>
-          <option value="green_shield">GreenShield</option>
-          <option value="equitable">Equitable</option>
-          <option value="desjardins">Desjardins</option>
-          <option value="other">Other / not sure</option>
+          <optgroup label="Benefits platforms">
+            <option value="maven">Maven Clinic</option>
+            <option value="carrot_fertility">Carrot Fertility</option>
+            <option value="forma">Forma</option>
+          </optgroup>
+          <optgroup label="Insurance carriers">
+            <option value="canada_life">Canada Life</option>
+            <option value="desjardins">Desjardins</option>
+            <option value="equitable">Equitable</option>
+            <option value="green_shield">GreenShield</option>
+            <option value="manulife">Manulife</option>
+            <option value="sun_life">Sun Life</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="other">My plan isn't listed</option>
+          </optgroup>
         </select>
       </div>
 
@@ -1522,6 +1630,12 @@
           <input type="number" id="ap-hsa-balance" name="hsaBalance" min="0" step="50" placeholder="e.g. 1500" class="ap-input">
         </div>
       </div>
+
+      <aside class="ap-gift-callout">
+        <h3>No coverage? Or covering the gap?</h3>
+        <p>Postpartum care makes one of the most meaningful registry gifts. Add Alma Care gift cards to your baby registry — friends and family can contribute directly to your recovery support.</p>
+        <a class="ap-gift-callout__cta" href="https://www.almacare.ca/gift-cards" target="_blank" rel="noopener">Learn about Alma Care gift cards →</a>
+      </aside>
     </section>
 
     <section id="ap-step-3" class="ap-step">
@@ -2079,84 +2193,16 @@
         });
       }
 
-      function recommendationCost(rec) {
-        if (rec.dosing && typeof rec.dosing.totalCost === 'number') {
-          return rec.dosing.totalCost;
+      function computeEligibleAmounts(coverage) {
+        const out = {};
+        if (!coverage) return out;
+        for (const serviceId of Object.keys(coverage)) {
+          const c = coverage[serviceId];
+          if (!c || typeof c.amount !== 'number') continue;
+          const pct = typeof c.reimbursementPercent === 'number' ? c.reimbursementPercent : 100;
+          out[serviceId] = c.amount * (pct / 100);
         }
-        const sessions = (rec.dosing && rec.dosing.sessions) || 0;
-        if (sessions > 0 && !(rec.dosing && typeof rec.dosing.estimatedSessionCost === 'number')) {
-          throw new Error(
-            'Rule for "' + rec.service + '" must specify dosing.estimatedSessionCost or dosing.totalCost'
-          );
-        }
-        const cost = rec.dosing && typeof rec.dosing.estimatedSessionCost === 'number'
-          ? rec.dosing.estimatedSessionCost
-          : 0;
-        return sessions * cost;
-      }
-
-      function allocateFunding(recommendations, coverage, hsaBalance) {
-        let remainingHsa = typeof hsaBalance === 'number' ? hsaBalance : 0;
-        const cov = coverage || {};
-        return (recommendations || []).map(function (rec) {
-          const totalCost = recommendationCost(rec);
-          const c = cov[rec.service];
-          let covered = 0;
-          if (c && typeof c.amount === 'number') {
-            const reimbPct = typeof c.reimbursementPercent === 'number' ? c.reimbursementPercent : 100;
-            const maxCovered = c.amount * (reimbPct / 100);
-            covered = Math.min(totalCost, maxCovered);
-          }
-          const afterCoverage = Math.max(0, totalCost - covered);
-          const fromHsa = Math.min(afterCoverage, remainingHsa);
-          remainingHsa -= fromHsa;
-          const outOfPocket = Math.max(0, afterCoverage - fromHsa);
-          return Object.assign({}, rec, {
-            totalCost: totalCost,
-            covered: covered,
-            fromHsa: fromHsa,
-            outOfPocket: outOfPocket
-          });
-        });
-      }
-
-      function formatMoney(n) {
-        return '$' + Math.round(n);
-      }
-
-      function buildFundingStrategy(recommendations, coverage, hsaBalance, totalCovered) {
-        const lines = [];
-        const cov = coverage || {};
-
-        // Track which services were actually used in recommendations
-        const usedServices = new Set(recommendations.map(function (r) { return r.service; }));
-
-        for (const serviceId of usedServices) {
-          const c = cov[serviceId];
-          if (c && typeof c.amount === 'number' && c.amount > 0) {
-            const name = SERVICE_NAMES[serviceId] || serviceId;
-            lines.push('Use your ' + name + ' benefits — ' + formatMoney(c.amount) + ' available.');
-          }
-        }
-
-        const totalFromHsa = recommendations.reduce(function (s, r) { return s + (r.fromHsa || 0); }, 0);
-        if (totalFromHsa > 0) {
-          lines.push('Cover ' + formatMoney(totalFromHsa) + ' with your ' + formatMoney(hsaBalance) + ' HSA.');
-        }
-
-        const totalOop = recommendations.reduce(function (s, r) { return s + (r.outOfPocket || 0); }, 0);
-        if (totalOop > 0) {
-          lines.push(
-            '~' + formatMoney(totalOop) + ' out-of-pocket — consider adding Alma gift cards to your registry.'
-          );
-        }
-
-        if (totalCovered === 0 && (!hsaBalance || hsaBalance === 0)) {
-          lines.push('Most of your care will be out-of-pocket — here\'s how to plan smartly.');
-          lines.push('Consider Alma gift cards on your registry to offset costs.');
-        }
-
-        return lines;
+        return out;
       }
 
       function computeResults(rawInputs, rules, almaServices, today) {
@@ -2189,15 +2235,7 @@
           return pa - pb;
         });
 
-        const recommendations = allocateFunding(matched, normalized.coverage, normalized.hsaBalance);
-
-        // totalCovered = sum of covered $ across recommendations
-        const totalCovered = recommendations.reduce(function (sum, r) { return sum + (r.covered || 0); }, 0);
-        const totalRecommendedCost = recommendations.reduce(function (sum, r) { return sum + (r.totalCost || 0); }, 0);
-
-        // ----- Annotate recs with isCovered (boolean) + windowRank for the hybrid sort -----
-        // `rec.covered` stays as the dollar amount written by allocateFunding; we add a
-        // separate `isCovered` boolean so the UI's dollar-amount reads keep working.
+        const recommendations = matched;
         const coverageMap = normalized.coverage || {};
         for (const rec of recommendations) {
           rec.isCovered = !!coverageMap[rec.service];
@@ -2205,7 +2243,6 @@
           rec.windowRank = isInWindow(normalized.weeksPostpartum, dosingWindow) ? 0 : 1;
         }
 
-        // ----- Hybrid final sort: isCovered (true first) -> priority asc -> windowRank asc -----
         recommendations.sort(function (a, b) {
           if (a.isCovered !== b.isCovered) return a.isCovered ? -1 : 1;
           const pa = PRIORITY_RANK[a.priority] != null ? PRIORITY_RANK[a.priority] : 99;
@@ -2214,20 +2251,13 @@
           return (a.windowRank != null ? a.windowRank : 99) - (b.windowRank != null ? b.windowRank : 99);
         });
 
-        const fundingStrategy = buildFundingStrategy(
-          recommendations,
-          normalized.coverage,
-          normalized.hsaBalance,
-          totalCovered
-        );
+        const eligibleAmounts = computeEligibleAmounts(normalized.coverage);
 
         return {
           normalized: normalized,
           eligibleServiceIds: eligibleServiceIds,
           recommendations: recommendations,
-          totalCovered: totalCovered,
-          totalRecommendedCost: totalRecommendedCost,
-          fundingStrategy: fundingStrategy,
+          eligibleAmounts: eligibleAmounts,
           detectedConcerns: detectedConcerns
         };
       }
@@ -2265,8 +2295,7 @@
 
       const state = {
         dueDate: null,
-        isPostpartum: false,
-        weeksPostpartum: null,
+        isPostpartum: null,
         firstTimeParent: null,
         concerns: '',
         insurer: null,
@@ -2275,10 +2304,10 @@
         coverage: {},
         results: null,
         lead: {
-          name: '',
+          firstName: '',
+          lastName: '',
           email: '',
-          address: '',
-          leadConcerns: ''
+          phone: ''
         }
       };
 
@@ -2298,10 +2327,13 @@
       // ---------- Element refs ----------
       const dueDateInput = document.getElementById('ap-due-date');
       const dueDateField = document.getElementById('ap-due-date-field');
-      const weeksInput = document.getElementById('ap-weeks-postpartum');
-      const weeksField = document.getElementById('ap-weeks-postpartum-field');
+      const dueDateLabel = document.getElementById('ap-due-date-label');
       const concernsInput = document.getElementById('ap-concerns');
-      const postpartumToggle = document.getElementById('ap-postpartum-toggle');
+      const stageButtons = document.querySelectorAll('[data-toggle="stage"]');
+      const firstNameInput = document.getElementById('ap-first-name');
+      const lastNameInput = document.getElementById('ap-last-name');
+      const emailInput = document.getElementById('ap-email');
+      const phoneInput = document.getElementById('ap-phone');
       const firstTimeButtons = document.querySelectorAll('[data-toggle="firstTimeParent"]');
       const insurerSelect = document.getElementById('ap-insurer');
       const hsaButtons = document.querySelectorAll('[data-toggle="hasHsa"]');
@@ -2321,26 +2353,25 @@
       const coverageModal = document.getElementById('ap-coverage-modal');
       const coverageModalClose = document.getElementById('ap-coverage-modal-close');
 
-      // ---------- Set max on due date input (1 year from today) ----------
-      function setDueDateMax() {
-        const today = new Date();
-        const maxDate = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
-        const yyyy = maxDate.getFullYear();
-        const mm = String(maxDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(maxDate.getDate()).padStart(2, '0');
-        dueDateInput.setAttribute('max', `${yyyy}-${mm}-${dd}`);
+      function isoDate(d) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
       }
 
-      // ---------- Set min on due date input (today) ----------
-      // Prevents picking a past date in the UI. The engine still auto-flips
-      // past dates to postpartum as a safety net for any path that bypasses
-      // the picker (e.g. hydrated state).
-      function setDueDateMin() {
+      // Apply date-input min/max constraints based on stage.
+      // Pregnant: today → today+1yr. Postpartum: no constraints (past dates allowed).
+      function applyDueDateConstraints() {
+        if (state.isPostpartum) {
+          dueDateInput.removeAttribute('max');
+          dueDateInput.removeAttribute('min');
+          return;
+        }
         const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        dueDateInput.setAttribute('min', `${yyyy}-${mm}-${dd}`);
+        const oneYear = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+        dueDateInput.setAttribute('min', isoDate(today));
+        dueDateInput.setAttribute('max', isoDate(oneYear));
       }
 
       // ---------- Persistence ----------
@@ -2349,14 +2380,17 @@
           const saved = sessionStorage.getItem(STORAGE_KEY);
           if (saved) Object.assign(state, JSON.parse(saved));
         } catch (e) { /* sessionStorage unavailable — silent fail */ }
-        // Ensure lead object exists even if persisted state predates it.
+        // Ensure lead object exists with current shape even if persisted state predates it.
+        const fresh = { firstName: '', lastName: '', email: '', phone: '' };
         if (!state.lead || typeof state.lead !== 'object') {
-          state.lead = { name: '', email: '', address: '', leadConcerns: '' };
+          state.lead = fresh;
         } else {
-          state.lead.name = state.lead.name || '';
-          state.lead.email = state.lead.email || '';
-          state.lead.address = state.lead.address || '';
-          state.lead.leadConcerns = state.lead.leadConcerns || '';
+          state.lead = Object.assign(fresh, {
+            firstName: state.lead.firstName || '',
+            lastName: state.lead.lastName || '',
+            email: state.lead.email || '',
+            phone: state.lead.phone || ''
+          });
         }
       }
 
@@ -2367,35 +2401,27 @@
       }
 
       // ---------- UI updates ----------
-      // `opts.clearOther` clears the value of the field we're switching *away* from.
-      // We pass false during hydration so persisted values aren't wiped on reload.
-      function togglePostpartum(toPostpartum, opts) {
-        const clearOther = !opts || opts.clearOther !== false;
-        state.isPostpartum = !!toPostpartum;
-        if (state.isPostpartum) {
-          dueDateField.classList.add('ap-hidden');
-          weeksField.classList.remove('ap-hidden');
-          postpartumToggle.innerHTML = 'Still expecting? <strong>Switch back</strong>';
-          if (clearOther) {
-            state.dueDate = null;
-            dueDateInput.value = '';
-          }
-        } else {
-          dueDateField.classList.remove('ap-hidden');
-          weeksField.classList.add('ap-hidden');
-          postpartumToggle.innerHTML = 'Already had your baby? <strong>Switch to postpartum</strong>';
-          if (clearOther) {
-            state.weeksPostpartum = null;
-            weeksInput.value = '';
-          }
+      // Apply a stage selection. `clearDate` is true when the user clicked a
+      // stage button (we want to discard the prior date because it likely
+      // belongs to the other stage), false during hydration so persisted
+      // values survive a reload.
+      function applyStage(stageValue, opts) {
+        const clearDate = !opts || opts.clearDate !== false;
+        state.isPostpartum = (stageValue === 'postpartum');
+        stageButtons.forEach((b) => {
+          const isSelected = b.getAttribute('data-value') === stageValue;
+          b.classList.toggle('ap-toggle--selected', isSelected);
+          b.setAttribute('aria-pressed', String(isSelected));
+        });
+        dueDateField.classList.remove('ap-hidden');
+        dueDateLabel.textContent = state.isPostpartum
+          ? "What was baby's original due date?"
+          : 'When are you due?';
+        applyDueDateConstraints();
+        if (clearDate) {
+          state.dueDate = null;
+          dueDateInput.value = '';
         }
-        // Move the toggle link into whichever field is currently visible
-        const visibleField = state.isPostpartum ? weeksField : dueDateField;
-        const footer = postpartumToggle.parentElement;
-        if (footer && footer.classList.contains('ap-field__footer') && footer.parentElement !== visibleField) {
-          visibleField.appendChild(footer);
-        }
-        postpartumToggle.setAttribute('aria-pressed', String(state.isPostpartum));
         saveState();
         updateContinueButton();
       }
@@ -2541,17 +2567,20 @@
         });
       }
 
-      function hasValidTimingAnswer() {
-        if (state.isPostpartum) {
-          return typeof state.weeksPostpartum === 'number' && !Number.isNaN(state.weeksPostpartum);
-        }
-        return !!state.dueDate;
-      }
+      const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const PHONE_RE = /^[\d\s()+\-]{7,}$/;
 
       function updateContinueButton() {
         let canContinue;
         if (currentStep === 1) {
-          canContinue = hasValidTimingAnswer() && state.firstTimeParent !== null;
+          canContinue =
+            state.isPostpartum !== null &&
+            !!state.dueDate &&
+            state.firstTimeParent !== null &&
+            !!state.lead.firstName.trim() &&
+            !!state.lead.lastName.trim() &&
+            EMAIL_RE.test(state.lead.email) &&
+            PHONE_RE.test(state.lead.phone);
         } else if (currentStep === 2) {
           canContinue = !!state.insurer;
         } else if (currentStep === 3) {
@@ -2564,10 +2593,14 @@
 
       function hydrateUI() {
         dueDateInput.value = state.dueDate || '';
-        weeksInput.value = state.weeksPostpartum != null ? state.weeksPostpartum : '';
         concernsInput.value = state.concerns || '';
-        if (state.isPostpartum) togglePostpartum(true, { clearOther: false });
+        if (state.isPostpartum === true) applyStage('postpartum', { clearDate: false });
+        else if (state.isPostpartum === false) applyStage('pregnant', { clearDate: false });
         if (state.firstTimeParent !== null) applyFirstTimeParentUI(state.firstTimeParent);
+        firstNameInput.value = state.lead.firstName || '';
+        lastNameInput.value = state.lead.lastName || '';
+        emailInput.value = state.lead.email || '';
+        phoneInput.value = state.lead.phone || '';
         // Step 2
         insurerSelect.value = state.insurer || '';
         if (state.hasHsa !== null) applyHsaUI(state.hasHsa);
@@ -2642,25 +2675,30 @@
         updateContinueButton();
       });
 
-      weeksInput.addEventListener('input', (e) => {
-        const raw = e.target.value;
-        if (raw === '') {
-          state.weeksPostpartum = null;
-        } else {
-          const num = parseInt(raw, 10);
-          state.weeksPostpartum = Number.isNaN(num) ? null : num;
-        }
-        saveState();
-        updateContinueButton();
-      });
-
       concernsInput.addEventListener('input', (e) => {
         state.concerns = e.target.value;
         saveState();
       });
 
-      postpartumToggle.addEventListener('click', () => {
-        togglePostpartum(!state.isPostpartum);
+      stageButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          applyStage(btn.getAttribute('data-value'));
+        });
+      });
+
+      const LEAD_INPUT_BINDINGS = [
+        { el: firstNameInput, key: 'firstName' },
+        { el: lastNameInput, key: 'lastName' },
+        { el: emailInput, key: 'email' },
+        { el: phoneInput, key: 'phone' }
+      ];
+      LEAD_INPUT_BINDINGS.forEach(({ el, key }) => {
+        if (!el) return;
+        el.addEventListener('input', (e) => {
+          state.lead[key] = e.target.value;
+          saveState();
+          updateContinueButton();
+        });
       });
 
       firstTimeButtons.forEach((btn) => {
@@ -2725,6 +2763,13 @@
 
       continueBtn.addEventListener('click', () => {
         if (continueBtn.disabled) return;
+        // Step 1 → submit contact info to Hubspot immediately so the lead is
+        // captured even if the user bails on Step 2 or 3.
+        if (currentStep === 1) {
+          submitStep1ToHubspot(state).then(function (r) {
+            track('step1_submitted', { hubspot_ok: !!(r && r.ok) });
+          });
+        }
         if (currentStep === TOTAL_STEPS) {
           // Final intake step → run engine, render panels, then advance.
           state.results = computeResults(state, RULES, ALMA_SERVICES, new Date());
@@ -2732,8 +2777,11 @@
           renderResults(state.results);
           track('results_viewed', {
             recommendations_count: state.results.recommendations.length,
-            total_covered: state.results.totalCovered,
             has_concerns: state.results.detectedConcerns.length > 0
+          });
+          // Enrich the Hubspot contact with coverage + recs once they reach the plan.
+          submitEnrichmentToHubspot(state).then(function (r) {
+            track('plan_viewed', { hubspot_ok: !!(r && r.ok) });
           });
           if (state.results.detectedConcerns.length > 0) {
             track('concerns_detected', {
@@ -2827,118 +2875,113 @@
           .replace(/'/g, '&#39;');
       }
 
-      function dosingLine(dosing) {
-        if (!dosing) return '';
-        const sessions = dosing.sessions;
-        const win = dosing.window;
-        if (sessions && win) return sessions + ' session' + (sessions === 1 ? '' : 's') + ' — ' + win;
-        if (sessions) return sessions + ' session' + (sessions === 1 ? '' : 's');
-        if (win) return win;
-        return '';
+      function formatMoney(n) {
+        return '$' + Math.round(n);
+      }
+
+      function renderIntro() {
+        return (
+          '<header class="ap-results__intro">'
+          + '<h2>Your Personalized Care Plan</h2>'
+          + '</header>'
+        );
+      }
+
+      function renderClarifier() {
+        return (
+          '<p class="ap-results__clarifier">'
+          + 'This care plan outlines eligible coverage pathways and recommended postpartum supports. '
+          + 'After your complimentary consultation, we’ll prepare a tailored estimate with specific care '
+          + 'providers, hours, and costs — ready to submit to your insurer.'
+          + '</p>'
+        );
       }
 
       function renderSnapshot(results) {
-        const total = results.totalCovered || 0;
-        const heroHtml = total > 0
-          ? '<div class="ap-snapshot-hero">' + formatMoney(total) + ' in benefits to use</div>'
-          : '<div class="ap-snapshot-hero ap-snapshot-hero--muted">No extended benefits — that\'s okay.</div>';
+        const eligibleAmounts = (results && results.eligibleAmounts) || {};
+        const coveredIds = Object.keys(eligibleAmounts);
+        const notCoveredIds = ALMA_SERVICES.filter(function (id) {
+          return coveredIds.indexOf(id) === -1;
+        });
+
+        const eligibleItems = coveredIds.map(function (id) {
+          const name = SERVICE_NAMES[id] || id;
+          const amt = formatMoney(eligibleAmounts[id]);
+          return '<li><span class="ap-coverage-list__check">✓</span>'
+            + escapeHtml(name) + ' — <strong>' + amt + ' eligible</strong></li>';
+        }).join('');
+
+        const notEligibleItems = notCoveredIds.map(function (id) {
+          const name = SERVICE_NAMES[id] || id;
+          return '<li class="ap-coverage-list__item--muted">'
+            + '<span class="ap-coverage-list__dash">—</span>' + escapeHtml(name) + '</li>';
+        }).join('');
+
+        const totalEligible = coveredIds.reduce(function (sum, id) {
+          return sum + eligibleAmounts[id];
+        }, 0);
+        const totalLine = coveredIds.length
+          ? '<p class="ap-coverage-list__total"><strong>Total eligible: ' + formatMoney(totalEligible) + '</strong></p>'
+          : '';
 
         const showHsa = state.hasHsa === 'yes'
           && typeof state.hsaBalance === 'number'
           && state.hsaBalance > 0;
         const hsaHtml = showHsa
-          ? '<div class="ap-hsa-callout">+ ' + formatMoney(state.hsaBalance) + ' flexible HSA spend</div>'
-          : '';
-
-        const coveredIds = Object.keys(state.coverage || {});
-        const coveredItems = coveredIds.map(function (id) {
-          const entry = state.coverage[id];
-          const amount = entry && typeof entry.amount === 'number' ? entry.amount : 0;
-          const name = SERVICE_NAMES[id] || id;
-          return '<li><span class="ap-coverage-list__check">✓</span>'
-            + escapeHtml(name) + ' — ' + formatMoney(amount) + '</li>';
-        }).join('');
-
-        const notCovered = ALMA_SERVICES.filter(function (id) { return coveredIds.indexOf(id) === -1; });
-        const notCoveredItems = notCovered.map(function (id) {
-          const name = SERVICE_NAMES[id] || id;
-          return '<li class="ap-coverage-list__item--muted"><span class="ap-coverage-list__dash">—</span>'
-            + escapeHtml(name) + '</li>';
-        }).join('');
-
-        const coveredColHtml = coveredItems
-          ? '<div class="ap-coverage-list__column"><h3>What\'s covered</h3><ul>' + coveredItems + '</ul></div>'
-          : '<div class="ap-coverage-list__column"><h3>What\'s covered</h3><ul><li class="ap-coverage-list__item--muted">Nothing selected.</li></ul></div>';
-
-        const notCoveredColHtml = notCoveredItems
-          ? '<div class="ap-coverage-list__column"><h3>What\'s not covered</h3><ul>' + notCoveredItems + '</ul></div>'
+          ? '<div class="ap-coverage-card ap-coverage-card--hsa">'
+              + '<h3>HSA available: ' + formatMoney(state.hsaBalance) + '</h3>'
+              + '<p>Can be applied to any service above.</p>'
+              + '</div>'
           : '';
 
         return (
           '<section class="ap-panel ap-panel--snapshot">'
-          + '<h2>Your coverage at a glance</h2>'
-          + heroHtml
+          + '<h2>Your Coverage at a Glance</h2>'
+          + '<div class="ap-coverage-card ap-coverage-card--eligible">'
+          +   '<h3>✓ What\'s Eligible for Coverage</h3>'
+          +   (coveredIds.length
+                ? '<ul>' + eligibleItems + '</ul>' + totalLine
+                : '<p class="ap-coverage-list__item--muted">No services selected.</p>')
+          + '</div>'
+          + '<div class="ap-coverage-card ap-coverage-card--not-eligible">'
+          +   '<h3>✗ What\'s Not Eligible for Coverage</h3>'
+          +   (notEligibleItems
+                ? '<ul>' + notEligibleItems + '</ul>'
+                : '<p class="ap-coverage-list__item--muted">All services have coverage.</p>')
+          + '</div>'
           + hsaHtml
-          + '<div class="ap-coverage-list">' + coveredColHtml + notCoveredColHtml + '</div>'
           + '</section>'
-        );
-      }
-
-      function renderCostBreakdown(rec) {
-        const rows = [];
-        rows.push(
-          '<div class="ap-cost-breakdown__row ap-cost-breakdown__row--total">'
-          + '<span>Estimated total</span><span>' + formatMoney(rec.totalCost || 0) + '</span></div>'
-        );
-        if ((rec.covered || 0) > 0) {
-          rows.push(
-            '<div class="ap-cost-breakdown__row ap-cost-breakdown__row--covered">'
-            + '<span>Covered by insurance</span><span>' + formatMoney(rec.covered) + '</span></div>'
-          );
-        }
-        if ((rec.fromHsa || 0) > 0) {
-          rows.push(
-            '<div class="ap-cost-breakdown__row ap-cost-breakdown__row--covered">'
-            + '<span>From HSA</span><span>' + formatMoney(rec.fromHsa) + '</span></div>'
-          );
-        }
-        if ((rec.outOfPocket || 0) > 0) {
-          rows.push(
-            '<div class="ap-cost-breakdown__row ap-cost-breakdown__row--oop">'
-            + '<span>Out-of-pocket</span><span>' + formatMoney(rec.outOfPocket) + '</span></div>'
-          );
-        }
-        return '<div class="ap-cost-breakdown">' + rows.join('') + '</div>';
-      }
-
-      function renderIntro(/* results */) {
-        return (
-          '<header class="ap-results__intro">'
-          + '<h2>You may have more support available to you than you think.</h2>'
-          + '<p>Based on your responses, there appear to be several potential pathways to offset postpartum care through extended health benefits and/or HSA funding. We\'ve outlined the options most relevant to your stage of recovery and care goals below.</p>'
-          + '</header>'
         );
       }
 
       function renderRecCard(rec, rank) {
         const name = SERVICE_NAMES[rec.service] || rec.service;
+        const needsAsterisk = rec.service === 'postpartum_doula_care'
+          || rec.service === 'registered_nursing';
+        const priorityKey = rec.priority || '';
+        const priorityLabel = priorityKey
+          ? priorityKey.charAt(0).toUpperCase() + priorityKey.slice(1)
+          : '';
         const initial = (name || '').trim().charAt(0).toUpperCase();
         const badgeHtml = (typeof rank === 'number')
           ? '<div class="ap-rec-card__rank" aria-hidden="true">' + rank + '</div>'
           : '<div class="ap-rec-card__icon" aria-hidden="true">' + escapeHtml(initial) + '</div>';
+        const asterisk = needsAsterisk
+          ? ' <span class="ap-rec-card__asterisk" aria-label="Pre-assessment approval required">*</span>'
+          : '';
+        const priorityBadge = priorityLabel
+          ? ' <span class="ap-rec-card__priority ap-rec-card__priority--' + escapeHtml(priorityKey) + '">'
+              + escapeHtml(priorityLabel) + '</span>'
+          : '';
         return (
           '<div class="ap-rec-card">'
           + badgeHtml
           + '<div class="ap-rec-card__body">'
-          + '<div class="ap-rec-card__title">' + escapeHtml(name) + '</div>'
-          + (dosingLine(rec.dosing)
-              ? '<div class="ap-rec-card__dosing">' + escapeHtml(dosingLine(rec.dosing)) + '</div>'
-              : '')
+          + '<div class="ap-rec-card__title">' + escapeHtml(name) + asterisk + priorityBadge + '</div>'
           + (rec.concernCallout
               ? '<p class="ap-rec-card__callout">Based on what you shared, we’d especially encourage this.</p>'
               : '')
           + '<div class="ap-rec-card__rationale">' + escapeHtml(rec.rationale || '') + '</div>'
-          + renderCostBreakdown(rec)
           + '</div>'
           + '</div>'
         );
@@ -2960,29 +3003,19 @@
             body += '</details>';
           }
         }
+        const hasAsterisk = recs.some(function (r) {
+          return r.service === 'postpartum_doula_care' || r.service === 'registered_nursing';
+        });
+        const footnote = hasAsterisk
+          ? '<p class="ap-rec__footnote">* Pre-assessment approval may be required and varies by insurer. '
+              + '<a href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a consultation</a> '
+              + 'to get a tailored estimate.</p>'
+          : '';
         return (
           '<section class="ap-panel ap-panel--plan">'
           + '<h2>Your highest-priority postpartum supports</h2>'
           + body
-          + '</section>'
-        );
-      }
-
-      function renderHsaEligible(/* results */) {
-        const coveredIds = Object.keys(state.coverage || {});
-        const uncovered = ALMA_SERVICES.filter(function (id) { return coveredIds.indexOf(id) === -1; });
-        if (uncovered.length === 0) return '';
-        return (
-          '<section class="ap-hsa">'
-          + '<h2>Additional services that may be eligible through your HSA</h2>'
-          + '<p>Even when a practitioner category is not included in your extended health benefits, many families are still able to use Health Spending Account (HSA) funds toward eligible care providers. Depending on your plan, this may include:</p>'
-          + '<ul>'
-          + '<li>Private duty nursing</li>'
-          + '<li>Nursing-led postpartum support</li>'
-          + '<li>Lactation support provided by eligible practitioners</li>'
-          + '<li>Select wellness and recovery services</li>'
-          + '</ul>'
-          + '<p class="ap-hsa__footnote">We recommend confirming practitioner eligibility directly with your benefits provider before booking care.</p>'
+          + footnote
           + '</section>'
         );
       }
@@ -2990,164 +3023,41 @@
       function renderWhatHappensNext() {
         return (
           '<section class="ap-next">'
-          + '<h2>What happens next</h2>'
-          + '<ol>'
-          + '<li>Complete your coverage assessment</li>'
-          + '<li>Review your personalized care recommendations</li>'
-          + '<li>Speak with an Alma Care specialist</li>'
-          + '<li>Build a postpartum support plan tailored to your family</li>'
-          + '<li>Begin care with trusted practitioners and guidance on eligible reimbursement pathways</li>'
+          + '<h2>What Happens Next</h2>'
+          + '<ol class="ap-next__list">'
+          +   '<li><strong>Book a complimentary consultation</strong>'
+          +     '<a class="ap-btn ap-btn--primary ap-next__cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a call →</a>'
+          +   '</li>'
+          +   '<li>Submit an intake form and refundable deposit</li>'
+          +   '<li>Receive bios of qualified Postnatal Care Specialists within 2 business days</li>'
+          +   '<li>Interview your candidates and select your care team</li>'
           + '</ol>'
           + '</section>'
         );
       }
 
-      function renderNavigateDetails() {
+      function renderGiftCardsCallout(results) {
+        const eligibleIds = Object.keys((results && results.eligibleAmounts) || {});
+        if (eligibleIds.length === ALMA_SERVICES.length) return '';
         return (
-          '<section class="ap-navigate">'
-          + '<h2>We help families navigate the details</h2>'
-          + '<p>Our team regularly helps families:</p>'
-          + '<ul>'
-          + '<li>Understand eligible practitioner categories</li>'
-          + '<li>Maximize extended health benefits</li>'
-          + '<li>Utilize HSA and wellness spending accounts</li>'
-          + '<li>Prepare documentation for reimbursement</li>'
-          + '<li>Coordinate layered postpartum support plans</li>'
-          + '</ul>'
-          + '</section>'
-        );
-      }
-
-      function renderEmotionalPermission() {
-        return (
-          '<section class="ap-permission">'
-          + '<h2>Support is not a luxury during postpartum recovery</h2>'
-          + '<p>Families often prepare extensively for birth — but far less for recovery, healing, feeding support, sleep, and the realities of the first weeks at home. Increasingly, families are choosing to include postpartum care support as part of their baby registry, allowing loved ones to contribute meaningfully to recovery and wellbeing during one of life\'s most important transitions.</p>'
-          + '</section>'
-        );
-      }
-
-      function renderFunding(results) {
-        const lines = results.fundingStrategy || [];
-        const items = lines.length === 0
-          ? '<li>Speak with our care team for a personalized funding plan.</li>'
-          : lines.map(function (line) {
-              return '<li>' + escapeHtml(line) + '</li>';
-            }).join('');
-        return (
-          '<section class="ap-panel ap-panel--funding">'
-          + '<h2>How to fund your care</h2>'
-          + '<ul class="ap-funding-list">' + items + '</ul>'
-          + '</section>'
+          '<aside class="ap-gift-callout">'
+          + '<h3>No coverage? Or covering the gap?</h3>'
+          + '<p>Postpartum care makes one of the most meaningful registry gifts. Add Alma Care gift cards to your baby registry — friends and family can contribute directly to your recovery support.</p>'
+          + '<a class="ap-gift-callout__cta" href="https://www.almacare.ca/gift-cards" target="_blank" rel="noopener">Learn about Alma Care gift cards →</a>'
+          + '</aside>'
         );
       }
 
       function renderFinalCta() {
         return (
           '<section class="ap-final-cta">'
-          + '<h2>Review your options with an Alma Care specialist</h2>'
-          + '<p>Our team can help you:</p>'
-          + '<ul>'
-          + '<li>Understand eligible coverage pathways</li>'
-          + '<li>Maximize HSA utilization</li>'
-          + '<li>Navigate documentation requirements</li>'
-          + '<li>Build a personalized postpartum support plan</li>'
-          + '</ul>'
           + '<div class="ap-cta-row">'
-          + '<a class="ap-btn ap-btn--primary" id="ap-consult-cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a free consult</a>'
-          + '<button type="button" class="ap-btn ap-btn--secondary" id="ap-email-plan">Email me my care plan</button>'
+          +   '<a class="ap-btn ap-btn--primary" id="ap-consult-cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a complimentary consultation</a>'
+          +   '<button type="button" class="ap-btn ap-btn--secondary" id="ap-print-plan">Send me my care plan</button>'
           + '</div>'
-          + '</section>'
-          + renderLeadDrawer()
-        );
-      }
-
-      function renderTrustStrip() {
-        return (
-          '<aside class="ap-trust">'
-          + '<div class="ap-trust__item"><strong>Trusted postpartum professionals</strong></div>'
-          + '<div class="ap-trust__item"><strong>Personalized practitioner matching</strong></div>'
-          + '<div class="ap-trust__item"><strong>Guided care coordination across Canada</strong></div>'
-          + '</aside>'
-        );
-      }
-
-      function renderLeadDrawer() {
-        return (
-          '<section id="ap-lead-drawer" class="ap-panel ap-panel--lead ap-hidden">'
-          + '<h2>Send your care plan</h2>'
-          + '<p>We\'ll email you a branded PDF estimate you can use for insurance pre-approval, and our care team will follow up.</p>'
-          + '<form id="ap-lead-form" novalidate>'
-          + '<div class="ap-field">'
-          + '<label for="ap-lead-name">Your name</label>'
-          + '<input type="text" id="ap-lead-name" name="name" autocomplete="name" required>'
-          + '</div>'
-          + '<div class="ap-field">'
-          + '<label for="ap-lead-email">Email</label>'
-          + '<input type="email" id="ap-lead-email" name="email" autocomplete="email" inputmode="email" required>'
-          + '</div>'
-          + '<div class="ap-field">'
-          + '<label for="ap-lead-address">Address (for the PDF letterhead)</label>'
-          + '<input type="text" id="ap-lead-address" name="address" autocomplete="street-address" required>'
-          + '</div>'
-          + '<div class="ap-field">'
-          + '<label for="ap-lead-concerns">Anything else we should know? <span class="ap-optional">(optional)</span></label>'
-          + '<textarea id="ap-lead-concerns" name="leadConcerns" rows="3"></textarea>'
-          + '</div>'
-          + '<p class="ap-privacy">We\'ll only use this to send your plan and follow up about your care. No spam.</p>'
-          + '<button type="submit" class="ap-btn ap-lead-submit">Send me my care plan</button>'
           + '<p class="ap-print-tip">Tip: in the print dialog, expand "More settings" and uncheck "Headers and footers" for a cleaner PDF.</p>'
-          + '<p id="ap-lead-status" class="ap-lead-status" aria-live="polite"></p>'
-          + '</form>'
           + '</section>'
         );
-      }
-
-      // ---------- Lead capture form ----------
-      const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-      function openLeadDrawer() {
-        const drawer = document.getElementById('ap-lead-drawer');
-        if (!drawer) return;
-        drawer.classList.remove('ap-hidden');
-
-        const nameInput = document.getElementById('ap-lead-name');
-        const emailInput = document.getElementById('ap-lead-email');
-        const addressInput = document.getElementById('ap-lead-address');
-        const concernsTextarea = document.getElementById('ap-lead-concerns');
-
-        if (nameInput) nameInput.value = state.lead.name || '';
-        if (emailInput) emailInput.value = state.lead.email || '';
-        if (addressInput) addressInput.value = state.lead.address || '';
-        // Concerns textarea pre-fills from state.concerns if leadConcerns is empty,
-        // otherwise keep what they previously typed in the drawer.
-        if (concernsTextarea) {
-          const existing = state.lead.leadConcerns;
-          concernsTextarea.value = existing && existing.length > 0
-            ? existing
-            : (state.concerns || '');
-          // Sync state so what's shown is also what we submit.
-          state.lead.leadConcerns = concernsTextarea.value;
-          saveState();
-        }
-
-        if (nameInput && typeof nameInput.focus === 'function') nameInput.focus();
-      }
-
-      function clearLeadInvalid() {
-        ['ap-lead-name', 'ap-lead-email', 'ap-lead-address'].forEach(function (id) {
-          const el = document.getElementById(id);
-          if (el) el.removeAttribute('aria-invalid');
-        });
-      }
-
-      function setLeadStatus(message, kind) {
-        const status = document.getElementById('ap-lead-status');
-        if (!status) return;
-        status.textContent = message || '';
-        status.classList.remove('ap-lead-status--error', 'ap-lead-status--success');
-        if (kind === 'error') status.classList.add('ap-lead-status--error');
-        if (kind === 'success') status.classList.add('ap-lead-status--success');
       }
 
       // ---------- Hubspot submission ----------
@@ -3160,17 +3070,47 @@
         return String(v);
       }
 
-      function buildHubspotFields(state) {
-        const fullName = (state.lead && state.lead.name) ? state.lead.name.trim() : '';
-        const firstName = fullName ? fullName.split(/\s+/)[0] : '';
+      async function submitHubspotPayload(fields, pageNameSuffix) {
+        if (!HUBSPOT.portalId || HUBSPOT.portalId === 'TODO_FILL_IN' || !HUBSPOT.formId || HUBSPOT.formId === 'TODO_FILL_IN') {
+          console.warn('Hubspot config not set — skipping submission');
+          return { ok: false, reason: 'not_configured' };
+        }
+        const url = 'https://api.hsforms.com/submissions/v3/integrations/submit/' + HUBSPOT.portalId + '/' + HUBSPOT.formId;
+        const payload = {
+          fields: fields,
+          context: {
+            pageUri: window.location.href,
+            pageName: 'Benefits Eligibility Tool — ' + (pageNameSuffix || '')
+          }
+        };
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) return { ok: false, reason: 'http_error', status: res.status };
+          return { ok: true };
+        } catch (e) {
+          return { ok: false, reason: 'network_error' };
+        }
+      }
 
-        // Recompute normalized weeksUntilDue so Hubspot sees the same number
-        // the engine used when generating recommendations.
-        const normalized = normalizeInputs(state, new Date());
-        const weeksUntilDue = typeof normalized.weeksUntilDue === 'number'
-          ? normalized.weeksUntilDue
-          : '';
+      function buildStep1Fields(state) {
+        const lead = state.lead || {};
+        return [
+          { name: 'firstname',          value: hsValue(lead.firstName) },
+          { name: 'lastname',           value: hsValue(lead.lastName) },
+          { name: 'email',              value: hsValue(lead.email) },
+          { name: 'phone',              value: hsValue(lead.phone) },
+          { name: 'ap_due_date',        value: hsValue(state.dueDate) },
+          { name: 'ap_is_postpartum',   value: hsValue(state.isPostpartum) },
+          { name: 'ap_first_time_parent', value: hsValue(state.firstTimeParent) },
+          { name: 'ap_concerns',        value: hsValue(state.concerns) }
+        ];
+      }
 
+      function buildEnrichmentFields(state) {
         const coverageKeys = state.coverage ? Object.keys(state.coverage) : [];
         const servicesCovered = coverageKeys.join(';');
         const totalCoverageValue = coverageKeys.reduce(function (sum, id) {
@@ -3178,165 +3118,38 @@
           const amount = entry && typeof entry.amount === 'number' ? entry.amount : 0;
           return sum + amount;
         }, 0);
-
-        // Combine step-1 concerns with the lead-form concerns when both are
-        // present; otherwise use whichever the user actually filled in.
-        const stepConcerns = (state.concerns || '').trim();
-        const leadConcerns = (state.lead && state.lead.leadConcerns ? state.lead.leadConcerns : '').trim();
-        let concernsText = '';
-        if (stepConcerns && leadConcerns) {
-          concernsText = stepConcerns + '\n\n' + leadConcerns;
-        } else if (stepConcerns) {
-          concernsText = stepConcerns;
-        } else if (leadConcerns) {
-          concernsText = leadConcerns;
-        }
-
         const recs = (state.results && state.results.recommendations) || [];
         const recommendedServices = recs
           .map(function (r) { return SERVICE_NAMES[r.service] || r.service; })
           .join(';');
-        const recommendedTotalCost = state.results && typeof state.results.totalRecommendedCost === 'number'
-          ? state.results.totalRecommendedCost
-          : 0;
-
+        const detectedConcerns = state.results && state.results.detectedConcerns
+          ? state.results.detectedConcerns.join(';')
+          : '';
+        // Total eligible across all selected services (after reimbursement %)
+        const eligible = (state.results && state.results.eligibleAmounts) || {};
+        const totalEligible = Object.keys(eligible).reduce(function (sum, id) {
+          return sum + eligible[id];
+        }, 0);
+        const lead = state.lead || {};
         return [
-          { name: 'firstname',             value: hsValue(firstName) },
-          { name: 'email',                 value: hsValue(state.lead && state.lead.email) },
-          { name: 'address',               value: hsValue(state.lead && state.lead.address) },
-          { name: 'due_date',              value: hsValue(state.dueDate) },
-          { name: 'weeks_until_due',       value: hsValue(weeksUntilDue) },
-          { name: 'is_postpartum',         value: hsValue(state.isPostpartum) },
-          { name: 'weeks_postpartum',      value: hsValue(state.weeksPostpartum) },
-          { name: 'first_time_parent',     value: hsValue(state.firstTimeParent) },
-          { name: 'insurer',               value: hsValue(state.insurer) },
-          { name: 'has_hsa',               value: hsValue(state.hasHsa) },
-          { name: 'hsa_balance',           value: hsValue(state.hsaBalance) },
-          { name: 'services_covered',      value: hsValue(servicesCovered) },
-          { name: 'total_coverage_value',  value: hsValue(totalCoverageValue) },
-          { name: 'concerns_text',         value: hsValue(concernsText) },
-          { name: 'detected_concerns',     value: hsValue(state.results && state.results.detectedConcerns ? state.results.detectedConcerns.join(';') : '') },
-          { name: 'recommended_services',  value: hsValue(recommendedServices) },
-          { name: 'recommended_total_cost', value: hsValue(recommendedTotalCost) }
+          { name: 'email',                value: hsValue(lead.email) },
+          { name: 'ap_insurer',           value: hsValue(state.insurer) },
+          { name: 'ap_has_hsa',           value: hsValue(state.hasHsa) },
+          { name: 'ap_hsa_balance',       value: hsValue(state.hsaBalance) },
+          { name: 'ap_services_covered',  value: hsValue(servicesCovered) },
+          { name: 'ap_total_coverage_value', value: hsValue(totalCoverageValue) },
+          { name: 'ap_total_eligible',    value: hsValue(totalEligible) },
+          { name: 'ap_recommended_services', value: hsValue(recommendedServices) },
+          { name: 'ap_detected_concerns', value: hsValue(detectedConcerns) }
         ];
       }
 
-      async function submitToHubspot(state) {
-        if (!HUBSPOT.portalId || HUBSPOT.portalId === 'TODO_FILL_IN' || !HUBSPOT.formId || HUBSPOT.formId === 'TODO_FILL_IN') {
-          console.warn('Hubspot config not set — skipping submission');
-          return { ok: false, reason: 'not_configured' };
-        }
-
-        const fields = buildHubspotFields(state);
-        const url = 'https://api.hsforms.com/submissions/v3/integrations/submit/' + HUBSPOT.portalId + '/' + HUBSPOT.formId;
-
-        const payload = {
-          fields: fields,
-          context: {
-            pageUri: window.location.href,
-            pageName: 'Benefits Eligibility Tool'
-          }
-        };
-
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) {
-          const errorText = await res.text().catch(function () { return ''; });
-          return { ok: false, reason: 'http_error', status: res.status, body: errorText };
-        }
-        return { ok: true };
+      function submitStep1ToHubspot(state) {
+        return submitHubspotPayload(buildStep1Fields(state), 'Step 1');
       }
 
-      function wireLeadForm() {
-        const form = document.getElementById('ap-lead-form');
-        if (!form) return;
-
-        const fields = [
-          { id: 'ap-lead-name', key: 'name' },
-          { id: 'ap-lead-email', key: 'email' },
-          { id: 'ap-lead-address', key: 'address' },
-          { id: 'ap-lead-concerns', key: 'leadConcerns' }
-        ];
-
-        fields.forEach(function (f) {
-          const el = document.getElementById(f.id);
-          if (!el) return;
-          el.addEventListener('input', function (e) {
-            state.lead[f.key] = e.target.value;
-            saveState();
-          });
-        });
-
-        form.addEventListener('submit', async function (e) {
-          e.preventDefault();
-          clearLeadInvalid();
-
-          const nameInput = document.getElementById('ap-lead-name');
-          const emailInput = document.getElementById('ap-lead-email');
-          const addressInput = document.getElementById('ap-lead-address');
-          const submitBtn = form.querySelector('.ap-lead-submit');
-
-          const name = (state.lead.name || '').trim();
-          const email = (state.lead.email || '').trim();
-          const address = (state.lead.address || '').trim();
-
-          let invalid = false;
-          if (!name) { nameInput && nameInput.setAttribute('aria-invalid', 'true'); invalid = true; }
-          if (!email || !EMAIL_RE.test(email)) {
-            emailInput && emailInput.setAttribute('aria-invalid', 'true');
-            invalid = true;
-          }
-          if (!address) { addressInput && addressInput.setAttribute('aria-invalid', 'true'); invalid = true; }
-
-          if (invalid) {
-            setLeadStatus('Please fill all required fields and enter a valid email.', 'error');
-            track('submission_failed', { stage: 'validation' });
-            return;
-          }
-
-          setLeadStatus('Preparing your care plan…', '');
-          if (submitBtn) submitBtn.disabled = true;
-
-          // Submit to Hubspot first so the care team is notified even if
-          // the user cancels the print dialog.
-          let hubspotResult;
-          try {
-            hubspotResult = await submitToHubspot(state);
-          } catch (err) {
-            console.error('Hubspot submit failed:', err);
-            hubspotResult = { ok: false, reason: 'network_error' };
-          }
-
-          // Set the final status message before opening the print dialog
-          // (the dialog can block the page momentarily).
-          if (hubspotResult && hubspotResult.ok) {
-            setLeadStatus('We\'ve shared your details with our care team. Choose "Save as PDF" in the print dialog to download your plan.', 'success');
-            track('submission_succeeded', { hubspot_ok: true, hubspot_reason: 'configured' });
-          } else if (hubspotResult && hubspotResult.reason === 'not_configured') {
-            setLeadStatus('Choose "Save as PDF" in the print dialog to download your plan.', 'success');
-            track('submission_succeeded', { hubspot_ok: false, hubspot_reason: 'not_configured' });
-          } else {
-            setLeadStatus('Choose "Save as PDF" in the print dialog to download your plan. We had trouble notifying our care team — feel free to email care@almacare.ca and we\'ll follow up.', 'success');
-            track('submission_succeeded', {
-              hubspot_ok: false,
-              hubspot_reason: (hubspotResult && hubspotResult.reason) || 'http_error'
-            });
-          }
-
-          try {
-            await printCarePlan();
-          } catch (err) {
-            console.error('print failed', err);
-            setLeadStatus('Something went wrong opening the print dialog. Please try again.', 'error');
-            track('submission_failed', { stage: 'print_error' });
-          } finally {
-            if (submitBtn) submitBtn.disabled = false;
-          }
-        });
+      function submitEnrichmentToHubspot(state) {
+        return submitHubspotPayload(buildEnrichmentFields(state), 'Plan Viewed');
       }
 
       // ---------- PDF generation ----------
@@ -3351,9 +3164,13 @@
       }
 
       function renderPdfSnapshot(results) {
-        const total = results.totalCovered || 0;
-        const heroHtml = total > 0
-          ? '<div class="ap-pdf__hero">' + formatMoney(total) + ' in benefits to use</div>'
+        const eligibleAmounts = (results && results.eligibleAmounts) || {};
+        const coveredIds = Object.keys(eligibleAmounts);
+        const totalEligible = coveredIds.reduce(function (sum, id) {
+          return sum + eligibleAmounts[id];
+        }, 0);
+        const heroHtml = coveredIds.length > 0
+          ? '<div class="ap-pdf__hero">' + formatMoney(totalEligible) + ' eligible for coverage</div>'
           : '<div class="ap-pdf__hero ap-pdf__hero--muted">No extended benefits — that\'s okay.</div>';
 
         const showHsa = state.hasHsa === 'yes'
@@ -3363,130 +3180,114 @@
           ? '<div class="ap-pdf__hsa">+ ' + formatMoney(state.hsaBalance) + ' flexible HSA spend</div>'
           : '';
 
-        const coveredIds = Object.keys(state.coverage || {});
-        const coveredItems = coveredIds.map(function (id) {
-          const entry = state.coverage[id];
-          const amount = entry && typeof entry.amount === 'number' ? entry.amount : 0;
+        const eligibleItems = coveredIds.map(function (id) {
           const name = SERVICE_NAMES[id] || id;
-          return '<li>' + escapeHtml(name) + ' — ' + formatMoney(amount) + '</li>';
+          return '<li>' + escapeHtml(name) + ' — <strong>' + formatMoney(eligibleAmounts[id]) + ' eligible</strong></li>';
         }).join('');
 
-        const notCovered = ALMA_SERVICES.filter(function (id) { return coveredIds.indexOf(id) === -1; });
-        const notCoveredItems = notCovered.map(function (id) {
+        const notCoveredIds = ALMA_SERVICES.filter(function (id) {
+          return coveredIds.indexOf(id) === -1;
+        });
+        const notEligibleItems = notCoveredIds.map(function (id) {
           const name = SERVICE_NAMES[id] || id;
           return '<li class="muted">' + escapeHtml(name) + '</li>';
         }).join('');
 
-        const coveredCol = coveredItems
-          ? '<div class="ap-pdf__cov-col"><h4>What\'s covered</h4><ul>' + coveredItems + '</ul></div>'
-          : '<div class="ap-pdf__cov-col"><h4>What\'s covered</h4><ul><li class="muted">Nothing selected.</li></ul></div>';
+        const eligibleCol = '<div class="ap-pdf__cov-col"><h4>What\'s eligible for coverage</h4>'
+          + (coveredIds.length
+              ? '<ul>' + eligibleItems + '</ul>'
+              : '<ul><li class="muted">No services selected.</li></ul>')
+          + '</div>';
 
-        const notCoveredCol = notCoveredItems
-          ? '<div class="ap-pdf__cov-col"><h4>What\'s not covered</h4><ul>' + notCoveredItems + '</ul></div>'
+        const notEligibleCol = notEligibleItems
+          ? '<div class="ap-pdf__cov-col"><h4>What\'s not eligible for coverage</h4><ul>' + notEligibleItems + '</ul></div>'
           : '';
 
         return (
           '<section class="ap-pdf__panel">'
-          + '<h3>Your coverage at a glance</h3>'
+          + '<h3>Your Coverage at a Glance</h3>'
           + heroHtml
           + hsaHtml
-          + '<div class="ap-pdf__cov-grid">' + coveredCol + notCoveredCol + '</div>'
+          + eligibleCol
+          + notEligibleCol
           + '</section>'
         );
-      }
-
-      function renderPdfCostBreakdown(rec) {
-        const rows = [];
-        rows.push(
-          '<div class="ap-pdf__cost-row ap-pdf__cost-row--total">'
-          + '<span>Estimated total</span><span>' + formatMoney(rec.totalCost || 0) + '</span></div>'
-        );
-        if ((rec.covered || 0) > 0) {
-          rows.push(
-            '<div class="ap-pdf__cost-row ap-pdf__cost-row--covered">'
-            + '<span>Covered by insurance</span><span>' + formatMoney(rec.covered) + '</span></div>'
-          );
-        }
-        if ((rec.fromHsa || 0) > 0) {
-          rows.push(
-            '<div class="ap-pdf__cost-row ap-pdf__cost-row--covered">'
-            + '<span>From HSA</span><span>' + formatMoney(rec.fromHsa) + '</span></div>'
-          );
-        }
-        if ((rec.outOfPocket || 0) > 0) {
-          rows.push(
-            '<div class="ap-pdf__cost-row ap-pdf__cost-row--oop">'
-            + '<span>Out-of-pocket</span><span>' + formatMoney(rec.outOfPocket) + '</span></div>'
-          );
-        }
-        return '<div class="ap-pdf__cost">' + rows.join('') + '</div>';
       }
 
       function renderPdfPlan(results) {
         const recs = results.recommendations || [];
         let body;
         if (recs.length === 0) {
-          body = '<p>We didn\'t have enough info to build personalized recommendations — book a free consult and we\'ll walk through your options together.</p>';
+          body = '<p>We didn\'t have enough info to build personalized recommendations — book a complimentary consultation and we\'ll walk through your options together.</p>';
         } else {
           body = recs.map(function (rec) {
             const name = SERVICE_NAMES[rec.service] || rec.service;
-            const dosing = dosingLine(rec.dosing);
+            const needsAsterisk = rec.service === 'postpartum_doula_care'
+              || rec.service === 'registered_nursing';
+            const asterisk = needsAsterisk ? ' *' : '';
             return (
               '<div class="ap-pdf__rec">'
-              + '<div class="ap-pdf__rec-title">' + escapeHtml(name) + '</div>'
-              + (dosing ? '<div class="ap-pdf__rec-dosing">' + escapeHtml(dosing) + '</div>' : '')
+              + '<div class="ap-pdf__rec-title">' + escapeHtml(name) + asterisk + '</div>'
               + '<div class="ap-pdf__rec-rationale">' + escapeHtml(rec.rationale || '') + '</div>'
-              + renderPdfCostBreakdown(rec)
               + '</div>'
             );
           }).join('');
         }
+        const hasAsterisk = recs.some(function (r) {
+          return r.service === 'postpartum_doula_care' || r.service === 'registered_nursing';
+        });
+        const footnote = hasAsterisk
+          ? '<p class="ap-pdf__footnote">* Pre-assessment approval may be required and varies by insurer. Book a consultation at almacare.ca/booking/book-a-call to get a tailored estimate.</p>'
+          : '';
         return (
           '<section class="ap-pdf__panel">'
-          + '<h3>Your personalized care plan</h3>'
-          + '<p>Recommendations based on your due date, benefits, and what you shared.</p>'
+          + '<h3>Your Highest-Priority Postpartum Supports</h3>'
           + body
+          + footnote
           + '</section>'
         );
       }
 
-      function renderPdfFunding(results) {
-        const lines = results.fundingStrategy || [];
-        const items = lines.length === 0
-          ? '<li>Speak with our care team for a personalized funding plan.</li>'
-          : lines.map(function (line) {
-              return '<li>' + escapeHtml(line) + '</li>';
-            }).join('');
+      function renderPdfWhatHappensNext() {
         return (
           '<section class="ap-pdf__panel">'
-          + '<h3>How to fund your care</h3>'
-          + '<ul class="ap-pdf__funding">' + items + '</ul>'
+          + '<h3>What Happens Next</h3>'
+          + '<ol class="ap-pdf__next">'
+          +   '<li>Book a complimentary consultation</li>'
+          +   '<li>Submit an intake form and refundable deposit</li>'
+          +   '<li>Receive bios of qualified Postnatal Care Specialists within 2 business days</li>'
+          +   '<li>Interview your candidates and select your care team</li>'
+          + '</ol>'
           + '</section>'
         );
       }
 
       function renderPdfSource(results) {
         const today = formatPdfDate(new Date());
-        const name = (state.lead.name || '').trim();
-        const address = (state.lead.address || '').trim();
+        const lead = state.lead || {};
+        const fullName = ((lead.firstName || '') + ' ' + (lead.lastName || '')).trim();
+        const contact = [];
+        if (lead.email) contact.push(escapeHtml(lead.email));
+        if (lead.phone) contact.push(escapeHtml(lead.phone));
 
         return (
           '<div class="ap-pdf__letterhead">'
           + '<div class="ap-pdf__brand">' + BRAND_MARK_SVG + '<span>Alma Care</span></div>'
           + '<div class="ap-pdf__brand-tag">Postpartum care, personalized</div>'
           + '<div class="ap-pdf__meta">'
-          + '<div><strong>Prepared for:</strong> ' + escapeHtml(name) + '</div>'
-          + '<div>' + escapeHtml(address) + '</div>'
+          + '<div><strong>Prepared for:</strong> ' + escapeHtml(fullName) + '</div>'
+          + (contact.length ? '<div>' + contact.join(' • ') + '</div>' : '')
           + '<div><strong>Date:</strong> ' + escapeHtml(today) + '</div>'
           + '</div>'
           + '</div>'
-          + '<h2 class="ap-pdf__heading">Your personalized postpartum care plan</h2>'
+          + '<h2 class="ap-pdf__heading">Your Personalized Care Plan</h2>'
+          + '<p class="ap-pdf__clarifier">This care plan outlines eligible coverage pathways and recommended postpartum supports. After your complimentary consultation, we’ll prepare a tailored estimate with specific care providers, hours, and costs — ready to submit to your insurer.</p>'
           + renderPdfSnapshot(results)
           + renderPdfPlan(results)
-          + renderPdfFunding(results)
+          + renderPdfWhatHappensNext()
           + '<div class="ap-pdf__footer">'
-          + 'This estimate is based on the information you provided. Actual coverage and pricing may vary. Speak with your benefits provider for confirmation.'
-          + '<br>Book your free consult: <span class="ap-pdf__footer-link">almacare.ca/booking/book-a-call</span>'
+          + 'This care plan is based on the information you provided. Eligible amounts reflect your plan\'s annual maximums and reimbursement percentages — they are not a guarantee of coverage. Confirm details with your benefits provider.'
+          + '<br>Book your complimentary consultation: <span class="ap-pdf__footer-link">almacare.ca/booking/book-a-call</span>'
           + '</div>'
           + '<footer class="ap-pdf__brandline">Alma Care — care@almacare.ca — almacare.ca/benefits</footer>'
         );
@@ -3513,10 +3314,7 @@
           // Set a clean document title so Chrome's PDF picker pre-fills with
           // "Alma Care plan — [first name]" instead of the page URL.
           const originalTitle = document.title;
-          const leadName = (state.lead && state.lead.name) ? state.lead.name : '';
-          const firstName = state.firstName
-            || (leadName ? leadName.split(/\s+/)[0] : '')
-            || '';
+          const firstName = (state.lead && state.lead.firstName) ? state.lead.firstName.trim() : '';
           document.title = 'Alma Care plan' + (firstName ? ' — ' + firstName : '');
           const restoreTitle = function () { document.title = originalTitle; };
           window.addEventListener('afterprint', restoreTitle, { once: true });
@@ -3548,30 +3346,20 @@
         const container = document.getElementById('ap-results');
         if (!container) return;
         container.innerHTML =
-          renderSnapshot(results)
-          + renderIntro(results)
+          renderIntro()
+          + renderClarifier()
+          + renderSnapshot(results)
           + renderPlan(results)
-          + renderHsaEligible(results)
           + renderWhatHappensNext()
-          + renderNavigateDetails()
-          + renderEmotionalPermission()
-          + renderFunding(results)
-          + renderFinalCta()
-          + renderTrustStrip();
+          + renderGiftCardsCallout(results)
+          + renderFinalCta();
 
-        const emailBtn = document.getElementById('ap-email-plan');
-        const drawer = document.getElementById('ap-lead-drawer');
-        if (emailBtn && drawer) {
-          emailBtn.addEventListener('click', function () {
-            const isHidden = drawer.classList.contains('ap-hidden');
-            if (isHidden) {
-              openLeadDrawer();
-              emailBtn.textContent = 'Hide';
-              track('lead_drawer_opened', { has_results: true });
-            } else {
-              drawer.classList.add('ap-hidden');
-              emailBtn.textContent = 'Email me my care plan';
-            }
+        const printBtn = document.getElementById('ap-print-plan');
+        if (printBtn) {
+          printBtn.addEventListener('click', function () {
+            printCarePlan().catch(function (err) {
+              console.error('print failed', err);
+            });
           });
         }
 
@@ -3581,13 +3369,9 @@
             track('consult_cta_clicked', { source: 'results_primary_cta' });
           });
         }
-
-        wireLeadForm();
       }
 
       // ---------- Init ----------
-      setDueDateMax();
-      setDueDateMin();
       loadState();
       hydrateUI();
     })();
