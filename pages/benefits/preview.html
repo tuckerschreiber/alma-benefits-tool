@@ -1512,13 +1512,22 @@
         <label class="ap-label" for="ap-insurer">Insurance provider</label>
         <select id="ap-insurer" name="insurer" class="ap-select">
           <option value="">Select your insurer</option>
-          <option value="sun_life">Sun Life</option>
-          <option value="manulife">Manulife</option>
-          <option value="canada_life">Canada Life</option>
-          <option value="green_shield">GreenShield</option>
-          <option value="equitable">Equitable</option>
-          <option value="desjardins">Desjardins</option>
-          <option value="other">Other / not sure</option>
+          <optgroup label="Benefits platforms">
+            <option value="maven">Maven Clinic</option>
+            <option value="carrot_fertility">Carrot Fertility</option>
+            <option value="forma">Forma</option>
+          </optgroup>
+          <optgroup label="Insurance carriers">
+            <option value="canada_life">Canada Life</option>
+            <option value="desjardins">Desjardins</option>
+            <option value="equitable">Equitable</option>
+            <option value="green_shield">GreenShield</option>
+            <option value="manulife">Manulife</option>
+            <option value="sun_life">Sun Life</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="other">My plan isn't listed</option>
+          </optgroup>
         </select>
       </div>
 
