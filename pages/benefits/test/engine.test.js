@@ -4,7 +4,6 @@ import {
   normalizeInputs,
   eligibilityFilter,
   applyRules,
-  allocateFunding,
   computeResults,
   detectConcerns,
   computeEligibleAmounts,
@@ -238,107 +237,6 @@ test('applyRules: postpartum user matches rule with weeksUntilDueMax (prenatal c
   assert.equal(result.length, 1);
 });
 
-// ----- allocateFunding -----
-
-test('allocateFunding: coverage fully covers cost', () => {
-  const recs = [
-    {
-      service: 'massage_therapy',
-      dosing: { sessions: 4, estimatedSessionCost: 100 }, // $400 total
-      rationale: 'x',
-      priority: 'medium'
-    }
-  ];
-  const coverage = {
-    massage_therapy: { amount: 500, perVisitCap: 0, reimbursementPercent: 100 }
-  };
-  const result = allocateFunding(recs, coverage, 0);
-  assert.equal(result[0].totalCost, 400);
-  assert.equal(result[0].covered, 400);
-  assert.equal(result[0].fromHsa, 0);
-  assert.equal(result[0].outOfPocket, 0);
-});
-
-test('allocateFunding: 80% reimbursement on $500 limit caps covered at $400', () => {
-  const recs = [
-    {
-      service: 'massage_therapy',
-      dosing: { sessions: 10, estimatedSessionCost: 100 }, // $1000 total
-      rationale: 'x',
-      priority: 'medium'
-    }
-  ];
-  const coverage = {
-    massage_therapy: { amount: 500, perVisitCap: 0, reimbursementPercent: 80 }
-  };
-  const result = allocateFunding(recs, coverage, 0);
-  assert.equal(result[0].totalCost, 1000);
-  assert.equal(result[0].covered, 400); // 500 * 0.8
-  assert.equal(result[0].outOfPocket, 600);
-});
-
-test('allocateFunding: HSA depletes across multiple services in order', () => {
-  const recs = [
-    {
-      service: 'a',
-      dosing: { sessions: 1, estimatedSessionCost: 300 },
-      rationale: 'x',
-      priority: 'high'
-    },
-    {
-      service: 'b',
-      dosing: { sessions: 1, estimatedSessionCost: 300 },
-      rationale: 'y',
-      priority: 'high'
-    }
-  ];
-  const result = allocateFunding(recs, {}, 400);
-  // First rec consumes 300 of HSA, leaving 100
-  assert.equal(result[0].fromHsa, 300);
-  assert.equal(result[0].outOfPocket, 0);
-  // Second rec consumes remaining 100 of HSA
-  assert.equal(result[1].fromHsa, 100);
-  assert.equal(result[1].outOfPocket, 200);
-});
-
-test('allocateFunding: out-of-pocket = remainder when neither covers fully', () => {
-  const recs = [
-    {
-      service: 'massage_therapy',
-      dosing: { sessions: 4, estimatedSessionCost: 100 }, // $400
-      rationale: 'x',
-      priority: 'medium'
-    }
-  ];
-  const coverage = {
-    massage_therapy: { amount: 100, perVisitCap: 0, reimbursementPercent: 100 }
-  };
-  const result = allocateFunding(recs, coverage, 50);
-  assert.equal(result[0].totalCost, 400);
-  assert.equal(result[0].covered, 100);
-  assert.equal(result[0].fromHsa, 50);
-  assert.equal(result[0].outOfPocket, 250);
-});
-
-test('allocateFunding: throws when rule has neither estimatedSessionCost nor totalCost', () => {
-  const recs = [{ service: 'massage_therapy', dosing: { sessions: 4 } }];
-  assert.throws(() => allocateFunding(recs, {}, 0), /must specify dosing.estimatedSessionCost or dosing.totalCost/);
-});
-
-test('allocateFunding: does not mutate input array', () => {
-  const recs = [
-    {
-      service: 'massage_therapy',
-      dosing: { sessions: 4, estimatedSessionCost: 100 },
-      rationale: 'x',
-      priority: 'medium'
-    }
-  ];
-  const before = JSON.parse(JSON.stringify(recs));
-  allocateFunding(recs, {}, 0);
-  assert.deepEqual(recs, before);
-});
-
 // ----- computeResults -----
 
 test('computeResults: end-to-end with realistic input returns correct shape', () => {
@@ -362,26 +260,9 @@ test('computeResults: end-to-end with realistic input returns correct shape', ()
   assert.ok(result.recommendations.length >= 1);
   // First rec should be the high-priority one (lactation_consulting for first-time parent)
   assert.equal(result.recommendations[0].service, 'lactation_consulting');
-  assert.ok(typeof result.totalCovered === 'number');
-  assert.ok(typeof result.totalRecommendedCost === 'number');
-  assert.ok(Array.isArray(result.fundingStrategy));
-});
-
-test('computeResults: zero coverage + zero HSA produces empathetic copy', () => {
-  const today = new Date('2026-05-10');
-  const inputs = {
-    dueDate: '2026-07-05',
-    firstTimeParent: true,
-    coverage: {},
-    hasHsa: false,
-    hsaBalance: 0
-  };
-  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
-
-  // No eligible services means no recommendations from coverage, but fundingStrategy should explain
-  const joined = result.fundingStrategy.join(' ');
-  assert.match(joined, /out-of-pocket/i);
-  assert.match(joined, /gift card/i);
+  assert.ok(typeof result.eligibleAmounts === 'object', 'has eligibleAmounts map');
+  assert.equal(result.eligibleAmounts.massage_therapy, 400); // 500 * 0.8
+  assert.equal(result.eligibleAmounts.lactation_consulting, 300);
 });
 
 test('computeResults: SERVICE_NAMES exports human-readable names', () => {
