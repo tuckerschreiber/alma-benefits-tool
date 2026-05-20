@@ -658,6 +658,29 @@
       margin-top: 8px;
     }
 
+    /* ---------- Gift cards callout (Step 2 + results) ---------- */
+    .ap-gift-callout {
+      margin-top: 32px;
+      padding: 20px 24px;
+      background: #f5f1ea;
+      border-left: 4px solid #032215;
+      border-radius: 8px;
+    }
+    .ap-gift-callout h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      color: #032215;
+    }
+    .ap-gift-callout p {
+      margin: 0 0 12px;
+      color: #2a3a32;
+    }
+    .ap-gift-callout__cta {
+      color: #032215;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
     /* ---------- Results panels ---------- */
     .ap-panel {
       background: #ffffff;
@@ -743,23 +766,21 @@
       align-self: flex-start;
     }
 
-    .ap-coverage-list {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin-top: 8px;
+    /* ---------- Stacked coverage cards ---------- */
+    .ap-coverage-card {
+      margin-top: 16px;
+      padding: 20px 24px;
+      background: #fbf9f4;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
     }
-
-    .ap-coverage-list__column h3 {
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #555;
-      margin-bottom: 8px;
+    .ap-coverage-card h3 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #032215;
     }
-
-    .ap-coverage-list ul {
+    .ap-coverage-card ul {
       list-style: none;
       padding: 0;
       margin: 0;
@@ -767,27 +788,89 @@
       flex-direction: column;
       gap: 6px;
     }
-
-    .ap-coverage-list li {
+    .ap-coverage-card li {
       font-size: 15px;
       color: #032215;
       overflow-wrap: break-word;
-      word-wrap: break-word;
+    }
+    .ap-coverage-card li.ap-coverage-list__item--muted,
+    .ap-coverage-card .ap-coverage-list__item--muted {
+      color: #888;
+    }
+    .ap-coverage-list__check { color: #156146; font-weight: 700; margin-right: 8px; }
+    .ap-coverage-list__dash { color: #bbb; margin-right: 8px; }
+    .ap-coverage-list__total {
+      margin: 12px 0 0;
+      padding-top: 12px;
+      border-top: 1px solid rgb(235, 225, 213);
+      color: #032215;
+      font-size: 15px;
+    }
+    .ap-coverage-card--hsa {
+      border-left: 4px solid #032215;
+    }
+    .ap-coverage-card--hsa p {
+      margin: 0;
+      color: #555;
+      font-size: 14px;
     }
 
-    .ap-coverage-list li.ap-coverage-list__item--muted {
-      color: #999;
+    /* ---------- Results-page clarifier + footnote + priority badges ---------- */
+    .ap-results__clarifier {
+      font-size: 15px;
+      color: #444;
+      margin: 8px 0 24px;
+      line-height: 1.6;
     }
-
-    .ap-coverage-list__check {
-      color: #156146;
+    .ap-rec-card__asterisk {
+      color: #b8860b;
+      font-weight: 700;
+    }
+    .ap-rec-card__priority {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #e6efe9;
+      color: #032215;
+      vertical-align: middle;
       font-weight: 600;
-      margin-right: 6px;
+    }
+    .ap-rec-card__priority--medium { background: #f4ecdc; }
+    .ap-rec-card__priority--low    { background: #f0f0f0; }
+    .ap-rec__footnote {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: #fafaf6;
+      border-left: 3px solid #b8860b;
+      font-size: 14px;
+      color: #2a3a32;
+      line-height: 1.55;
+      border-radius: 4px;
+    }
+    .ap-rec__footnote a {
+      color: #032215;
+      font-weight: 600;
     }
 
-    .ap-coverage-list__dash {
-      color: #bbb;
-      margin-right: 6px;
+    /* ---------- New What Happens Next list ---------- */
+    .ap-next__list {
+      padding-left: 24px;
+      margin: 0;
+    }
+    .ap-next__list li {
+      margin: 12px 0;
+      line-height: 1.55;
+      font-size: 15px;
+    }
+    .ap-next__cta {
+      display: inline-block;
+      margin-left: 12px;
+      padding: 6px 14px;
+      font-size: 14px;
     }
 
     .ap-rec-card {
@@ -1358,10 +1441,6 @@
 
       .ap-panel h2 {
         font-size: 20px;
-      }
-
-      .ap-coverage-list {
-        grid-template-columns: 1fr;
       }
 
       .ap-cta-row {
