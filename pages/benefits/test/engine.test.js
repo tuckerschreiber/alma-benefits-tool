@@ -7,6 +7,7 @@ import {
   allocateFunding,
   computeResults,
   detectConcerns,
+  computeEligibleAmounts,
   SERVICE_NAMES
 } from '../src/engine.js';
 import { ALMA_SERVICES, RULES } from '../src/rules.js';
@@ -554,4 +555,30 @@ test('computeResults: within same covered+priority tier, in-window outranks out-
   // The actual ordering claim:
   assert.ok(nursingIdx < doulaIdx, 'in-window nursing must precede out-of-window doula');
   assert.ok(lactationIdx < doulaIdx, 'in-window lactation must precede out-of-window doula');
+});
+
+// ----- computeEligibleAmounts -----
+
+test('computeEligibleAmounts: amount × reimbursementPercent per service', () => {
+  const coverage = {
+    massage_therapy: { amount: 500 },
+    acupuncture: { amount: 500, reimbursementPercent: 80 },
+    postpartum_doula_care: { amount: 1000 }
+  };
+  const result = computeEligibleAmounts(coverage);
+  assert.deepStrictEqual(result, {
+    massage_therapy: 500,
+    acupuncture: 400,
+    postpartum_doula_care: 1000
+  });
+});
+
+test('computeEligibleAmounts: missing reimbursementPercent defaults to 100', () => {
+  const result = computeEligibleAmounts({ massage_therapy: { amount: 300 } });
+  assert.strictEqual(result.massage_therapy, 300);
+});
+
+test('computeEligibleAmounts: empty / null coverage returns {}', () => {
+  assert.deepStrictEqual(computeEligibleAmounts({}), {});
+  assert.deepStrictEqual(computeEligibleAmounts(null), {});
 });

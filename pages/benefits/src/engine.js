@@ -260,6 +260,21 @@ function recommendationCost(rec) {
 }
 
 /**
+ * Compute the eligible $ amount per service from the user's coverage inputs.
+ * eligible = amount × (reimbursementPercent ?? 100) / 100
+ */
+export function computeEligibleAmounts(coverage) {
+  const out = {};
+  if (!coverage) return out;
+  for (const [serviceId, c] of Object.entries(coverage)) {
+    if (!c || typeof c.amount !== 'number') continue;
+    const pct = typeof c.reimbursementPercent === 'number' ? c.reimbursementPercent : 100;
+    out[serviceId] = c.amount * (pct / 100);
+  }
+  return out;
+}
+
+/**
  * Allocate insurance coverage + HSA against each recommendation in order. Returns a new
  * array; does not mutate.
  */
