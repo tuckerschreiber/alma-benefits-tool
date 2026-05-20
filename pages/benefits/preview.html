@@ -2079,84 +2079,16 @@
         });
       }
 
-      function recommendationCost(rec) {
-        if (rec.dosing && typeof rec.dosing.totalCost === 'number') {
-          return rec.dosing.totalCost;
+      function computeEligibleAmounts(coverage) {
+        const out = {};
+        if (!coverage) return out;
+        for (const serviceId of Object.keys(coverage)) {
+          const c = coverage[serviceId];
+          if (!c || typeof c.amount !== 'number') continue;
+          const pct = typeof c.reimbursementPercent === 'number' ? c.reimbursementPercent : 100;
+          out[serviceId] = c.amount * (pct / 100);
         }
-        const sessions = (rec.dosing && rec.dosing.sessions) || 0;
-        if (sessions > 0 && !(rec.dosing && typeof rec.dosing.estimatedSessionCost === 'number')) {
-          throw new Error(
-            'Rule for "' + rec.service + '" must specify dosing.estimatedSessionCost or dosing.totalCost'
-          );
-        }
-        const cost = rec.dosing && typeof rec.dosing.estimatedSessionCost === 'number'
-          ? rec.dosing.estimatedSessionCost
-          : 0;
-        return sessions * cost;
-      }
-
-      function allocateFunding(recommendations, coverage, hsaBalance) {
-        let remainingHsa = typeof hsaBalance === 'number' ? hsaBalance : 0;
-        const cov = coverage || {};
-        return (recommendations || []).map(function (rec) {
-          const totalCost = recommendationCost(rec);
-          const c = cov[rec.service];
-          let covered = 0;
-          if (c && typeof c.amount === 'number') {
-            const reimbPct = typeof c.reimbursementPercent === 'number' ? c.reimbursementPercent : 100;
-            const maxCovered = c.amount * (reimbPct / 100);
-            covered = Math.min(totalCost, maxCovered);
-          }
-          const afterCoverage = Math.max(0, totalCost - covered);
-          const fromHsa = Math.min(afterCoverage, remainingHsa);
-          remainingHsa -= fromHsa;
-          const outOfPocket = Math.max(0, afterCoverage - fromHsa);
-          return Object.assign({}, rec, {
-            totalCost: totalCost,
-            covered: covered,
-            fromHsa: fromHsa,
-            outOfPocket: outOfPocket
-          });
-        });
-      }
-
-      function formatMoney(n) {
-        return '$' + Math.round(n);
-      }
-
-      function buildFundingStrategy(recommendations, coverage, hsaBalance, totalCovered) {
-        const lines = [];
-        const cov = coverage || {};
-
-        // Track which services were actually used in recommendations
-        const usedServices = new Set(recommendations.map(function (r) { return r.service; }));
-
-        for (const serviceId of usedServices) {
-          const c = cov[serviceId];
-          if (c && typeof c.amount === 'number' && c.amount > 0) {
-            const name = SERVICE_NAMES[serviceId] || serviceId;
-            lines.push('Use your ' + name + ' benefits — ' + formatMoney(c.amount) + ' available.');
-          }
-        }
-
-        const totalFromHsa = recommendations.reduce(function (s, r) { return s + (r.fromHsa || 0); }, 0);
-        if (totalFromHsa > 0) {
-          lines.push('Cover ' + formatMoney(totalFromHsa) + ' with your ' + formatMoney(hsaBalance) + ' HSA.');
-        }
-
-        const totalOop = recommendations.reduce(function (s, r) { return s + (r.outOfPocket || 0); }, 0);
-        if (totalOop > 0) {
-          lines.push(
-            '~' + formatMoney(totalOop) + ' out-of-pocket — consider adding Alma gift cards to your registry.'
-          );
-        }
-
-        if (totalCovered === 0 && (!hsaBalance || hsaBalance === 0)) {
-          lines.push('Most of your care will be out-of-pocket — here\'s how to plan smartly.');
-          lines.push('Consider Alma gift cards on your registry to offset costs.');
-        }
-
-        return lines;
+        return out;
       }
 
       function computeResults(rawInputs, rules, almaServices, today) {
@@ -2189,15 +2121,7 @@
           return pa - pb;
         });
 
-        const recommendations = allocateFunding(matched, normalized.coverage, normalized.hsaBalance);
-
-        // totalCovered = sum of covered $ across recommendations
-        const totalCovered = recommendations.reduce(function (sum, r) { return sum + (r.covered || 0); }, 0);
-        const totalRecommendedCost = recommendations.reduce(function (sum, r) { return sum + (r.totalCost || 0); }, 0);
-
-        // ----- Annotate recs with isCovered (boolean) + windowRank for the hybrid sort -----
-        // `rec.covered` stays as the dollar amount written by allocateFunding; we add a
-        // separate `isCovered` boolean so the UI's dollar-amount reads keep working.
+        const recommendations = matched;
         const coverageMap = normalized.coverage || {};
         for (const rec of recommendations) {
           rec.isCovered = !!coverageMap[rec.service];
@@ -2205,7 +2129,6 @@
           rec.windowRank = isInWindow(normalized.weeksPostpartum, dosingWindow) ? 0 : 1;
         }
 
-        // ----- Hybrid final sort: isCovered (true first) -> priority asc -> windowRank asc -----
         recommendations.sort(function (a, b) {
           if (a.isCovered !== b.isCovered) return a.isCovered ? -1 : 1;
           const pa = PRIORITY_RANK[a.priority] != null ? PRIORITY_RANK[a.priority] : 99;
@@ -2214,20 +2137,13 @@
           return (a.windowRank != null ? a.windowRank : 99) - (b.windowRank != null ? b.windowRank : 99);
         });
 
-        const fundingStrategy = buildFundingStrategy(
-          recommendations,
-          normalized.coverage,
-          normalized.hsaBalance,
-          totalCovered
-        );
+        const eligibleAmounts = computeEligibleAmounts(normalized.coverage);
 
         return {
           normalized: normalized,
           eligibleServiceIds: eligibleServiceIds,
           recommendations: recommendations,
-          totalCovered: totalCovered,
-          totalRecommendedCost: totalRecommendedCost,
-          fundingStrategy: fundingStrategy,
+          eligibleAmounts: eligibleAmounts,
           detectedConcerns: detectedConcerns
         };
       }
