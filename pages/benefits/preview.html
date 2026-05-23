@@ -2349,6 +2349,10 @@
       const lastNameInput = document.getElementById('ap-last-name');
       const emailInput = document.getElementById('ap-email');
       const phoneInput = document.getElementById('ap-phone');
+      const streetAddressInput = document.getElementById('ap-street-address');
+      const cityInput = document.getElementById('ap-city');
+      const postalCodeInput = document.getElementById('ap-postal-code');
+      const postalCodeError = document.querySelector('[data-error-for="postalCode"]');
       const firstTimeButtons = document.querySelectorAll('[data-toggle="firstTimeParent"]');
       const insurerSelect = document.getElementById('ap-insurer');
       const hsaButtons = document.querySelectorAll('[data-toggle="hasHsa"]');
@@ -2396,7 +2400,7 @@
           if (saved) Object.assign(state, JSON.parse(saved));
         } catch (e) { /* sessionStorage unavailable — silent fail */ }
         // Ensure lead object exists with current shape even if persisted state predates it.
-        const fresh = { firstName: '', lastName: '', email: '', phone: '' };
+        const fresh = { firstName: '', lastName: '', email: '', phone: '', streetAddress: '', city: '', postalCode: '' };
         if (!state.lead || typeof state.lead !== 'object') {
           state.lead = fresh;
         } else {
@@ -2404,7 +2408,10 @@
             firstName: state.lead.firstName || '',
             lastName: state.lead.lastName || '',
             email: state.lead.email || '',
-            phone: state.lead.phone || ''
+            phone: state.lead.phone || '',
+            streetAddress: state.lead.streetAddress || '',
+            city: state.lead.city || '',
+            postalCode: state.lead.postalCode || ''
           });
         }
       }
@@ -2584,6 +2591,7 @@
 
       const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const PHONE_RE = /^[\d\s()+\-]{7,}$/;
+      const POSTAL_RE = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
 
       function updateContinueButton() {
         let canContinue;
@@ -2595,7 +2603,9 @@
             !!state.lead.firstName.trim() &&
             !!state.lead.lastName.trim() &&
             EMAIL_RE.test(state.lead.email) &&
-            PHONE_RE.test(state.lead.phone);
+            PHONE_RE.test(state.lead.phone) &&
+            !!state.lead.city.trim() &&
+            POSTAL_RE.test(state.lead.postalCode);
         } else if (currentStep === 2) {
           canContinue = !!state.insurer;
         } else if (currentStep === 3) {
@@ -2616,6 +2626,9 @@
         lastNameInput.value = state.lead.lastName || '';
         emailInput.value = state.lead.email || '';
         phoneInput.value = state.lead.phone || '';
+        streetAddressInput.value = state.lead.streetAddress || '';
+        cityInput.value = state.lead.city || '';
+        postalCodeInput.value = state.lead.postalCode || '';
         // Step 2
         insurerSelect.value = state.insurer || '';
         if (state.hasHsa !== null) applyHsaUI(state.hasHsa);
@@ -2705,7 +2718,10 @@
         { el: firstNameInput, key: 'firstName' },
         { el: lastNameInput, key: 'lastName' },
         { el: emailInput, key: 'email' },
-        { el: phoneInput, key: 'phone' }
+        { el: phoneInput, key: 'phone' },
+        { el: streetAddressInput, key: 'streetAddress' },
+        { el: cityInput, key: 'city' },
+        { el: postalCodeInput, key: 'postalCode' }
       ];
       LEAD_INPUT_BINDINGS.forEach(({ el, key }) => {
         if (!el) return;
@@ -2715,6 +2731,23 @@
           updateContinueButton();
         });
       });
+
+      if (postalCodeInput) {
+        postalCodeInput.addEventListener('blur', () => {
+          const raw = (state.lead.postalCode || '').toUpperCase().replace(/[\s-]+/g, '');
+          if (raw.length === 6) {
+            state.lead.postalCode = raw.slice(0, 3) + ' ' + raw.slice(3);
+            postalCodeInput.value = state.lead.postalCode;
+          }
+          if (postalCodeError) {
+            const hasValue = !!state.lead.postalCode;
+            const isValid = POSTAL_RE.test(state.lead.postalCode);
+            postalCodeError.hidden = !hasValue || isValid;
+          }
+          saveState();
+          updateContinueButton();
+        });
+      }
 
       firstTimeButtons.forEach((btn) => {
         btn.addEventListener('click', () => {
