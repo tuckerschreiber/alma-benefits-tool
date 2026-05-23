@@ -2328,7 +2328,10 @@
         };
       }
 
-      // ---------- PDF (mirror of src/pdf.js + ALMA_RN_HOURLY_RATE from src/rules.js — keep in sync) ----------
+      // ---------- PDF (mirror of pages/benefits/src/pdf.js + ALMA_RN_HOURLY_RATE from src/rules.js) ----------
+      // Last synced from src/pdf.js @ ada5ad2 (Phase E commit 1). When changing
+      // src/pdf.js, also update this mirror and bump the SHA above. Tests run against
+      // src/pdf.js only — drift between source and mirror is silent in CI.
       // Alma's published hourly rate for in-home postpartum nursing support.
       // Used by buildEstimateDocDefinition to compute "Estimated Hours" from the
       // eligible $ amount. Leave null pre-launch — the Download Coverage Estimate
@@ -3320,6 +3323,7 @@
       // ---------- PDF download (lazy-load pdfmake from CDN) ----------
       const PDFMAKE_URL = 'https://cdn.jsdelivr.net/npm/pdfmake@0.2.10/build/pdfmake.min.js';
       const PDFMAKE_FONTS_URL = 'https://cdn.jsdelivr.net/npm/pdfmake@0.2.10/build/vfs_fonts.js';
+      let pdfMakeReadyPromise = null;
 
       function loadExternalScript(src) {
         return new Promise(function (resolve, reject) {
@@ -3329,21 +3333,38 @@
           s.src = src;
           s.setAttribute('data-pdfmake-src', src);
           s.onload = function () { resolve(); };
-          s.onerror = function () { reject(new Error('Failed to load ' + src)); };
+          s.onerror = function () {
+            s.remove();
+            reject(new Error('Failed to load ' + src));
+          };
           document.head.appendChild(s);
         });
       }
 
       function ensurePdfMake() {
         if (window.pdfMake && window.pdfMake.vfs) return Promise.resolve();
-        return loadExternalScript(PDFMAKE_URL).then(function () {
-          return loadExternalScript(PDFMAKE_FONTS_URL);
-        });
+        if (pdfMakeReadyPromise) return pdfMakeReadyPromise;
+        pdfMakeReadyPromise = loadExternalScript(PDFMAKE_URL)
+          .then(function () { return loadExternalScript(PDFMAKE_FONTS_URL); })
+          .catch(function (err) {
+            // Allow a future retry to actually attempt loading again.
+            pdfMakeReadyPromise = null;
+            throw err;
+          });
+        return pdfMakeReadyPromise;
       }
 
       function handleDownloadEstimate() {
         const eligibleNursing = (state.results && state.results.eligibleAmounts && state.results.eligibleAmounts.registered_nursing) || 0;
         if (eligibleNursing <= 0) return;
+
+        const downloadBtn = document.getElementById('ap-download-estimate') || document.getElementById('ap-download-redo');
+        const originalLabel = downloadBtn ? downloadBtn.textContent : '';
+        if (downloadBtn) {
+          downloadBtn.disabled = true;
+          downloadBtn.textContent = 'Generating…';
+        }
+
         const adapterResults = { nursing: { eligibleAmount: eligibleNursing } };
         const today = new Date();
         const doc = buildEstimateDocDefinition(state, adapterResults, {
@@ -3351,10 +3372,12 @@
           today: today
         });
         if (!doc) {
+          if (downloadBtn) { downloadBtn.disabled = false; downloadBtn.textContent = originalLabel; }
           console.warn('Estimate doc unavailable (missing data or rate)');
           return;
         }
         const filename = buildEstimateFilename(state, today);
+
         ensurePdfMake().then(function () {
           try {
             window.pdfMake.createPdf(doc).download(filename);
@@ -3363,6 +3386,7 @@
             swapDownloadBlockToError();
             return;
           }
+          // Fire-and-forget — user has already received the PDF, don't block UI on Hubspot.
           submitDownloadToHubspot(state);
           track('estimate_downloaded', { hours_estimated: Math.floor(eligibleNursing / ALMA_RN_HOURLY_RATE) });
           swapDownloadBlockToDone();
@@ -3392,6 +3416,7 @@
       function swapDownloadBlockToError() {
         const block = document.getElementById('ap-download-block');
         if (!block) return;
+        block.classList.remove('ap-download-block--done');
         block.innerHTML = (
           '<p class="ap-download-block__copy">Couldn\'t generate the estimate. Speak with a Postnatal Care Concierge and we\'ll send you one directly.</p>'
           + '<a class="ap-btn ap-btn--primary" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Speak with a Postnatal Care Concierge →</a>'
