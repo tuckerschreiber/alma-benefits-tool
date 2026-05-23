@@ -6,6 +6,7 @@ let selectedMatches = [];
 let currentClient = null;
 let geoCache = JSON.parse(localStorage.getItem('almaGeoCache') || '{}');
 let allMatches = [];
+let shiftsLoadFailure = null;
 let filters = {
     credential: 'any',
     maxDistance: null,    // null means use settings.maxDistance
@@ -321,7 +322,7 @@ async function loadShiftsForWindow(startDate, weeks = 8) {
             const res = await fetch(u, { headers: { 'Authorization': `Bearer ${settings.apiKey}` } });
             if (!res.ok) {
                 console.warn('Shifts fetch failed:', res.status);
-                showMessage('Could not load shifts — availability will show as unknown', 'error');
+                shiftsLoadFailure = `Shifts table "${settings.shiftsTable}" returned ${res.status} from Airtable. Check the table name/ID in settings.`;
                 return null;
             }
             const data = await res.json();
@@ -343,7 +344,7 @@ async function loadShiftsForWindow(startDate, weeks = 8) {
         return byMember;
     } catch (e) {
         console.warn('Shifts load error:', e);
-        showMessage('Could not load shifts — availability will show as unknown', 'error');
+        shiftsLoadFailure = `Shifts load error: ${e.message}. Availability will show as unknown.`;
         return null;
     }
 }
@@ -423,6 +424,7 @@ async function performMatching(client, careTeam) {
         eligible.push(member);
     }
 
+    shiftsLoadFailure = null;
     const bookedByMember = await loadShiftsForWindow(client.fields['Start Date']);
     const clientPrefs = getClientPreferences(client);
 
@@ -580,6 +582,7 @@ function displayMatches(client) {
                 </label>
                 <span class="filter-count">Showing ${matches.length} of ${allMatches.length}</span>
             </div>
+            ${shiftsLoadFailure ? `<div class="filter-note filter-note-error">⚠️ ${shiftsLoadFailure}</div>` : ''}
             ${!startDateValid ? `<div class="filter-note">ℹ️ Start Date is TBD — availability is computed against the next 8 weeks from today.</div>` : ''}
             ${matches.map(match => `
                 <div class="match-card ${selectedMatches.includes(match.id) ? 'selected' : ''}" onclick="toggleSelection('${match.id}')">
