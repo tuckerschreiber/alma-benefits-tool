@@ -13,19 +13,17 @@ let filters = {
     hasAvailability: true, // default ON — hides 'conflict'
 };
 
-// Geocode a city in Ontario via Nominatim (cached in localStorage)
+// Geocode a city in Ontario via /api/geocode (server-side Nominatim proxy).
 async function geocodeCity(city) {
     if (!city) return null;
     const key = city.trim().toLowerCase();
     if (geoCache[key]) return geoCache[key];
 
     try {
-        const res = await fetch(
-            `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city.trim())}&state=Ontario&country=Canada&format=json&limit=1`,
-            { headers: { 'User-Agent': 'AlmaClientMatcher/1.0' } }
-        );
+        const res = await fetch(`/api/geocode?city=${encodeURIComponent(city.trim())}`);
+        if (!res.ok) return null;
         const data = await res.json();
-        if (data.length > 0) {
+        if (Array.isArray(data) && data.length > 0) {
             const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
             geoCache[key] = result;
             localStorage.setItem('almaGeoCache', JSON.stringify(geoCache));
@@ -46,7 +44,7 @@ function extractFSA(postalCode) {
     return cleaned.slice(0, 3);
 }
 
-// Geocode an FSA via Nominatim. Cached in localStorage under key "fsa:M5V".
+// Geocode an FSA via /api/geocode. Cached in localStorage under key "fsa:M5V".
 async function geocodeFSA(postalCode) {
     const fsa = extractFSA(postalCode);
     if (!fsa) return null;
@@ -54,12 +52,10 @@ async function geocodeFSA(postalCode) {
     if (geoCache[key]) return geoCache[key];
 
     try {
-        const res = await fetch(
-            `https://nominatim.openstreetmap.org/search?postalcode=${fsa}&country=Canada&format=json&limit=1`,
-            { headers: { 'User-Agent': 'AlmaClientMatcher/1.0' } }
-        );
+        const res = await fetch(`/api/geocode?postalcode=${fsa}`);
+        if (!res.ok) return null;
         const data = await res.json();
-        if (data.length > 0) {
+        if (Array.isArray(data) && data.length > 0) {
             const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
             geoCache[key] = result;
             localStorage.setItem('almaGeoCache', JSON.stringify(geoCache));
