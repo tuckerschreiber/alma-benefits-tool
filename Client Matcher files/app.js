@@ -88,9 +88,16 @@ function haversineKm(c1, c2) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// Initialize
-loadSettings();
-const configReady = loadSharedApiKey();
+// Defaults baked in so teammates only need to paste their own API key.
+const SETTINGS_DEFAULTS = {
+    apiKey: '',
+    baseId: 'appimHaFTD2NoqgrS',
+    clientsTable: 'Clients',
+    careTeamTable: 'Care Team',
+    maxDistance: 100,
+    shiftsTable: 'tblnACbHC0hBIbB8v',
+    loadThreshold: 30,
+};
 
 // Fetch the team-shared API key from the Vercel env var (if set) and
 // prefill the input. Silent if not configured — falls back to user-saved key.
@@ -108,16 +115,9 @@ async function loadSharedApiKey() {
     }
 }
 
-// Defaults baked in so teammates only need to paste their own API key.
-const SETTINGS_DEFAULTS = {
-    apiKey: '',
-    baseId: 'appimHaFTD2NoqgrS',
-    clientsTable: 'Clients',
-    careTeamTable: 'Care Team',
-    maxDistance: 100,
-    shiftsTable: 'tblnACbHC0hBIbB8v',
-    loadThreshold: 30,
-};
+// Initialize
+loadSettings();
+const configReady = loadSharedApiKey();
 
 function loadSettings() {
     const saved = localStorage.getItem('almaSettings');
