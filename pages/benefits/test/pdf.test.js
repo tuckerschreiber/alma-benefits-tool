@@ -16,7 +16,9 @@ const baseResults = {
   nursing: { eligibleAmount: 2000 }
 };
 
-const TODAY = new Date('2026-05-23');
+// Local-time constructor (month is 0-indexed). Avoids ISO-string parsing
+// that lands at UTC midnight and produces wrong dates west of UTC.
+const TODAY = new Date(2026, 4, 23);
 
 test('returns null when nursing eligibleAmount is 0', () => {
   const doc = buildEstimateDocDefinition(baseState, { nursing: { eligibleAmount: 0 } }, { hourlyRate: 90, today: TODAY });

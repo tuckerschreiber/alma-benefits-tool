@@ -7,9 +7,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
                 'July', 'August', 'September', 'October', 'November', 'December'];
 
 function formatLongDate(d) {
-  // Use UTC accessors so ISO date strings like '2026-05-23' format consistently
-  // across timezones (browser users in PT would otherwise see May 22).
-  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+  return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
 function formatCurrency(n) {
