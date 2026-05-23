@@ -510,7 +510,7 @@ function applyFilters(all) {
         if (filters.credential !== 'any' && !(m.credentials || []).includes(filters.credential)) return false;
         if (filters.maxDistance != null && m.distance > filters.maxDistance) return false;
         if (filters.status !== 'any' && m.status !== filters.status) return false;
-        if (filters.hasAvailability && m.availability === 'conflict') return false;
+        if (filters.hasAvailability && (m.availability === 'conflict' || m.availability === 'unknown')) return false;
         return true;
     });
 }
