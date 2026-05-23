@@ -5,6 +5,13 @@ let allCareTeam = [];
 let selectedMatches = [];
 let currentClient = null;
 let geoCache = JSON.parse(localStorage.getItem('almaGeoCache') || '{}');
+let allMatches = [];
+let filters = {
+    designation: 'any',
+    maxDistance: null,    // null means use settings.maxDistance
+    status: 'any',
+    hasAvailability: true, // default ON — hides 'conflict'
+};
 
 // Geocode a city in Ontario via Nominatim (cached in localStorage)
 async function geocodeCity(city) {
@@ -220,8 +227,10 @@ async function findMatches() {
 
     try {
         const matches = await performMatching(currentClient, allCareTeam);
+        allMatches = matches;
+        filters.maxDistance = settings.maxDistance;
 
-        displayMatches(currentClient, matches);
+        displayMatches(currentClient);
         showMessage(`Found ${matches.length} potential matches!`, 'success');
 
     } catch (error) {
@@ -480,11 +489,23 @@ function availabilityBadge(state) {
     }
 }
 
-function displayMatches(client, matches) {
-    const resultsArea = document.getElementById('resultsArea');
-    selectedMatches = [];
+function applyFilters(all) {
+    return all.filter(m => {
+        if (filters.designation !== 'any' && m.designation !== filters.designation) return false;
+        if (filters.maxDistance != null && m.distance > filters.maxDistance) return false;
+        if (filters.status !== 'any' && m.status !== filters.status) return false;
+        if (filters.hasAvailability && m.availability === 'conflict') return false;
+        return true;
+    });
+}
 
-    if (matches.length === 0) {
+function displayMatches(client) {
+    const resultsArea = document.getElementById('resultsArea');
+    selectedMatches = selectedMatches.filter(id => allMatches.some(m => m.id === id));
+
+    const matches = applyFilters(allMatches);
+
+    if (allMatches.length === 0) {
         resultsArea.innerHTML = `
             <div class="card">
                 <div class="empty-state">
@@ -502,7 +523,10 @@ function displayMatches(client, matches) {
     const clientCareType = client.fields['Daytime/Overnight [Intake]'] || client.fields['Daytime/Overnight'] || 'Unknown';
     const clientStartDate = client.fields['Start Date'] || 'TBD';
 
-    let html = `
+    const designations = Array.from(new Set(allMatches.map(m => m.designation).filter(Boolean))).sort();
+    const statuses = Array.from(new Set(allMatches.map(m => m.status).filter(Boolean))).sort();
+
+    resultsArea.innerHTML = `
         <div class="card">
             <div class="client-header">
                 <div class="client-name">${clientName}</div>
@@ -510,9 +534,30 @@ function displayMatches(client, matches) {
                 <span class="detail-badge">${clientCareType}</span>
                 <span class="detail-badge">Start: ${clientStartDate}</span>
             </div>
-            
+            <div class="filter-bar">
+                <label>Designation
+                    <select onchange="updateFilter('designation', this.value)">
+                        <option value="any">any</option>
+                        ${designations.map(d => `<option value="${d}" ${filters.designation === d ? 'selected' : ''}>${d}</option>`).join('')}
+                    </select>
+                </label>
+                <label>Max distance
+                    <input type="number" value="${filters.maxDistance}" onchange="updateFilter('maxDistance', parseInt(this.value))" /> km
+                </label>
+                <label>Status
+                    <select onchange="updateFilter('status', this.value)">
+                        <option value="any">any</option>
+                        ${statuses.map(s => `<option value="${s}" ${filters.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                    </select>
+                </label>
+                <label>
+                    <input type="checkbox" ${filters.hasAvailability ? 'checked' : ''} onchange="updateFilter('hasAvailability', this.checked)" />
+                    Has availability
+                </label>
+                <span class="filter-count">Showing ${matches.length} of ${allMatches.length}</span>
+            </div>
             ${matches.map(match => `
-                <div class="match-card" onclick="toggleSelection('${match.id}')">
+                <div class="match-card ${selectedMatches.includes(match.id) ? 'selected' : ''}" onclick="toggleSelection('${match.id}')">
                     <div class="match-score">⭐ ${match.matchScore}</div>
                     <div class="match-name">${match.name}</div>
                     ${match.designation ? `<div class="match-detail">🎓 ${match.designation}${match.designationMatched ? ' <span class="pref-match">✓ matches preference</span>' : ''}</div>` : ''}
@@ -523,12 +568,14 @@ function displayMatches(client, matches) {
                     ${match.availableFor ? `<div class="match-detail">Available for: ${match.availableFor}</div>` : ''}
                 </div>
             `).join('')}
-            
             <button onclick="prepareEmails()" style="margin-top: 1rem;">📧 Email Selected Matches</button>
         </div>
     `;
+}
 
-    resultsArea.innerHTML = html;
+function updateFilter(key, value) {
+    filters[key] = value;
+    displayMatches(currentClient);
 }
 
 function toggleSelection(matchId) {
