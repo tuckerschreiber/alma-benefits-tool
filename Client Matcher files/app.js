@@ -121,7 +121,12 @@ const SETTINGS_DEFAULTS = {
 
 function loadSettings() {
     const saved = localStorage.getItem('almaSettings');
-    settings = saved ? { ...SETTINGS_DEFAULTS, ...JSON.parse(saved) } : { ...SETTINGS_DEFAULTS };
+    // Strip empty saved values so they don't override the defaults — older
+    // versions of this app saved '' for unset fields.
+    const cleaned = saved
+        ? Object.fromEntries(Object.entries(JSON.parse(saved)).filter(([, v]) => v !== '' && v != null))
+        : {};
+    settings = { ...SETTINGS_DEFAULTS, ...cleaned };
     document.getElementById('apiKey').value = settings.apiKey;
     document.getElementById('baseId').value = settings.baseId;
     document.getElementById('clientsTable').value = settings.clientsTable;
