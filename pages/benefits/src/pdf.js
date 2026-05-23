@@ -6,6 +6,15 @@
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
                 'July', 'August', 'September', 'October', 'November', 'December'];
 
+// Canadian postal-code first-letter → province. Some letters span multiple
+// provinces in reality; these are the dominant CRM-style assignments.
+// X covers NT/NU — we collapse to NT for simplicity.
+const POSTAL_PROVINCE = {
+  A: 'NL', B: 'NS', C: 'PE', E: 'NB', G: 'QC', H: 'QC', J: 'QC',
+  K: 'ON', L: 'ON', M: 'ON', N: 'ON', P: 'ON',
+  R: 'MB', S: 'SK', T: 'AB', V: 'BC', X: 'NT', Y: 'YT'
+};
+
 function formatLongDate(d) {
   return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
@@ -19,7 +28,9 @@ function buildPreparedFor(lead) {
   const street = (lead.streetAddress || '').trim();
   const city = (lead.city || '').trim();
   const postal = (lead.postalCode || '').trim().toUpperCase();
-  const cityLine = [city, postal].filter(Boolean).join(' · ');
+  const province = postal ? POSTAL_PROVINCE[postal.charAt(0)] : '';
+  const cityWithProv = [city, province].filter(Boolean).join(', ');
+  const cityLine = [cityWithProv, postal].filter(Boolean).join(' · ');
 
   const lines = [{ text: `Prepared for: ${name}`, fontSize: 12, margin: [0, 4, 0, 0] }];
   if (street) lines.push({ text: street, fontSize: 10, color: '#555' });
@@ -107,4 +118,21 @@ export function buildEstimateDocDefinition(state, results, opts) {
       margin: [0, 20, 0, 0]
     }
   };
+}
+
+/**
+ * Build the suggested filename for the downloaded estimate PDF.
+ * Format: alma-coverage-estimate-{lastname-lowercase-alnum}-{YYYY-MM-DD}.pdf.
+ * Falls back to "family" when lastName is missing/blank.
+ *
+ * @param {{lead?: object}} state
+ * @param {Date} [today=new Date()]
+ */
+export function buildEstimateFilename(state, today = new Date()) {
+  const rawLast = (state && state.lead && state.lead.lastName) || '';
+  const slug = rawLast.toLowerCase().replace(/[^a-z0-9]/g, '') || 'family';
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `alma-coverage-estimate-${slug}-${yyyy}-${mm}-${dd}.pdf`;
 }
