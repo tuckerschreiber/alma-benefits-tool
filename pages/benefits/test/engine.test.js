@@ -463,3 +463,44 @@ test('computeEligibleAmounts: empty / null coverage returns {}', () => {
   assert.deepStrictEqual(computeEligibleAmounts({}), {});
   assert.deepStrictEqual(computeEligibleAmounts(null), {});
 });
+
+// ---------- Round-3 regression: PDN duplicate bug ----------
+
+test('postpartum user does not match prenatal registered_nursing rule', () => {
+  const state = {
+    isPostpartum: true,
+    weeksPostpartum: 1,
+    firstTimeParent: false,
+    coverage: { registered_nursing: { amount: 2000, reimbursementPercent: 100 } },
+    hasHsa: false,
+    hsaBalance: 0,
+    concerns: ''
+  };
+  const normalized = normalizeInputs(state);
+  const eligible = eligibilityFilter(state.coverage, ALMA_SERVICES);
+  const matches = applyRules(normalized, eligible, RULES);
+  const pdnMatches = matches.filter((m) => m.service === 'registered_nursing');
+  assert.strictEqual(pdnMatches.length, 1, 'should only get one PDN recommendation');
+  assert.strictEqual(pdnMatches[0].priority, 'high', 'should be the postpartum (high) rule');
+});
+
+test('prenatal user at week 36 matches the prenatal registered_nursing rule once', () => {
+  const today = new Date('2026-05-23');
+  // due in 2 weeks → weeksUntilDue = 2 (matches weeksUntilDueMax: 4)
+  const dueDate = new Date('2026-06-06').toISOString();
+  const inputs = {
+    dueDate,
+    isPostpartum: false,
+    firstTimeParent: false,
+    coverage: { registered_nursing: { amount: 2000, reimbursementPercent: 100 } },
+    hasHsa: false,
+    hsaBalance: 0,
+    concerns: ''
+  };
+  const normalized = normalizeInputs(inputs, today);
+  const eligible = eligibilityFilter(inputs.coverage, ALMA_SERVICES);
+  const matches = applyRules(normalized, eligible, RULES);
+  const pdnMatches = matches.filter((m) => m.service === 'registered_nursing');
+  assert.strictEqual(pdnMatches.length, 1);
+  assert.strictEqual(pdnMatches[0].priority, 'medium');
+});
