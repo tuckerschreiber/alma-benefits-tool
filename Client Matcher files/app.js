@@ -30,6 +30,47 @@ async function geocodeCity(city) {
     return null;
 }
 
+// Extract Forward Sortation Area (first 3 chars) from a Canadian postal code.
+// Returns uppercase FSA like "M5V", or null if input is missing/invalid.
+function extractFSA(postalCode) {
+    if (!postalCode) return null;
+    const cleaned = postalCode.replace(/\s+/g, '').toUpperCase();
+    if (!/^[A-Z]\d[A-Z]/.test(cleaned)) return null;
+    return cleaned.slice(0, 3);
+}
+
+// Geocode an FSA via Nominatim. Cached in localStorage under key "fsa:M5V".
+async function geocodeFSA(postalCode) {
+    const fsa = extractFSA(postalCode);
+    if (!fsa) return null;
+    const key = `fsa:${fsa}`;
+    if (geoCache[key]) return geoCache[key];
+
+    try {
+        const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?postalcode=${fsa}&country=Canada&format=json&limit=1`,
+            { headers: { 'User-Agent': 'AlmaClientMatcher/1.0' } }
+        );
+        const data = await res.json();
+        if (data.length > 0) {
+            const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+            geoCache[key] = result;
+            localStorage.setItem('almaGeoCache', JSON.stringify(geoCache));
+            return result;
+        }
+    } catch (e) {
+        console.warn('FSA geocoding failed for', fsa, e);
+    }
+    return null;
+}
+
+// Resolve a record's location: try postal code (FSA) first, fall back to city.
+async function geocodeLocation(postalCode, city) {
+    const fsaCoord = await geocodeFSA(postalCode);
+    if (fsaCoord) return fsaCoord;
+    return await geocodeCity(city);
+}
+
 // Haversine distance in km
 function haversineKm(c1, c2) {
     const R = 6371;
@@ -54,7 +95,7 @@ function loadSettings() {
         document.getElementById('baseId').value = settings.baseId || '';
         document.getElementById('clientsTable').value = settings.clientsTable || 'Clients';
         document.getElementById('careTeamTable').value = settings.careTeamTable || 'Care Team';
-        document.getElementById('maxDistance').value = settings.maxDistance || 60;
+        document.getElementById('maxDistance').value = settings.maxDistance || 100;
     }
 }
 
@@ -64,7 +105,7 @@ function saveSettings() {
         baseId: document.getElementById('baseId').value.trim(),
         clientsTable: document.getElementById('clientsTable').value.trim(),
         careTeamTable: document.getElementById('careTeamTable').value.trim(),
-        maxDistance: parseInt(document.getElementById('maxDistance').value) || 60
+        maxDistance: parseInt(document.getElementById('maxDistance').value) || 100
     };
     localStorage.setItem('almaSettings', JSON.stringify(settings));
     showMessage('Settings saved successfully!', 'success');
@@ -193,9 +234,10 @@ async function performMatching(client, careTeam) {
 
     // Geocode client city
     const clientCity = client.fields['City'];
-    const clientCoord = await geocodeCity(clientCity);
+    const clientPostalRaw = client.fields['Postal Code'];
+    const clientCoord = await geocodeLocation(clientPostalRaw, clientCity);
     if (!clientCoord) {
-        console.warn('Could not geocode client city:', clientCity);
+        console.warn('Could not geocode client location:', clientPostalRaw, clientCity);
         return matches;
     }
 
@@ -221,19 +263,30 @@ async function performMatching(client, careTeam) {
         eligible.push(member);
     }
 
-    // Geocode all unique cities for eligible members (with rate limiting for uncached ones)
-    const uniqueCities = new Set(eligible.map(m => (m.fields['City'] || '').trim().toLowerCase()).filter(Boolean));
+    // Pre-cache FSAs for all eligible members (rate-limited for uncached)
+    const uniqueFSAs = new Set();
+    for (const m of eligible) {
+        const fsa = extractFSA(m.fields['Postal Code']);
+        if (fsa) uniqueFSAs.add(fsa);
+        else {
+            const city = (m.fields['City'] || '').trim().toLowerCase();
+            if (city) uniqueFSAs.add(`city:${city}`);
+        }
+    }
     let uncachedCount = 0;
-    for (const city of uniqueCities) {
-        if (!geoCache[city]) uncachedCount++;
+    for (const k of uniqueFSAs) {
+        const cacheKey = k.startsWith('city:') ? k.slice(5) : `fsa:${k}`;
+        if (!geoCache[cacheKey]) uncachedCount++;
     }
     if (uncachedCount > 0) {
-        document.getElementById('resultsArea').innerHTML = `<div class="loading"><div class="spinner"></div><p>Geocoding ${uncachedCount} cities (one-time, cached after)...</p></div>`;
+        document.getElementById('resultsArea').innerHTML = `<div class="loading"><div class="spinner"></div><p>Geocoding ${uncachedCount} locations (one-time, cached after)...</p></div>`;
     }
-    for (const city of uniqueCities) {
-        if (!geoCache[city]) {
-            await geocodeCity(city);
-            await sleep(1100); // Nominatim rate limit: 1 req/sec
+    for (const k of uniqueFSAs) {
+        if (k.startsWith('city:')) {
+            const city = k.slice(5);
+            if (!geoCache[city]) { await geocodeCity(city); await sleep(1100); }
+        } else {
+            if (!geoCache[`fsa:${k}`]) { await geocodeFSA(k); await sleep(1100); }
         }
     }
 
@@ -244,7 +297,7 @@ async function performMatching(client, careTeam) {
         const memberCareTypes = member.fields['Daytime / Overnight'] || member.fields['Daytime/Overnight'];
         const status = member.fields['Status'];
 
-        const memberCoord = await geocodeCity(memberCity);
+        const memberCoord = await geocodeLocation(member.fields['Postal Code'], member.fields['City']);
         if (!memberCoord) continue;
 
         const distance = haversineKm(clientCoord, memberCoord);
