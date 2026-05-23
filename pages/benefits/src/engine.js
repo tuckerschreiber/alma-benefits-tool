@@ -180,19 +180,19 @@ function ruleMatches(normalized, appliesWhen) {
   for (const [key, value] of Object.entries(appliesWhen)) {
     switch (key) {
       case 'weeksUntilDueMax':
-        if (normalized.isPostpartum) break;
+        if (normalized.isPostpartum) return false;
         if (!(normalized.weeksUntilDue <= value)) return false;
         break;
       case 'weeksUntilDueMin':
-        if (normalized.isPostpartum) break;
+        if (normalized.isPostpartum) return false;
         if (!(normalized.weeksUntilDue >= value)) return false;
         break;
       case 'weeksPostpartumMax':
-        if (!normalized.isPostpartum) break;
+        if (!normalized.isPostpartum) return false;
         if (!(normalized.weeksPostpartum <= value)) return false;
         break;
       case 'weeksPostpartumMin':
-        if (!normalized.isPostpartum) break;
+        if (!normalized.isPostpartum) return false;
         if (!(normalized.weeksPostpartum >= value)) return false;
         break;
       case 'firstTimeParent':

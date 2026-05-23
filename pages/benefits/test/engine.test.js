@@ -201,7 +201,7 @@ test('applyRules: empty appliesWhen matches any normalized state for an eligible
   assert.equal(r2.length, 1);
 });
 
-test('applyRules: postpartum window conditions match weeksPostpartum, not weeksUntilDue', () => {
+test('applyRules: weeksPostpartum conditions act as implicit postpartum stage gate', () => {
   const rule = {
     service: 'massage_therapy',
     appliesWhen: { weeksPostpartumMax: 6 },
@@ -219,7 +219,7 @@ test('applyRules: postpartum window conditions match weeksPostpartum, not weeksU
     ['massage_therapy'],
     [rule]
   );
-  // When not postpartum, the postpartum condition is not constraining and should match
+  // Prenatal user should NOT match a postpartum-gated rule
   const prenatal = applyRules(
     { isPostpartum: false, weeksUntilDue: 4 },
     ['massage_therapy'],
@@ -227,14 +227,14 @@ test('applyRules: postpartum window conditions match weeksPostpartum, not weeksU
   );
   assert.equal(matchPP.length, 1);
   assert.equal(noMatchPP.length, 0);
-  assert.equal(prenatal.length, 1);
+  assert.equal(prenatal.length, 0);
 });
 
-test('applyRules: postpartum user matches rule with weeksUntilDueMax (prenatal condition skipped)', () => {
+test('applyRules: postpartum user does NOT match rule with weeksUntilDueMax (prenatal-only)', () => {
   const normalized = { isPostpartum: true, weeksPostpartum: 4 };
   const rules = [{ service: 'massage_therapy', appliesWhen: { weeksUntilDueMax: 8 }, dosing: {sessions:1, estimatedSessionCost:120}, rationale:'x', priority:'medium' }];
   const result = applyRules(normalized, ['massage_therapy'], rules);
-  assert.equal(result.length, 1);
+  assert.equal(result.length, 0);
 });
 
 // ----- computeResults -----
