@@ -311,7 +311,7 @@ async function loadShiftsForWindow(startDate, weeks = 8) {
 
     const startISO = start.toISOString();
     const endISO = end.toISOString();
-    const formula = `AND(IS_AFTER({Start}, '${startISO}'), IS_BEFORE({Start}, '${endISO}'))`;
+    const formula = `AND(IS_AFTER({start_at}, '${startISO}'), IS_BEFORE({start_at}, '${endISO}'))`;
     const url = `https://api.airtable.com/v0/${settings.baseId}/${encodeURIComponent(settings.shiftsTable)}?filterByFormula=${encodeURIComponent(formula)}`;
 
     try {
@@ -331,10 +331,10 @@ async function loadShiftsForWindow(startDate, weeks = 8) {
         } while (offset);
         const byMember = new Map();
         for (const shift of records) {
-            const memberIds = shift.fields['Care Team Member'] || [];
+            const memberIds = shift.fields['Care Team'] || [];
             const ids = Array.isArray(memberIds) ? memberIds : [memberIds];
-            const shiftStart = shift.fields['Start'];
-            const shiftEnd = shift.fields['End'];
+            const shiftStart = shift.fields['start_at'];
+            const shiftEnd = shift.fields['end_at'];
             if (!shiftStart || !shiftEnd) continue;
             for (const id of ids) {
                 if (!byMember.has(id)) byMember.set(id, []);
