@@ -147,6 +147,8 @@
 
     .ap-label__optional { color: #888; font-weight: 400; font-size: 0.9em; margin-left: 4px; }
 
+    .ap-field__error { color: #a4332b; font-size: 13px; margin: 6px 0 0; }
+
     .ap-optional {
       color: #999;
       font-size: 13px;
@@ -1592,7 +1594,7 @@
       <div class="ap-field">
         <label class="ap-label" for="ap-postal-code">Postal code</label>
         <input type="text" id="ap-postal-code" name="postalCode" autocomplete="postal-code" maxlength="7" class="ap-input" placeholder="A1A 1A1" required>
-        <p class="ap-field__error" data-error-for="postalCode" hidden style="color:#a4332b; font-size:13px; margin:6px 0 0;">Enter a valid Canadian postal code (e.g. M5V 2T6).</p>
+        <p class="ap-field__error" data-error-for="postalCode" hidden>Enter a valid Canadian postal code (e.g. M5V 2T6).</p>
       </div>
     </section>
 
@@ -2319,12 +2321,7 @@
         hsaBalance: null,
         coverage: {},
         results: null,
-        lead: {
-          firstName: '',
-          lastName: '',
-          email: '',
-          phone: ''
-        }
+        lead: { firstName: '', lastName: '', email: '', phone: '', streetAddress: '', city: '', postalCode: '' }
       };
 
       let currentStep = 1;
