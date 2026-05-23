@@ -290,16 +290,22 @@ async function loadShiftsForWindow(startDate, weeks = 8) {
     const url = `https://api.airtable.com/v0/${settings.baseId}/${encodeURIComponent(settings.shiftsTable)}?filterByFormula=${encodeURIComponent(formula)}`;
 
     try {
-        const res = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${settings.apiKey}` }
-        });
-        if (!res.ok) {
-            console.warn('Shifts fetch failed:', res.status);
-            return new Map();
-        }
-        const data = await res.json();
+        let offset;
+        const records = [];
+        do {
+            const u = offset ? `${url}&offset=${offset}` : url;
+            const res = await fetch(u, { headers: { 'Authorization': `Bearer ${settings.apiKey}` } });
+            if (!res.ok) {
+                console.warn('Shifts fetch failed:', res.status);
+                showMessage('Could not load shifts — availability will show as unknown', 'error');
+                return new Map();
+            }
+            const data = await res.json();
+            records.push(...data.records);
+            offset = data.offset;
+        } while (offset);
         const byMember = new Map();
-        for (const shift of data.records) {
+        for (const shift of records) {
             const memberIds = shift.fields['Care Team Member'] || [];
             const ids = Array.isArray(memberIds) ? memberIds : [memberIds];
             const shiftStart = shift.fields['Start'];
@@ -313,6 +319,7 @@ async function loadShiftsForWindow(startDate, weeks = 8) {
         return byMember;
     } catch (e) {
         console.warn('Shifts load error:', e);
+        showMessage('Could not load shifts — availability will show as unknown', 'error');
         return new Map();
     }
 }
