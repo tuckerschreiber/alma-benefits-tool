@@ -90,6 +90,23 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // Initialize
 loadSettings();
+loadSharedApiKey();
+
+// Fetch the team-shared API key from the Vercel env var (if set) and
+// prefill the input. Silent if not configured — falls back to user-saved key.
+async function loadSharedApiKey() {
+    try {
+        const res = await fetch('/api/config');
+        if (!res.ok) return;
+        const cfg = await res.json();
+        if (cfg.apiKey) {
+            document.getElementById('apiKey').value = cfg.apiKey;
+            settings.apiKey = cfg.apiKey;
+        }
+    } catch (e) {
+        // Offline / endpoint missing — fine, use whatever's already loaded.
+    }
+}
 
 // Defaults baked in so teammates only need to paste their own API key.
 const SETTINGS_DEFAULTS = {
