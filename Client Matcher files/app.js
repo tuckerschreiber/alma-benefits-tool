@@ -229,7 +229,6 @@ async function findMatches() {
 
 async function performMatching(client, careTeam) {
     const matches = [];
-    const clientPostal = client.fields['Postal Code'];
     const clientCareType = client.fields['Daytime/Overnight [Intake]'] || client.fields['Daytime/Overnight'];
 
     // Geocode client city
@@ -250,7 +249,7 @@ async function performMatching(client, careTeam) {
         const name = member.fields['Full Name'] || 'Unknown';
 
         if (status !== 'Active' && status !== 'Ready for Review') continue;
-        if (!memberPostal) continue;
+        if (!memberPostal && !member.fields['City']) continue;
 
         let careTypeMatch = false;
         if (memberCareTypes && clientCareType) {
@@ -292,8 +291,6 @@ async function performMatching(client, careTeam) {
 
     // Now calculate real distances
     for (const member of eligible) {
-        const memberCity = member.fields['City'];
-        const memberPostal = member.fields['Postal Code'];
         const memberCareTypes = member.fields['Daytime / Overnight'] || member.fields['Daytime/Overnight'];
         const status = member.fields['Status'];
 
@@ -312,7 +309,7 @@ async function performMatching(client, careTeam) {
             id: member.id,
             name: member.fields['Full Name'] || 'Unknown',
             email: member.fields['Email'] || member.fields['email'],
-            postalCode: memberPostal,
+            postalCode: member.fields['Postal Code'],
             distance: distance,
             designation: member.fields['Designation'] || '',
             availableFor: Array.isArray(memberCareTypes) ? memberCareTypes.join(', ') : memberCareTypes,
