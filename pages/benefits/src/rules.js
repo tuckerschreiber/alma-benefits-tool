@@ -5,6 +5,12 @@ export const ALMA_SERVICES = [
   'mental_health', 'nutritionist'
 ];
 
+// Alma's published hourly rate for in-home postpartum nursing support.
+// Used by src/pdf.js to compute "Estimated Hours" from the eligible $ amount.
+// Leave null pre-launch — the Download Coverage Estimate button is hidden
+// until this is a numeric value.
+export const ALMA_RN_HOURLY_RATE = null;
+
 export const RULES = [
   {
     service: 'lactation_consulting',
