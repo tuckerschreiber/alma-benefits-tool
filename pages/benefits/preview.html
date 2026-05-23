@@ -145,6 +145,8 @@
       font-size: 14px;
     }
 
+    .ap-label__optional { color: #888; font-weight: 400; font-size: 0.9em; margin-left: 4px; }
+
     .ap-optional {
       color: #999;
       font-size: 13px;
@@ -1578,6 +1580,19 @@
       <div class="ap-field">
         <label class="ap-label" for="ap-phone">Phone</label>
         <input type="tel" id="ap-phone" name="phone" autocomplete="tel" inputmode="tel" class="ap-input" required placeholder="(416) 555-1234">
+      </div>
+      <div class="ap-field">
+        <label class="ap-label" for="ap-street-address">Street address <span class="ap-label__optional">(optional)</span></label>
+        <input type="text" id="ap-street-address" name="streetAddress" autocomplete="street-address" maxlength="120" class="ap-input">
+      </div>
+      <div class="ap-field">
+        <label class="ap-label" for="ap-city">City</label>
+        <input type="text" id="ap-city" name="city" autocomplete="address-level2" maxlength="60" class="ap-input" required>
+      </div>
+      <div class="ap-field">
+        <label class="ap-label" for="ap-postal-code">Postal code</label>
+        <input type="text" id="ap-postal-code" name="postalCode" autocomplete="postal-code" maxlength="7" class="ap-input" placeholder="A1A 1A1" required>
+        <p class="ap-field__error" data-error-for="postalCode" hidden style="color:#a4332b; font-size:13px; margin:6px 0 0;">Enter a valid Canadian postal code (e.g. M5V 2T6).</p>
       </div>
     </section>
 
