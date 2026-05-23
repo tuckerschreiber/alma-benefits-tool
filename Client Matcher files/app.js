@@ -91,29 +91,38 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 // Initialize
 loadSettings();
 
+// Defaults baked in so teammates only need to paste their own API key.
+const SETTINGS_DEFAULTS = {
+    apiKey: '',
+    baseId: 'appimHaFTD2NoqgrS',
+    clientsTable: 'Clients',
+    careTeamTable: 'Care Team',
+    maxDistance: 100,
+    shiftsTable: 'tblnACbHC0hBIbB8v',
+    loadThreshold: 30,
+};
+
 function loadSettings() {
     const saved = localStorage.getItem('almaSettings');
-    if (saved) {
-        settings = JSON.parse(saved);
-        document.getElementById('apiKey').value = settings.apiKey || '';
-        document.getElementById('baseId').value = settings.baseId || '';
-        document.getElementById('clientsTable').value = settings.clientsTable || 'Clients';
-        document.getElementById('careTeamTable').value = settings.careTeamTable || 'Care Team';
-        document.getElementById('maxDistance').value = settings.maxDistance || 100;
-        document.getElementById('shiftsTable').value = settings.shiftsTable || 'Shifts';
-        document.getElementById('loadThreshold').value = settings.loadThreshold || 30;
-    }
+    settings = saved ? { ...SETTINGS_DEFAULTS, ...JSON.parse(saved) } : { ...SETTINGS_DEFAULTS };
+    document.getElementById('apiKey').value = settings.apiKey;
+    document.getElementById('baseId').value = settings.baseId;
+    document.getElementById('clientsTable').value = settings.clientsTable;
+    document.getElementById('careTeamTable').value = settings.careTeamTable;
+    document.getElementById('maxDistance').value = settings.maxDistance;
+    document.getElementById('shiftsTable').value = settings.shiftsTable;
+    document.getElementById('loadThreshold').value = settings.loadThreshold;
 }
 
 function saveSettings() {
     settings = {
         apiKey: document.getElementById('apiKey').value.trim(),
-        baseId: document.getElementById('baseId').value.trim(),
-        clientsTable: document.getElementById('clientsTable').value.trim(),
-        careTeamTable: document.getElementById('careTeamTable').value.trim(),
-        maxDistance: parseInt(document.getElementById('maxDistance').value) || 100,
-        shiftsTable: document.getElementById('shiftsTable').value.trim() || 'Shifts',
-        loadThreshold: parseInt(document.getElementById('loadThreshold').value) || 30
+        baseId: document.getElementById('baseId').value.trim() || SETTINGS_DEFAULTS.baseId,
+        clientsTable: document.getElementById('clientsTable').value.trim() || SETTINGS_DEFAULTS.clientsTable,
+        careTeamTable: document.getElementById('careTeamTable').value.trim() || SETTINGS_DEFAULTS.careTeamTable,
+        maxDistance: parseInt(document.getElementById('maxDistance').value) || SETTINGS_DEFAULTS.maxDistance,
+        shiftsTable: document.getElementById('shiftsTable').value.trim() || SETTINGS_DEFAULTS.shiftsTable,
+        loadThreshold: parseInt(document.getElementById('loadThreshold').value) || SETTINGS_DEFAULTS.loadThreshold,
     };
     localStorage.setItem('almaSettings', JSON.stringify(settings));
     showMessage('Settings saved successfully!', 'success');
