@@ -337,3 +337,9 @@ button:disabled {
     font-weight: 600;
     margin-left: 0.4rem;
 }
+
+.avail { font-weight: 600; }
+.avail-ok       { color: #2a7a2a; }
+.avail-partial  { color: #b87a00; }
+.avail-conflict { color: #a13; }
+.avail-unknown  { color: #777; }

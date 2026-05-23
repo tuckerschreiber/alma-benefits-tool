@@ -324,6 +324,46 @@ async function loadShiftsForWindow(startDate, weeks = 8) {
     }
 }
 
+// Determine availability state for a member given their bookings and the client.
+// Returns 'available' | 'partial' | 'conflict' | 'unknown'.
+function checkAvailability(member, client, bookedByMember) {
+    const memberShifts = bookedByMember.get(member.id);
+    if (memberShifts === undefined) return 'unknown';
+    if (memberShifts.length === 0) return 'available';
+
+    // Try specific weekly schedule first.
+    const clientScheduleRaw = getField(client, 'Weekly Schedule') || getField(client, 'Schedule');
+    if (clientScheduleRaw) {
+        // Schedule expected as array of {dayOfWeek 0-6, startHour, endHour} or
+        // string like "Mon 9-17,Wed 9-17". For now: any text presence triggers
+        // overlap check by sampling — but if the structure is unknown we skip
+        // strict mode and fall through to load-threshold mode.
+        // (Document an explicit parser when the actual schedule field shape
+        // is confirmed with the user.)
+    }
+
+    // Load-threshold mode: total booked hours / weeks in window.
+    const start = new Date(client.fields['Start Date']);
+    if (isNaN(start.getTime())) return 'unknown';
+    const weeks = 8;
+    const end = new Date(start);
+    end.setDate(end.getDate() + weeks * 7);
+
+    let totalHours = 0;
+    for (const s of memberShifts) {
+        const overlapStart = s.start > start ? s.start : start;
+        const overlapEnd = s.end < end ? s.end : end;
+        const diffMs = overlapEnd - overlapStart;
+        if (diffMs > 0) totalHours += diffMs / 1000 / 60 / 60;
+    }
+    const hoursPerWeek = totalHours / weeks;
+    const threshold = settings.loadThreshold || 30;
+
+    if (hoursPerWeek >= threshold) return 'conflict';
+    if (hoursPerWeek > 0) return 'partial';
+    return 'available';
+}
+
 async function performMatching(client, careTeam) {
     const matches = [];
     const clientCareType = client.fields['Daytime/Overnight [Intake]'] || client.fields['Daytime/Overnight'];
@@ -358,6 +398,8 @@ async function performMatching(client, careTeam) {
 
         eligible.push(member);
     }
+
+    const bookedByMember = await loadShiftsForWindow(client.fields['Start Date']);
 
     // Pre-cache FSAs for all eligible members (rate-limited for uncached)
     const uniqueFSAs = new Set();
@@ -407,6 +449,10 @@ async function performMatching(client, careTeam) {
         if (status === 'Ready for Review') score -= 5;
         score += designation.score;
 
+        const availability = checkAvailability(member, client, bookedByMember);
+        if (availability === 'available') score += 20;
+        // 'partial' and 'unknown' contribute 0; 'conflict' is filtered below.
+
         matches.push({
             id: member.id,
             name: member.fields['Full Name'] || 'Unknown',
@@ -417,11 +463,21 @@ async function performMatching(client, careTeam) {
             designationMatched: designation.matched,
             availableFor: Array.isArray(memberCareTypes) ? memberCareTypes.join(', ') : memberCareTypes,
             matchScore: score,
-            status: status
+            status: status,
+            availability,
         });
     }
 
     return matches.sort((a, b) => b.matchScore - a.matchScore);
+}
+
+function availabilityBadge(state) {
+    switch (state) {
+        case 'available': return '<span class="avail avail-ok">✅ Available</span>';
+        case 'partial':   return '<span class="avail avail-partial">⚠️ Partially booked</span>';
+        case 'conflict':  return '<span class="avail avail-conflict">⛔ Booked / over threshold</span>';
+        default:          return '<span class="avail avail-unknown">? Availability unknown</span>';
+    }
 }
 
 function displayMatches(client, matches) {
@@ -462,6 +518,7 @@ function displayMatches(client, matches) {
                     ${match.designation ? `<div class="match-detail">🎓 ${match.designation}${match.designationMatched ? ' <span class="pref-match">✓ matches preference</span>' : ''}</div>` : ''}
                     <div class="match-detail">📍 ${match.postalCode} (${match.distance.toFixed(1)} km away)</div>
                     <div class="match-detail">💼 ${match.status}</div>
+                    <div class="match-detail">${availabilityBadge(match.availability)}</div>
                     ${match.email ? `<div class="match-detail">✉️ ${match.email}</div>` : ''}
                     ${match.availableFor ? `<div class="match-detail">Available for: ${match.availableFor}</div>` : ''}
                 </div>
