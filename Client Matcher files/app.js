@@ -248,6 +248,15 @@ function getField(record, name) {
 
 // Score designation match (0..30). Tries ranked, multi-select, then single field.
 // Returns { score, matched } — `matched` is true when any rule fired.
+// Read a member's designation tolerating case + array shapes (multi-select,
+// linked record, lookup). Returns a plain string or ''.
+function getMemberDesignation(member) {
+    const raw = getField(member, 'Designation') ?? getField(member, 'Designations');
+    if (raw == null) return '';
+    if (Array.isArray(raw)) return raw.length > 0 ? String(raw[0]) : '';
+    return String(raw);
+}
+
 function getDesignationScore(client, memberDesignation) {
     if (!memberDesignation) return { score: 0, matched: false };
 
@@ -280,12 +289,11 @@ function getDesignationScore(client, memberDesignation) {
 
 // Pull all shifts where Start is within [startDate, startDate + weeks].
 // Returns a Map keyed by care-team-member record ID → array of {start, end}.
+// If startDate is missing or invalid (e.g. client Start Date is "TBD"),
+// defaults to today so availability is still meaningful.
 async function loadShiftsForWindow(startDate, weeks = 8) {
-    const start = new Date(startDate);
-    if (isNaN(start.getTime())) {
-        console.warn('Invalid client Start Date, skipping shifts load');
-        return new Map();
-    }
+    let start = new Date(startDate);
+    if (isNaN(start.getTime())) start = new Date();
     const end = new Date(start);
     end.setDate(end.getDate() + weeks * 7);
 
@@ -348,8 +356,8 @@ function checkAvailability(member, client, bookedByMember) {
     }
 
     // Load-threshold mode: total booked hours / weeks in window.
-    const start = new Date(client.fields['Start Date']);
-    if (isNaN(start.getTime())) return 'unknown';
+    let start = new Date(client.fields['Start Date']);
+    if (isNaN(start.getTime())) start = new Date();
     const weeks = 8;
     const end = new Date(start);
     end.setDate(end.getDate() + weeks * 7);
@@ -444,7 +452,7 @@ async function performMatching(client, careTeam) {
         const distance = haversineKm(clientCoord, memberCoord);
         if (distance > settings.maxDistance) continue;
 
-        const memberDesignation = member.fields['Designation'] || '';
+        const memberDesignation = getMemberDesignation(member);
         const designation = getDesignationScore(client, memberDesignation);
 
         let score = 100;
@@ -464,7 +472,7 @@ async function performMatching(client, careTeam) {
             email: member.fields['Email'] || member.fields['email'],
             postalCode: member.fields['Postal Code'],
             distance: distance,
-            designation: member.fields['Designation'] || '',
+            designation: memberDesignation,
             designationMatched: designation.matched,
             availableFor: Array.isArray(memberCareTypes) ? memberCareTypes.join(', ') : memberCareTypes,
             matchScore: score,
@@ -518,6 +526,7 @@ function displayMatches(client) {
     const clientLocation = client.fields['Postal Code'] || 'Unknown';
     const clientCareType = client.fields['Daytime/Overnight [Intake]'] || client.fields['Daytime/Overnight'] || 'Unknown';
     const clientStartDate = client.fields['Start Date'] || 'TBD';
+    const startDateValid = !isNaN(new Date(client.fields['Start Date']).getTime());
 
     const designations = Array.from(new Set(allMatches.map(m => m.designation).filter(Boolean))).sort();
     const statuses = Array.from(new Set(allMatches.map(m => m.status).filter(Boolean))).sort();
@@ -552,6 +561,7 @@ function displayMatches(client) {
                 </label>
                 <span class="filter-count">Showing ${matches.length} of ${allMatches.length}</span>
             </div>
+            ${!startDateValid ? `<div class="filter-note">ℹ️ Start Date is TBD — availability is computed against the next 8 weeks from today.</div>` : ''}
             ${matches.map(match => `
                 <div class="match-card ${selectedMatches.includes(match.id) ? 'selected' : ''}" onclick="toggleSelection('${match.id}')">
                     <div class="match-score">⭐ ${match.matchScore}</div>

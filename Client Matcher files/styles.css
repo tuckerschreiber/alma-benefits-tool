@@ -359,3 +359,13 @@ button:disabled {
 .filter-bar input[type="number"] { width: 5rem; padding: 0.2rem 0.4rem; }
 .filter-bar select { padding: 0.2rem 0.4rem; }
 .filter-count { margin-left: auto; color: #555; font-weight: 600; }
+
+.filter-note {
+    margin: -0.5rem 0 1rem;
+    padding: 0.5rem 0.75rem;
+    background: #fff8e1;
+    border-left: 3px solid #d4a017;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #5a4a00;
+}
