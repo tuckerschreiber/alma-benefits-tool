@@ -3490,6 +3490,16 @@
         return submitHubspotPayload(buildEnrichmentFields(state), 'Plan Viewed');
       }
 
+      function submitDownloadToHubspot(state) {
+        const lead = state.lead || {};
+        const fields = [
+          { name: 'email',                      value: hsValue(lead.email) },
+          { name: 'ap_estimate_downloaded',     value: 'true' },
+          { name: 'ap_estimate_downloaded_at',  value: new Date().toISOString() }
+        ];
+        return submitHubspotPayload(fields, 'estimate_downloaded');
+      }
+
       function renderResults(results) {
         const container = document.getElementById('ap-results');
         if (!container) return;
