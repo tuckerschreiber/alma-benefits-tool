@@ -90,7 +90,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // Initialize
 loadSettings();
-loadSharedApiKey();
+const configReady = loadSharedApiKey();
 
 // Fetch the team-shared API key from the Vercel env var (if set) and
 // prefill the input. Silent if not configured — falls back to user-saved key.
@@ -160,6 +160,7 @@ function showMessage(text, type) {
 }
 
 async function loadClients() {
+    await configReady;
     if (!settings.apiKey || !settings.baseId) {
         showMessage('Please configure and save your settings first', 'error');
         return;
