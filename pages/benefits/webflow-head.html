@@ -1,0 +1,1509 @@
+<script defer src="https://cdn.jsdelivr.net/gh/tuckerschreiber/alma-benefits-tool@main/pages/benefits/app.js?v=20260517"></script>
+
+<style>
+    /* ---------- Reset / base ---------- */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Respect users who've opted into reduced motion — keep transitions
+       perceptible for state changes (focus rings) but trim animation. */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        transition-duration: 0.001ms !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    html, body {
+      background: #FFFAF4;
+      color: #032215;
+      font-family: 'Futura', 'Futura PT', 'Trebuchet MS', sans-serif;
+      font-weight: 400;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      -webkit-text-size-adjust: 100%; /* prevent iOS landscape text bloat */
+      overflow-x: hidden; /* hard guard against accidental horizontal scroll on mobile */
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: 500;
+      color: #032215;
+    }
+
+    h1 {
+      font-size: 28px;
+      line-height: 1.25;
+    }
+
+    /* ---------- App shell ---------- */
+    .ap-app {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ---------- Progress ---------- */
+    .ap-progress {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ap-progress__label {
+      font-size: 13px;
+      color: #999;
+      letter-spacing: 0.02em;
+    }
+
+    .ap-progress__bar {
+      display: flex;
+      gap: 6px;
+    }
+
+    .ap-progress__segment {
+      flex: 1;
+      height: 6px;
+      border-radius: 999px;
+      background: rgb(235, 225, 213);
+    }
+
+    .ap-progress__segment--active {
+      background: #156146;
+    }
+
+    /* ---------- Landing screen ---------- */
+    .ap-landing { display: flex; flex-direction: column; gap: 28px; }
+    .ap-landing--hidden { display: none; }
+    .ap-landing__hero h1 { font-size: 32px; line-height: 1.2; margin-bottom: 16px; }
+    .ap-landing__hero p { color: #2a3a32; margin-bottom: 16px; }
+    .ap-landing__chips { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0 0 16px 0; }
+    .ap-landing__chips li { background: rgb(235, 225, 213); color: #032215; padding: 6px 14px; border-radius: 999px; font-size: 14px; }
+    .ap-landing__registry { font-style: italic; color: #4a5a52; }
+    .ap-landing__panel { background: rgba(21, 97, 70, 0.04); border: 1px solid rgb(235, 225, 213); border-radius: 12px; padding: 24px; }
+    .ap-landing__panel h2 { font-size: 20px; margin-bottom: 10px; }
+    .ap-landing__disclaimer { font-size: 12px; color: #777; line-height: 1.5; }
+    .ap-assessment--hidden { display: none; }
+
+    /* ---------- Step sections ---------- */
+    .ap-step {
+      display: none;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .ap-step--active {
+      display: flex;
+    }
+
+    .ap-step__header {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ap-step__header h2 {
+      font-size: 28px;
+      line-height: 1.25;
+      font-weight: 500;
+      color: #032215;
+    }
+
+    .ap-step__subhead {
+      color: #555;
+      font-size: 15px;
+    }
+
+    /* ---------- Card (reserved for later use) ---------- */
+    .ap-card {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    /* ---------- Field group ---------- */
+    .ap-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ap-label {
+      color: #032215;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .ap-optional {
+      color: #999;
+      font-size: 13px;
+      font-weight: 400;
+    }
+
+    .ap-input,
+    .ap-textarea {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 16px; /* 16px+ prevents iOS Safari auto-zoom on focus */
+      color: #032215;
+      width: 100%;
+      max-width: 100%;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    /* Remove the native number-input spinners on Safari/Chrome so the
+       currency $ prefix stays aligned and the input keeps a clean look. */
+    .ap-input[type="number"]::-webkit-outer-spin-button,
+    .ap-input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .ap-input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    /* iOS Safari date inputs render with their own internal padding —
+       this normalizes them with our other inputs. */
+    .ap-input[type="date"] {
+      -webkit-appearance: none;
+      appearance: none;
+      min-height: 44px;
+    }
+
+    .ap-input:focus,
+    .ap-textarea:focus {
+      outline: none;
+      border-color: #156146;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    .ap-textarea {
+      resize: vertical;
+      min-height: 96px;
+      line-height: 1.5;
+    }
+
+    /* ---------- Postpartum toggle link ---------- */
+    .ap-field__footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    .ap-link-toggle {
+      background: none;
+      border: none;
+      padding: 10px 4px;
+      min-height: 44px;
+      color: #156146;
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: right;
+      border-radius: 6px;
+    }
+
+    .ap-link-toggle:hover {
+      text-decoration: underline;
+    }
+
+    .ap-link-toggle:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    .ap-link-toggle strong {
+      font-weight: 500;
+    }
+
+    /* ---------- Hidden helper ---------- */
+    .ap-hidden {
+      display: none !important;
+    }
+
+    /* ---------- Two-button toggle (first-time parent) ---------- */
+    .ap-toggle-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .ap-toggle-group--three {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    /* ---------- Select (styled like ap-input) ---------- */
+    .ap-select {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 12px 40px 12px 16px;
+      min-height: 44px;
+      font-family: inherit;
+      font-size: 16px; /* 16px+ prevents iOS Safari auto-zoom on focus */
+      color: #032215;
+      width: 100%;
+      max-width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='none' stroke='%23156146' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M1 1l5 5 5-5'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      cursor: pointer;
+    }
+
+    .ap-select:focus {
+      outline: none;
+      border-color: #156146;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    /* ---------- Currency input ---------- */
+    .ap-input-currency {
+      position: relative;
+    }
+
+    .ap-input-currency__prefix {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #555;
+      font-size: 15px;
+      pointer-events: none;
+    }
+
+    .ap-input-currency .ap-input {
+      padding-left: 28px;
+    }
+
+    /* ---------- Label row (label + info button) ---------- */
+    .ap-label-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+    }
+
+    .ap-info-btn {
+      background: none;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 999px;
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      font-family: inherit;
+      font-size: 11px;
+      line-height: 1;
+      color: #156146;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Expand the touch target to 44x44 without changing the visual size
+       (mobile a11y guideline). The ::before pseudo extends the hit area
+       outward in all directions. */
+    .ap-info-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 44px;
+      height: 44px;
+    }
+
+    .ap-info-btn:hover {
+      border-color: #156146;
+    }
+
+    .ap-info-btn:focus-visible {
+      border-color: #156146;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    .ap-tooltip {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 6px;
+      background: #032215;
+      color: #FFFAF4;
+      font-size: 13px;
+      line-height: 1.45;
+      padding: 10px 12px;
+      border-radius: 8px;
+      max-width: 320px;
+      z-index: 10;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
+
+    .ap-toggle {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 16px 20px;
+      min-height: 44px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #032215;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
+
+    .ap-toggle:hover {
+      border-color: #156146;
+    }
+
+    .ap-toggle:focus-visible {
+      outline: none;
+      border-color: #156146;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    .ap-toggle--selected {
+      border-color: #156146;
+      background: #F4E9DD;
+    }
+
+    /* ---------- Nav ---------- */
+    .ap-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .ap-btn {
+      background: #156146;
+      color: #FFFAF4;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 32px;
+      min-height: 44px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .ap-btn:hover {
+      opacity: 0.92;
+    }
+
+    .ap-btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.35);
+    }
+
+    .ap-btn:disabled,
+    .ap-btn[disabled] {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .ap-btn--back {
+      background: transparent;
+      color: #156146;
+      border: 1px solid rgb(235, 225, 213);
+    }
+
+    /* ---------- Service grid (step 3) ---------- */
+    .ap-service-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 720px) {
+      .ap-service-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .ap-service-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .ap-service-card {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
+      padding: 16px;
+      min-height: 44px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #032215;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      width: 100%;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .ap-service-card:hover {
+      border-color: #156146;
+    }
+
+    .ap-service-card:focus-visible {
+      outline: none;
+      border-color: #156146;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    .ap-service-card[aria-checked="true"] {
+      border-color: #156146;
+      background: #F4E9DD;
+    }
+
+    .ap-service-card__check {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      border: 1.5px solid rgb(180, 165, 150);
+      background: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ap-service-card[aria-checked="true"] .ap-service-card__check {
+      border-color: #156146;
+      background: #156146;
+    }
+
+    .ap-service-card__check svg {
+      display: none;
+      width: 12px;
+      height: 12px;
+      color: #FFFAF4;
+    }
+
+    .ap-service-card[aria-checked="true"] .ap-service-card__check svg {
+      display: block;
+    }
+
+    .ap-service-card__label {
+      flex: 1;
+      min-width: 0;
+      font-weight: 500;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      hyphens: auto;
+    }
+
+    /* Coverage detail block (expanded under each checked service) */
+    .ap-coverage-detail {
+      grid-column: 1 / -1;
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 720px) {
+      .ap-coverage-detail {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .ap-coverage-detail {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .ap-coverage-detail__title {
+      grid-column: 1 / -1;
+      font-size: 13px;
+      color: #555;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .ap-coverage-detail .ap-field {
+      gap: 4px;
+    }
+
+    .ap-coverage-detail .ap-label {
+      font-size: 13px;
+    }
+
+    .ap-coverage-detail .ap-input {
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+
+    /* On mobile, bump coverage-detail inputs back to 16px so iOS Safari
+       doesn't auto-zoom on focus. */
+    @media (max-width: 640px) {
+      .ap-coverage-detail .ap-input {
+        font-size: 16px;
+      }
+    }
+
+    .ap-coverage-detail .ap-input-currency .ap-input {
+      padding-left: 24px;
+    }
+
+    /* ---------- Not-sure link ---------- */
+    .ap-help-link {
+      background: none;
+      border: none;
+      padding: 12px 4px;
+      min-height: 44px;
+      color: #156146;
+      font-family: inherit;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: underline;
+      align-self: flex-start;
+      border-radius: 6px;
+    }
+
+    .ap-help-link:hover {
+      opacity: 0.85;
+    }
+
+    .ap-help-link:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    /* ---------- Modal ---------- */
+    .ap-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 34, 21, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+      overflow-y: auto;
+    }
+
+    .ap-modal[hidden] {
+      display: none;
+    }
+
+    .ap-modal__card {
+      background: #FFFAF4;
+      border-radius: 12px;
+      padding: 28px;
+      max-width: 480px;
+      width: 100%;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    .ap-modal__title {
+      font-size: 20px;
+      font-weight: 500;
+      color: #032215;
+    }
+
+    .ap-modal__body {
+      color: #555;
+      font-size: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .ap-modal__close {
+      align-self: flex-end;
+      margin-top: 8px;
+    }
+
+    /* ---------- Gift cards callout (Step 2 + results) ---------- */
+    .ap-gift-callout {
+      margin-top: 32px;
+      padding: 20px 24px;
+      background: #f5f1ea;
+      border-left: 4px solid #032215;
+      border-radius: 8px;
+    }
+    .ap-gift-callout h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      color: #032215;
+    }
+    .ap-gift-callout p {
+      margin: 0 0 12px;
+      color: #2a3a32;
+    }
+    .ap-gift-callout__cta {
+      color: #032215;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
+    /* ---------- Results panels ---------- */
+    .ap-panel {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .ap-panel h2 {
+      font-weight: 500;
+      font-size: 24px;
+      color: #032215;
+    }
+
+    .ap-panel p {
+      color: #555;
+      font-size: 15px;
+    }
+
+    .ap-results__intro { margin: 24px 0 24px; }
+    .ap-results__intro h2 { font-size: 22px; line-height: 1.3; margin-bottom: 8px; }
+    .ap-results__intro p { color: #2a3a32; }
+
+    .ap-hsa { background: rgba(21, 97, 70, 0.04); border: 1px solid rgb(235, 225, 213); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+    .ap-hsa h2 { font-size: 18px; margin-bottom: 12px; }
+    .ap-hsa ul { padding-left: 20px; margin: 12px 0; color: #2a3a32; }
+    .ap-hsa li { padding: 3px 0; }
+    .ap-hsa__footnote { font-size: 13px; color: #4a5a52; margin-top: 12px; }
+
+    .ap-next { padding: 24px 0; border-top: 1px solid rgb(235, 225, 213); }
+    .ap-next h2 { font-size: 20px; margin-bottom: 12px; }
+    .ap-next ol { padding-left: 24px; color: #2a3a32; }
+    .ap-next li { padding: 6px 0; }
+
+    .ap-navigate { background: #ffffff; border: 1px solid rgb(235, 225, 213); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+    .ap-navigate h2 { font-size: 18px; margin-bottom: 8px; }
+    .ap-navigate ul { padding-left: 20px; color: #2a3a32; }
+    .ap-navigate li { padding: 4px 0; }
+
+    .ap-permission { background: #FFFAF4; padding: 24px 0; }
+    .ap-permission h2 { font-size: 18px; margin-bottom: 10px; color: #2a3a32; font-weight: 500; }
+    .ap-permission p { color: #2a3a32; line-height: 1.65; }
+
+    .ap-final-cta { padding: 24px 0; }
+    .ap-final-cta h2 { font-size: 22px; margin-bottom: 8px; }
+    .ap-final-cta p { color: #2a3a32; margin-bottom: 8px; }
+    .ap-final-cta ul { padding-left: 20px; margin-bottom: 16px; color: #2a3a32; }
+    .ap-final-cta li { padding: 3px 0; }
+    .ap-trust { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; padding-top: 24px; border-top: 1px solid rgb(235, 225, 213); }
+    .ap-trust__item { text-align: center; font-size: 13px; color: #4a5a52; }
+    .ap-trust__item strong { display: block; color: #032215; font-weight: 500; margin-bottom: 4px; }
+    @media (max-width: 600px) {
+      .ap-trust { grid-template-columns: 1fr; gap: 8px; text-align: left; }
+      .ap-trust__item { text-align: left; }
+    }
+
+    .ap-snapshot-hero {
+      font-size: clamp(28px, 7vw, 44px);
+      line-height: 1.1;
+      font-weight: 500;
+      color: #156146;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
+
+    .ap-snapshot-hero--muted {
+      color: #999;
+      font-size: 20px;
+      font-weight: 400;
+    }
+
+    .ap-hsa-callout {
+      display: inline-block;
+      background: #F4E9DD;
+      color: #032215;
+      font-size: 14px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      align-self: flex-start;
+    }
+
+    /* ---------- Stacked coverage cards ---------- */
+    .ap-coverage-card {
+      margin-top: 16px;
+      padding: 20px 24px;
+      background: #fbf9f4;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
+    }
+    .ap-coverage-card h3 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #032215;
+    }
+    .ap-coverage-card ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .ap-coverage-card li {
+      font-size: 15px;
+      color: #032215;
+      overflow-wrap: break-word;
+    }
+    .ap-coverage-card li.ap-coverage-list__item--muted,
+    .ap-coverage-card .ap-coverage-list__item--muted {
+      color: #888;
+    }
+    .ap-coverage-list__check { color: #156146; font-weight: 700; margin-right: 8px; }
+    .ap-coverage-list__dash { color: #bbb; margin-right: 8px; }
+    .ap-coverage-list__total {
+      margin: 12px 0 0;
+      padding-top: 12px;
+      border-top: 1px solid rgb(235, 225, 213);
+      color: #032215;
+      font-size: 15px;
+    }
+    .ap-coverage-card--hsa {
+      border-left: 4px solid #032215;
+    }
+    .ap-coverage-card--hsa p {
+      margin: 0;
+      color: #555;
+      font-size: 14px;
+    }
+
+    /* ---------- Results-page clarifier + footnote + priority badges ---------- */
+    .ap-results__clarifier {
+      font-size: 15px;
+      color: #444;
+      margin: 8px 0 24px;
+      line-height: 1.6;
+    }
+    .ap-rec-card__asterisk {
+      color: #b8860b;
+      font-weight: 700;
+    }
+    .ap-rec-card__priority {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #e6efe9;
+      color: #032215;
+      vertical-align: middle;
+      font-weight: 600;
+    }
+    .ap-rec-card__priority--medium { background: #f4ecdc; }
+    .ap-rec-card__priority--low    { background: #f0f0f0; }
+    .ap-rec__footnote {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: #fafaf6;
+      border-left: 3px solid #b8860b;
+      font-size: 14px;
+      color: #2a3a32;
+      line-height: 1.55;
+      border-radius: 4px;
+    }
+    .ap-rec__footnote a {
+      color: #032215;
+      font-weight: 600;
+    }
+
+    /* ---------- New What Happens Next list ---------- */
+    .ap-next__list {
+      padding-left: 24px;
+      margin: 0;
+    }
+    .ap-next__list li {
+      margin: 12px 0;
+      line-height: 1.55;
+      font-size: 15px;
+    }
+    .ap-next__cta {
+      display: inline-block;
+      margin-left: 12px;
+      padding: 6px 14px;
+      font-size: 14px;
+    }
+
+    .ap-rec-card {
+      background: #FFFAF4;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .ap-rec-card__icon {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      background: #F4E9DD;
+      color: #032215;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 500;
+      text-align: center;
+      line-height: 44px;
+    }
+
+    .ap-rec-card__rank { display: inline-flex; align-items: center; justify-content: center; background: #156146; color: #fff; width: 28px; height: 28px; border-radius: 50%; font-weight: 500; font-size: 14px; margin-right: 10px; flex-shrink: 0; }
+    .ap-recs__more { border-top: 1px solid rgb(235, 225, 213); padding-top: 12px; margin-top: 8px; }
+    .ap-recs__more > summary { cursor: pointer; color: #156146; font-weight: 500; padding: 8px 0; list-style: none; }
+    .ap-recs__more > summary::-webkit-details-marker { display: none; }
+    .ap-recs__more > summary::before { content: '▾ '; }
+    .ap-recs__more[open] > summary::before { content: '▴ '; }
+
+    .ap-rec-card__body {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ap-rec-card__title,
+    .ap-rec-card__dosing,
+    .ap-rec-card__rationale,
+    .ap-rec-card__callout {
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
+
+    .ap-rec-card__title {
+      font-size: 17px;
+      font-weight: 500;
+      color: #032215;
+    }
+
+    .ap-rec-card__dosing {
+      font-size: 14px;
+      color: #156146;
+      font-weight: 500;
+    }
+
+    .ap-rec-card__rationale {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .ap-rec-card__callout {
+      margin: 0;
+      padding: 8px 12px;
+      background: #F4E9DD;
+      color: #156146;
+      border-radius: 6px;
+      font-size: 13px;
+      font-style: italic;
+      line-height: 1.4;
+    }
+
+    .ap-cost-breakdown {
+      margin-top: 8px;
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ap-cost-breakdown__row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .ap-cost-breakdown__row > span:last-child {
+      flex-shrink: 0;
+    }
+
+    .ap-cost-breakdown__row--covered {
+      color: #156146;
+    }
+
+    .ap-cost-breakdown__row--oop {
+      color: #888;
+    }
+
+    .ap-cost-breakdown__row--total {
+      font-weight: 500;
+      color: #032215;
+    }
+
+    .ap-funding-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ap-funding-list li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 15px;
+      color: #032215;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
+
+    .ap-funding-list li::before {
+      content: '\2022';
+      color: #156146;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .ap-cta-row {
+      display: flex;
+      flex-direction: row;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .ap-cta-row .ap-btn {
+      padding: 16px 28px;
+      font-size: 16px;
+    }
+
+    .ap-btn--secondary {
+      background: transparent;
+      color: #156146;
+      border: 1px solid #156146;
+    }
+
+    .ap-empty-rec {
+      color: #555;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* ---------- Lead capture drawer ---------- */
+    .ap-panel--lead {
+      margin-top: 16px;
+    }
+
+    .ap-panel--lead h2 {
+      font-size: 20px;
+    }
+
+    .ap-panel--lead .ap-field {
+      gap: 6px;
+    }
+
+    .ap-panel--lead label {
+      color: #032215;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .ap-panel--lead input[type="text"],
+    .ap-panel--lead input[type="email"],
+    .ap-panel--lead textarea {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 16px; /* 16px+ prevents iOS Safari auto-zoom on focus */
+      color: #032215;
+      width: 100%;
+      max-width: 100%;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .ap-panel--lead input[type="text"],
+    .ap-panel--lead input[type="email"] {
+      min-height: 44px;
+    }
+
+    .ap-panel--lead textarea {
+      resize: vertical;
+      min-height: 88px;
+      line-height: 1.5;
+    }
+
+    .ap-panel--lead input:focus,
+    .ap-panel--lead textarea:focus {
+      outline: none;
+      border-color: #156146;
+      box-shadow: 0 0 0 3px rgba(21, 97, 70, 0.15);
+    }
+
+    .ap-panel--lead input[aria-invalid="true"],
+    .ap-panel--lead textarea[aria-invalid="true"] {
+      border-color: #B23A2E;
+      box-shadow: 0 0 0 3px rgba(178, 58, 46, 0.12);
+    }
+
+    .ap-panel--lead form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .ap-privacy {
+      font-size: 13px;
+      color: #777;
+    }
+
+    .ap-lead-status {
+      font-size: 14px;
+      min-height: 18px;
+      margin-top: 4px;
+    }
+
+    .ap-lead-status--error {
+      color: #B23A2E;
+    }
+
+    .ap-lead-status--success {
+      color: #156146;
+    }
+
+    .ap-lead-submit {
+      align-self: flex-start;
+    }
+
+    .ap-print-tip {
+      font-size: 12px;
+      color: #777;
+      font-style: italic;
+      margin-top: 8px;
+      margin-bottom: 0;
+    }
+
+    /* ---------- Print-only care plan ----------
+       Hidden on screen. When the user clicks "send my care plan", we
+       populate #ap-print-root with the same markup the PDF used to use
+       and call window.print(). The @media print rule below makes the
+       root the only visible content during the print render, so the
+       browser's native "Save as PDF" produces a clean branded document. */
+    #ap-print-root { display: none; }
+
+    @media print {
+      /* Hide everything except the print root. */
+      body > *:not(#ap-print-root) { display: none !important; }
+      html, body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      #ap-print-root {
+        display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0.6in 0.6in 0.75in 0.6in !important;
+        color: #032215 !important;
+        font-family: 'Futura', 'Futura PT', 'Trebuchet MS', sans-serif !important;
+        font-weight: 400 !important;
+        line-height: 1.5 !important;
+        background: #ffffff !important;
+      }
+      @page {
+        size: letter;
+        margin: 0;
+      }
+      .ap-pdf__panel, .ap-pdf__rec, .ap-pdf__letterhead {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      .ap-next, .ap-navigate {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+    }
+
+    .ap-pdf-source * {
+      box-sizing: border-box;
+    }
+
+    .ap-pdf__letterhead {
+      border-bottom: 2px solid #156146;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+
+    .ap-pdf__brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 28px;
+      font-weight: 500;
+      color: #032215;
+      letter-spacing: 0.02em;
+    }
+    .ap-pdf__brand-mark {
+      width: 28px;
+      height: 32px;
+      flex-shrink: 0;
+    }
+
+    .ap-pdf__brand-tag {
+      font-size: 12px;
+      color: #555;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .ap-pdf__meta {
+      margin-top: 14px;
+      font-size: 13px;
+      color: #555;
+      line-height: 1.55;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      word-break: break-word;
+    }
+
+    .ap-pdf__meta strong {
+      color: #032215;
+      font-weight: 500;
+    }
+
+    .ap-pdf__heading {
+      font-size: 22px;
+      font-weight: 500;
+      color: #032215;
+      margin-bottom: 20px;
+    }
+
+    .ap-pdf__panel {
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .ap-pdf__panel h3 {
+      font-size: 16px;
+      font-weight: 500;
+      color: #156146;
+      margin-bottom: 8px;
+    }
+
+    .ap-pdf__panel p {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .ap-pdf__hero {
+      font-size: 28px;
+      font-weight: 500;
+      color: #156146;
+      margin: 8px 0;
+    }
+
+    .ap-pdf__hero--muted {
+      color: #999;
+      font-size: 18px;
+      font-weight: 400;
+    }
+
+    .ap-pdf__hsa {
+      display: inline-block;
+      background: #F4E9DD;
+      color: #032215;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+
+    .ap-pdf__cov-grid {
+      margin-top: 8px;
+    }
+
+    .ap-pdf__cov-col {
+      margin-bottom: 10px;
+    }
+
+    .ap-pdf__cov-col h4 {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 4px;
+    }
+
+    .ap-pdf__cov-col ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .ap-pdf__cov-col li {
+      font-size: 13px;
+      color: #032215;
+      padding: 2px 0;
+    }
+
+    .ap-pdf__cov-col li.muted {
+      color: #999;
+    }
+
+    .ap-pdf__rec {
+      background: #FFFAF4;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 10px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .ap-pdf__rec-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: #032215;
+      margin-bottom: 4px;
+    }
+
+    .ap-pdf__rec-dosing {
+      font-size: 12px;
+      color: #156146;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .ap-pdf__rec-rationale {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .ap-pdf__cost {
+      background: #ffffff;
+      border: 1px solid rgb(235, 225, 213);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ap-pdf__cost-row {
+      padding: 2px 0;
+    }
+
+    .ap-pdf__cost-row span:last-child {
+      float: right;
+    }
+
+    .ap-pdf__cost-row--covered { color: #156146; }
+    .ap-pdf__cost-row--oop { color: #888; }
+    .ap-pdf__cost-row--total { color: #032215; font-weight: 500; }
+
+    .ap-pdf__funding {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .ap-pdf__funding li {
+      font-size: 13px;
+      color: #032215;
+      padding: 4px 0 4px 14px;
+      position: relative;
+    }
+
+    .ap-pdf__funding li::before {
+      content: '•';
+      color: #156146;
+      font-weight: 700;
+      position: absolute;
+      left: 0;
+    }
+
+    .ap-pdf__footer {
+      margin-top: 20px;
+      padding-top: 14px;
+      border-top: 1px solid rgb(235, 225, 213);
+      font-size: 11px;
+      color: #888;
+      line-height: 1.55;
+    }
+
+    .ap-pdf__footer-link {
+      color: #156146;
+      font-weight: 500;
+    }
+
+    .ap-pdf__brandline { margin-top: 16px; padding-top: 8px; border-top: 1px solid rgb(235, 225, 213); font-size: 11px; color: #777; text-align: center; }
+    .ap-pdf__footer + .ap-pdf__brandline { border-top: none; margin-top: 8px; padding-top: 0; }
+
+    /* ---------- Mobile ---------- */
+    @media (max-width: 640px) {
+      .ap-app {
+        max-width: 100%;
+        padding: 24px 16px 48px;
+      }
+
+      .ap-btn {
+        padding: 12px 24px;
+        font-size: 14px;
+      }
+
+      .ap-toggle-group,
+      .ap-toggle-group--three {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .ap-step__header h2 {
+        font-size: 24px;
+      }
+
+      .ap-landing__hero h1 {
+        font-size: 26px;
+      }
+
+      .ap-landing {
+        gap: 20px;
+      }
+
+      .ap-landing__panel {
+        padding: 20px;
+      }
+
+      .ap-panel {
+        padding: 24px;
+      }
+
+      .ap-panel h2 {
+        font-size: 20px;
+      }
+
+      .ap-cta-row {
+        flex-direction: column;
+      }
+
+      .ap-cta-row .ap-btn {
+        width: 100%;
+      }
+
+      .ap-rec-card {
+        padding: 16px;
+        gap: 12px;
+      }
+
+      .ap-modal__card {
+        padding: 20px;
+      }
+    }
+
+    /* Extra-narrow viewports (iPhone SE / 320px). Tighten paddings further
+       and let the snapshot hero shrink so nothing overflows the viewport. */
+    @media (max-width: 380px) {
+      .ap-app {
+        padding: 20px 12px 40px;
+      }
+
+      .ap-panel {
+        padding: 20px 16px;
+      }
+
+      .ap-rec-card {
+        padding: 14px;
+        gap: 10px;
+      }
+
+      .ap-rec-card__icon {
+        width: 36px;
+        height: 36px;
+        line-height: 36px;
+        font-size: 16px;
+      }
+    }
+  </style>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Alma Care Benefits Eligibility Tool",
+  "description": "Find out what your extended health benefits cover for postpartum care, get a personalized care plan, and a free PDF estimate for your insurance.",
+  "url": "https://almacare.ca/benefits",
+  "applicationCategory": "HealthApplication",
+  "operatingSystem": "Any",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CAD"
+  },
+  "provider": {
+    "@type": "Organization",
+    "name": "Alma Care",
+    "url": "https://almacare.ca"
+  }
+}
+</script>
