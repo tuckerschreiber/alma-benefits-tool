@@ -96,6 +96,8 @@ function loadSettings() {
         document.getElementById('clientsTable').value = settings.clientsTable || 'Clients';
         document.getElementById('careTeamTable').value = settings.careTeamTable || 'Care Team';
         document.getElementById('maxDistance').value = settings.maxDistance || 100;
+        document.getElementById('shiftsTable').value = settings.shiftsTable || 'Shifts';
+        document.getElementById('loadThreshold').value = settings.loadThreshold || 30;
     }
 }
 
@@ -105,7 +107,9 @@ function saveSettings() {
         baseId: document.getElementById('baseId').value.trim(),
         clientsTable: document.getElementById('clientsTable').value.trim(),
         careTeamTable: document.getElementById('careTeamTable').value.trim(),
-        maxDistance: parseInt(document.getElementById('maxDistance').value) || 100
+        maxDistance: parseInt(document.getElementById('maxDistance').value) || 100,
+        shiftsTable: document.getElementById('shiftsTable').value.trim() || 'Shifts',
+        loadThreshold: parseInt(document.getElementById('loadThreshold').value) || 30
     };
     localStorage.setItem('almaSettings', JSON.stringify(settings));
     showMessage('Settings saved successfully!', 'success');
@@ -267,6 +271,50 @@ function getDesignationScore(client, memberDesignation) {
     }
 
     return { score: 0, matched: false };
+}
+
+// Pull all shifts where Start is within [startDate, startDate + weeks].
+// Returns a Map keyed by care-team-member record ID → array of {start, end}.
+async function loadShiftsForWindow(startDate, weeks = 8) {
+    const start = new Date(startDate);
+    if (isNaN(start.getTime())) {
+        console.warn('Invalid client Start Date, skipping shifts load');
+        return new Map();
+    }
+    const end = new Date(start);
+    end.setDate(end.getDate() + weeks * 7);
+
+    const startISO = start.toISOString();
+    const endISO = end.toISOString();
+    const formula = `AND(IS_AFTER({Start}, '${startISO}'), IS_BEFORE({Start}, '${endISO}'))`;
+    const url = `https://api.airtable.com/v0/${settings.baseId}/${encodeURIComponent(settings.shiftsTable)}?filterByFormula=${encodeURIComponent(formula)}`;
+
+    try {
+        const res = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${settings.apiKey}` }
+        });
+        if (!res.ok) {
+            console.warn('Shifts fetch failed:', res.status);
+            return new Map();
+        }
+        const data = await res.json();
+        const byMember = new Map();
+        for (const shift of data.records) {
+            const memberIds = shift.fields['Care Team Member'] || [];
+            const ids = Array.isArray(memberIds) ? memberIds : [memberIds];
+            const shiftStart = shift.fields['Start'];
+            const shiftEnd = shift.fields['End'];
+            if (!shiftStart || !shiftEnd) continue;
+            for (const id of ids) {
+                if (!byMember.has(id)) byMember.set(id, []);
+                byMember.get(id).push({ start: new Date(shiftStart), end: new Date(shiftEnd) });
+            }
+        }
+        return byMember;
+    } catch (e) {
+        console.warn('Shifts load error:', e);
+        return new Map();
+    }
 }
 
 async function performMatching(client, careTeam) {
