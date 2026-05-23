@@ -542,7 +542,7 @@ function displayMatches(client) {
                     </select>
                 </label>
                 <label>Max distance
-                    <input type="number" value="${filters.maxDistance}" onchange="updateFilter('maxDistance', parseInt(this.value))" /> km
+                    <input type="number" min="0" max="${settings.maxDistance}" value="${filters.maxDistance ?? ''}" onchange="updateFilter('maxDistance', this.value === '' ? null : parseInt(this.value))" /> km
                 </label>
                 <label>Status
                     <select onchange="updateFilter('status', this.value)">
