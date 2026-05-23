@@ -7,7 +7,7 @@ let currentClient = null;
 let geoCache = JSON.parse(localStorage.getItem('almaGeoCache') || '{}');
 let allMatches = [];
 let filters = {
-    designation: 'any',
+    credential: 'any',
     maxDistance: null,    // null means use settings.maxDistance
     status: 'any',
     hasAvailability: true, // default ON — hides 'conflict'
@@ -246,45 +246,55 @@ function getField(record, name) {
     return undefined;
 }
 
-// Score designation match (0..30). Tries ranked, multi-select, then single field.
-// Returns { score, matched } — `matched` is true when any rule fired.
-// Read a member's designation tolerating case + array shapes (multi-select,
-// linked record, lookup). Returns a plain string or ''.
-function getMemberDesignation(member) {
-    const raw = getField(member, 'Designation') ?? getField(member, 'Designations');
-    if (raw == null) return '';
-    if (Array.isArray(raw)) return raw.length > 0 ? String(raw[0]) : '';
-    return String(raw);
+// Aggregate a care team member's credentials from the three attribute fields
+// into a deduped array of strings. Tolerates array/string/missing shapes.
+function getMemberCredentials(member) {
+    const fields = ['Certifications', 'Accreditation(s)', 'Areas of Specialization'];
+    const out = new Set();
+    for (const f of fields) {
+        const raw = getField(member, f);
+        if (raw == null) continue;
+        const items = Array.isArray(raw) ? raw : String(raw).split(/[,;]\s*/);
+        for (const item of items) {
+            const trimmed = String(item).trim();
+            if (trimmed) out.add(trimmed);
+        }
+    }
+    return Array.from(out);
 }
 
-function getDesignationScore(client, memberDesignation) {
-    if (!memberDesignation) return { score: 0, matched: false };
-
-    const rank1 = getField(client, 'Designation Preference 1');
-    const rank2 = getField(client, 'Designation Preference 2');
-    const rank3 = getField(client, 'Designation Preference 3');
-    if (rank1 || rank2 || rank3) {
-        if (rank1 && rank1 === memberDesignation) return { score: 30, matched: true };
-        if (rank2 && rank2 === memberDesignation) return { score: 20, matched: true };
-        if (rank3 && rank3 === memberDesignation) return { score: 10, matched: true };
-        return { score: 0, matched: false };
+// Pull the client's stated preferences from intake fields. Same shape tolerance.
+function getClientPreferences(client) {
+    const fields = ['Type(s) of Support? [Intake]', 'Education Goals [Intake]', 'Requested Add-Ons [Intake]'];
+    const out = new Set();
+    for (const f of fields) {
+        const raw = getField(client, f);
+        if (raw == null) continue;
+        const items = Array.isArray(raw) ? raw : String(raw).split(/[,;]\s*/);
+        for (const item of items) {
+            const trimmed = String(item).trim();
+            if (trimmed) out.add(trimmed);
+        }
     }
+    return Array.from(out);
+}
 
-    const multi = getField(client, 'Preferred Designations');
-    if (Array.isArray(multi) && multi.length > 0) {
-        return multi.includes(memberDesignation)
-            ? { score: 10, matched: true }
-            : { score: 0, matched: false };
+// Score the overlap between client preferences and member credentials.
+// +5 per credential that any client preference touches (case-insensitive
+// substring either direction), capped at +30. Returns { score, hits } where
+// hits is the list of credentials that matched, for UI highlighting.
+function getCredentialsScore(clientPrefs, memberCreds) {
+    if (clientPrefs.length === 0 || memberCreds.length === 0) {
+        return { score: 0, hits: [] };
     }
-
-    const single = getField(client, 'Preferred Designation');
-    if (single) {
-        return single === memberDesignation
-            ? { score: 20, matched: true }
-            : { score: 0, matched: false };
+    const lcPrefs = clientPrefs.map(p => p.toLowerCase());
+    const hits = [];
+    for (const cred of memberCreds) {
+        const lc = cred.toLowerCase();
+        const matched = lcPrefs.some(p => lc.includes(p) || p.includes(lc));
+        if (matched) hits.push(cred);
     }
-
-    return { score: 0, matched: false };
+    return { score: Math.min(hits.length * 5, 30), hits };
 }
 
 // Pull all shifts where Start is within [startDate, startDate + weeks].
@@ -413,6 +423,7 @@ async function performMatching(client, careTeam) {
     }
 
     const bookedByMember = await loadShiftsForWindow(client.fields['Start Date']);
+    const clientPrefs = getClientPreferences(client);
 
     // Pre-cache FSAs for all eligible members (rate-limited for uncached)
     const uniqueFSAs = new Set();
@@ -452,15 +463,15 @@ async function performMatching(client, careTeam) {
         const distance = haversineKm(clientCoord, memberCoord);
         if (distance > settings.maxDistance) continue;
 
-        const memberDesignation = getMemberDesignation(member);
-        const designation = getDesignationScore(client, memberDesignation);
+        const memberCreds = getMemberCredentials(member);
+        const creds = getCredentialsScore(clientPrefs, memberCreds);
 
         let score = 100;
         if (distance > 20 && distance <= 40) score -= 10;
         else if (distance > 40 && distance <= 60) score -= 15;
         else if (distance > 60) score -= 30;
         if (status === 'Ready for Review') score -= 5;
-        score += designation.score;
+        score += creds.score;
 
         const availability = checkAvailability(member, client, bookedByMember);
         if (availability === 'available') score += 20;
@@ -472,8 +483,8 @@ async function performMatching(client, careTeam) {
             email: member.fields['Email'] || member.fields['email'],
             postalCode: member.fields['Postal Code'],
             distance: distance,
-            designation: memberDesignation,
-            designationMatched: designation.matched,
+            credentials: memberCreds,
+            credentialHits: creds.hits,
             availableFor: Array.isArray(memberCareTypes) ? memberCareTypes.join(', ') : memberCareTypes,
             matchScore: score,
             status: status,
@@ -495,7 +506,7 @@ function availabilityBadge(state) {
 
 function applyFilters(all) {
     return all.filter(m => {
-        if (filters.designation !== 'any' && m.designation !== filters.designation) return false;
+        if (filters.credential !== 'any' && !(m.credentials || []).includes(filters.credential)) return false;
         if (filters.maxDistance != null && m.distance > filters.maxDistance) return false;
         if (filters.status !== 'any' && m.status !== filters.status) return false;
         if (filters.hasAvailability && m.availability === 'conflict') return false;
@@ -528,7 +539,7 @@ function displayMatches(client) {
     const clientStartDate = client.fields['Start Date'] || 'TBD';
     const startDateValid = !isNaN(new Date(client.fields['Start Date']).getTime());
 
-    const designations = Array.from(new Set(allMatches.map(m => m.designation).filter(Boolean))).sort();
+    const credentials = Array.from(new Set(allMatches.flatMap(m => m.credentials || []))).sort();
     const statuses = Array.from(new Set(allMatches.map(m => m.status).filter(Boolean))).sort();
 
     resultsArea.innerHTML = `
@@ -540,10 +551,10 @@ function displayMatches(client) {
                 <span class="detail-badge">Start: ${clientStartDate}</span>
             </div>
             <div class="filter-bar">
-                <label>Designation
-                    <select onchange="updateFilter('designation', this.value)">
+                <label>Credential
+                    <select onchange="updateFilter('credential', this.value)">
                         <option value="any">any</option>
-                        ${designations.map(d => `<option value="${d}" ${filters.designation === d ? 'selected' : ''}>${d}</option>`).join('')}
+                        ${credentials.map(c => `<option value="${c}" ${filters.credential === c ? 'selected' : ''}>${c}</option>`).join('')}
                     </select>
                 </label>
                 <label>Max distance
@@ -566,7 +577,7 @@ function displayMatches(client) {
                 <div class="match-card ${selectedMatches.includes(match.id) ? 'selected' : ''}" onclick="toggleSelection('${match.id}')">
                     <div class="match-score">⭐ ${match.matchScore}</div>
                     <div class="match-name">${match.name}</div>
-                    ${match.designation ? `<div class="match-detail">🎓 ${match.designation}${match.designationMatched ? ' <span class="pref-match">✓ matches preference</span>' : ''}</div>` : ''}
+                    ${(match.credentials && match.credentials.length) ? `<div class="match-detail">🎓 ${match.credentials.map(c => (match.credentialHits || []).includes(c) ? `<span class="pref-match">${c}</span>` : c).join(', ')}</div>` : ''}
                     <div class="match-detail">📍 ${match.postalCode} (${match.distance.toFixed(1)} km away)</div>
                     <div class="match-detail">💼 ${match.status}</div>
                     <div class="match-detail">${availabilityBadge(match.availability)}</div>
