@@ -298,9 +298,10 @@ function getCredentialsScore(clientPrefs, memberCreds) {
 }
 
 // Pull all shifts where Start is within [startDate, startDate + weeks].
-// Returns a Map keyed by care-team-member record ID → array of {start, end}.
-// If startDate is missing or invalid (e.g. client Start Date is "TBD"),
-// defaults to today so availability is still meaningful.
+// Returns a Map keyed by care-team-member record ID → array of {start, end},
+// or null if the Shifts table couldn't be read (so callers can distinguish
+// "no shifts" from "couldn't determine"). If startDate is missing/invalid
+// (e.g. "TBD"), defaults to today so the window is still meaningful.
 async function loadShiftsForWindow(startDate, weeks = 8) {
     let start = new Date(startDate);
     if (isNaN(start.getTime())) start = new Date();
@@ -321,7 +322,7 @@ async function loadShiftsForWindow(startDate, weeks = 8) {
             if (!res.ok) {
                 console.warn('Shifts fetch failed:', res.status);
                 showMessage('Could not load shifts — availability will show as unknown', 'error');
-                return new Map();
+                return null;
             }
             const data = await res.json();
             records.push(...data.records);
@@ -343,16 +344,16 @@ async function loadShiftsForWindow(startDate, weeks = 8) {
     } catch (e) {
         console.warn('Shifts load error:', e);
         showMessage('Could not load shifts — availability will show as unknown', 'error');
-        return new Map();
+        return null;
     }
 }
 
 // Determine availability state for a member given their bookings and the client.
 // Returns 'available' | 'partial' | 'conflict' | 'unknown'.
 function checkAvailability(member, client, bookedByMember) {
+    if (bookedByMember == null) return 'unknown';
     const memberShifts = bookedByMember.get(member.id);
-    if (memberShifts === undefined) return 'unknown';
-    if (memberShifts.length === 0) return 'available';
+    if (!memberShifts || memberShifts.length === 0) return 'available';
 
     // Try specific weekly schedule first.
     const clientScheduleRaw = getField(client, 'Weekly Schedule') || getField(client, 'Schedule');
@@ -539,7 +540,14 @@ function displayMatches(client) {
     const clientStartDate = client.fields['Start Date'] || 'TBD';
     const startDateValid = !isNaN(new Date(client.fields['Start Date']).getTime());
 
-    const credentials = Array.from(new Set(allMatches.flatMap(m => m.credentials || []))).sort();
+    // Filter the dropdown to short tag-like strings — the underlying fields
+    // are free-text bios on many care team members, which produce prose-y
+    // entries when split on commas. Long ones still contribute to scoring
+    // via substring match, they just don't pollute the filter.
+    const isTagLike = s => s.length <= 30 && !/\d/.test(s) && !/[()]/.test(s);
+    const credentials = Array.from(new Set(
+        allMatches.flatMap(m => (m.credentials || []).filter(isTagLike))
+    )).sort();
     const statuses = Array.from(new Set(allMatches.map(m => m.status).filter(Boolean))).sort();
 
     resultsArea.innerHTML = `
@@ -577,7 +585,12 @@ function displayMatches(client) {
                 <div class="match-card ${selectedMatches.includes(match.id) ? 'selected' : ''}" onclick="toggleSelection('${match.id}')">
                     <div class="match-score">⭐ ${match.matchScore}</div>
                     <div class="match-name">${match.name}</div>
-                    ${(match.credentials && match.credentials.length) ? `<div class="match-detail">🎓 ${match.credentials.map(c => (match.credentialHits || []).includes(c) ? `<span class="pref-match">${c}</span>` : c).join(', ')}</div>` : ''}
+                    ${(match.credentials && match.credentials.length) ? `<div class="match-detail">🎓 ${match.credentials.map(c => {
+                        const display = c.length > 60 ? c.slice(0, 60).replace(/\s+\S*$/, '') + '…' : c;
+                        const title = c.length > 60 ? ` title="${c.replace(/"/g, '&quot;')}"` : '';
+                        const isHit = (match.credentialHits || []).includes(c);
+                        return isHit ? `<span class="pref-match"${title}>${display}</span>` : `<span${title}>${display}</span>`;
+                    }).join(', ')}</div>` : ''}
                     <div class="match-detail">📍 ${match.postalCode} (${match.distance.toFixed(1)} km away)</div>
                     <div class="match-detail">💼 ${match.status}</div>
                     <div class="match-detail">${availabilityBadge(match.availability)}</div>
