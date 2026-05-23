@@ -331,3 +331,9 @@ button:disabled {
     font-size: 3rem;
     margin-bottom: 1rem;
 }
+
+.pref-match {
+    color: #2a7a2a;
+    font-weight: 600;
+    margin-left: 0.4rem;
+}

@@ -227,6 +227,48 @@ async function findMatches() {
     }
 }
 
+// Look up a field on a record with case/whitespace tolerance.
+function getField(record, name) {
+    if (record.fields[name] !== undefined) return record.fields[name];
+    const target = name.toLowerCase().replace(/\s+/g, '');
+    for (const k of Object.keys(record.fields)) {
+        if (k.toLowerCase().replace(/\s+/g, '') === target) return record.fields[k];
+    }
+    return undefined;
+}
+
+// Score designation match (0..30). Tries ranked, multi-select, then single field.
+// Returns { score, matched } — `matched` is true when any rule fired.
+function getDesignationScore(client, memberDesignation) {
+    if (!memberDesignation) return { score: 0, matched: false };
+
+    const rank1 = getField(client, 'Designation Preference 1');
+    const rank2 = getField(client, 'Designation Preference 2');
+    const rank3 = getField(client, 'Designation Preference 3');
+    if (rank1 || rank2 || rank3) {
+        if (rank1 && rank1 === memberDesignation) return { score: 30, matched: true };
+        if (rank2 && rank2 === memberDesignation) return { score: 20, matched: true };
+        if (rank3 && rank3 === memberDesignation) return { score: 10, matched: true };
+        return { score: 0, matched: false };
+    }
+
+    const multi = getField(client, 'Preferred Designations');
+    if (Array.isArray(multi) && multi.length > 0) {
+        return multi.includes(memberDesignation)
+            ? { score: 10, matched: true }
+            : { score: 0, matched: false };
+    }
+
+    const single = getField(client, 'Preferred Designation');
+    if (single) {
+        return single === memberDesignation
+            ? { score: 20, matched: true }
+            : { score: 0, matched: false };
+    }
+
+    return { score: 0, matched: false };
+}
+
 async function performMatching(client, careTeam) {
     const matches = [];
     const clientCareType = client.fields['Daytime/Overnight [Intake]'] || client.fields['Daytime/Overnight'];
@@ -300,10 +342,15 @@ async function performMatching(client, careTeam) {
         const distance = haversineKm(clientCoord, memberCoord);
         if (distance > settings.maxDistance) continue;
 
+        const memberDesignation = member.fields['Designation'] || '';
+        const designation = getDesignationScore(client, memberDesignation);
+
         let score = 100;
-        if (distance > 30) score -= 10;
-        if (distance > 45) score -= 10;
+        if (distance > 20 && distance <= 40) score -= 10;
+        else if (distance > 40 && distance <= 60) score -= 15;
+        else if (distance > 60) score -= 30;
         if (status === 'Ready for Review') score -= 5;
+        score += designation.score;
 
         matches.push({
             id: member.id,
@@ -312,6 +359,7 @@ async function performMatching(client, careTeam) {
             postalCode: member.fields['Postal Code'],
             distance: distance,
             designation: member.fields['Designation'] || '',
+            designationMatched: designation.matched,
             availableFor: Array.isArray(memberCareTypes) ? memberCareTypes.join(', ') : memberCareTypes,
             matchScore: score,
             status: status
@@ -356,7 +404,7 @@ function displayMatches(client, matches) {
                 <div class="match-card" onclick="toggleSelection('${match.id}')">
                     <div class="match-score">⭐ ${match.matchScore}</div>
                     <div class="match-name">${match.name}</div>
-                    ${match.designation ? `<div class="match-detail">🎓 ${match.designation}</div>` : ''}
+                    ${match.designation ? `<div class="match-detail">🎓 ${match.designation}${match.designationMatched ? ' <span class="pref-match">✓ matches preference</span>' : ''}</div>` : ''}
                     <div class="match-detail">📍 ${match.postalCode} (${match.distance.toFixed(1)} km away)</div>
                     <div class="match-detail">💼 ${match.status}</div>
                     ${match.email ? `<div class="match-detail">✉️ ${match.email}</div>` : ''}
