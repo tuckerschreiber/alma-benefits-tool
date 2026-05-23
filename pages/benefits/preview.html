@@ -1143,6 +1143,55 @@
       margin-bottom: 0;
     }
 
+    /* ---------- Insurance Coverage Estimate download block (results) ---------- */
+    .ap-download-block {
+      border: 2px solid #032215;
+      background: #f7f5ef;
+      border-radius: 8px;
+      padding: 24px 28px;
+      margin: 0 0 16px;
+      text-align: center;
+    }
+    .ap-download-block__eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      color: #032215;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .ap-download-block__copy {
+      font-size: 15px;
+      color: #333;
+      max-width: 520px;
+      margin: 0 auto 18px;
+    }
+    .ap-download-block__meta {
+      font-size: 12px;
+      color: #777;
+      margin-top: 12px;
+    }
+    .ap-download-block--done {
+      background: #eef5ee;
+      border-color: #2e6b2e;
+    }
+    .ap-download-block__check {
+      font-size: 32px;
+      line-height: 1;
+      color: #2e6b2e;
+      margin-bottom: 8px;
+    }
+    .ap-download-block__redo {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 13px;
+      color: #555;
+      text-decoration: underline;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
     /* ---------- Print-only care plan ----------
        Hidden on screen. When the user clicks "send my care plan", we
        populate #ap-print-root with the same markup the PDF used to use
@@ -3245,15 +3294,107 @@
         );
       }
 
-      function renderFinalCta() {
+      function renderFinalCta(results) {
+        const eligibleNursing = (results && results.eligibleAmounts && results.eligibleAmounts.registered_nursing) || 0;
+        const rateConfigured = typeof ALMA_RN_HOURLY_RATE === 'number' && ALMA_RN_HOURLY_RATE > 0;
+        const showDownload = eligibleNursing > 0 && rateConfigured;
+
         return (
           '<section class="ap-final-cta">'
+          + (showDownload
+              ? '<div class="ap-download-block" id="ap-download-block">'
+                +   '<div class="ap-download-block__eyebrow">INSURANCE COVERAGE ESTIMATE</div>'
+                +   '<p class="ap-download-block__copy">Download a one-page coverage estimate you can share with your insurer for pre-determination or coverage verification.</p>'
+                +   '<button type="button" class="ap-btn ap-btn--primary" id="ap-download-estimate">⬇ Download Coverage Estimate</button>'
+                +   '<div class="ap-download-block__meta">PDF · One page · Insurer-ready</div>'
+                + '</div>'
+              : ''
+            )
           + '<div class="ap-cta-row">'
-          +   '<a class="ap-btn ap-btn--primary" id="ap-consult-cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a complimentary consultation</a>'
-          +   '<button type="button" class="ap-btn ap-btn--secondary" id="ap-print-plan">Send me my care plan</button>'
+          +   '<a class="ap-btn ap-btn--' + (showDownload ? 'secondary' : 'primary') + '" id="ap-consult-cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a complimentary consultation</a>'
           + '</div>'
-          + '<p class="ap-print-tip">Tip: in the print dialog, expand "More settings" and uncheck "Headers and footers" for a cleaner PDF.</p>'
           + '</section>'
+        );
+      }
+
+      // ---------- PDF download (lazy-load pdfmake from CDN) ----------
+      const PDFMAKE_URL = 'https://cdn.jsdelivr.net/npm/pdfmake@0.2.10/build/pdfmake.min.js';
+      const PDFMAKE_FONTS_URL = 'https://cdn.jsdelivr.net/npm/pdfmake@0.2.10/build/vfs_fonts.js';
+
+      function loadExternalScript(src) {
+        return new Promise(function (resolve, reject) {
+          const existing = document.querySelector('script[data-pdfmake-src="' + src + '"]');
+          if (existing) { resolve(); return; }
+          const s = document.createElement('script');
+          s.src = src;
+          s.setAttribute('data-pdfmake-src', src);
+          s.onload = function () { resolve(); };
+          s.onerror = function () { reject(new Error('Failed to load ' + src)); };
+          document.head.appendChild(s);
+        });
+      }
+
+      function ensurePdfMake() {
+        if (window.pdfMake && window.pdfMake.vfs) return Promise.resolve();
+        return loadExternalScript(PDFMAKE_URL).then(function () {
+          return loadExternalScript(PDFMAKE_FONTS_URL);
+        });
+      }
+
+      function handleDownloadEstimate() {
+        const eligibleNursing = (state.results && state.results.eligibleAmounts && state.results.eligibleAmounts.registered_nursing) || 0;
+        if (eligibleNursing <= 0) return;
+        const adapterResults = { nursing: { eligibleAmount: eligibleNursing } };
+        const today = new Date();
+        const doc = buildEstimateDocDefinition(state, adapterResults, {
+          hourlyRate: ALMA_RN_HOURLY_RATE,
+          today: today
+        });
+        if (!doc) {
+          console.warn('Estimate doc unavailable (missing data or rate)');
+          return;
+        }
+        const filename = buildEstimateFilename(state, today);
+        ensurePdfMake().then(function () {
+          try {
+            window.pdfMake.createPdf(doc).download(filename);
+          } catch (err) {
+            console.error('pdfmake.createPdf failed', err);
+            swapDownloadBlockToError();
+            return;
+          }
+          submitDownloadToHubspot(state);
+          track('estimate_downloaded', { hours_estimated: Math.floor(eligibleNursing / ALMA_RN_HOURLY_RATE) });
+          swapDownloadBlockToDone();
+        }).catch(function (err) {
+          console.error('pdfmake load failed', err);
+          swapDownloadBlockToError();
+        });
+      }
+
+      function swapDownloadBlockToDone() {
+        const block = document.getElementById('ap-download-block');
+        if (!block) return;
+        block.classList.add('ap-download-block--done');
+        block.innerHTML = (
+          '<div class="ap-download-block__check">✓</div>'
+          + '<div class="ap-download-block__eyebrow">Coverage estimate downloaded</div>'
+          + '<p class="ap-download-block__copy">We\'ll help customize your recovery plan and navigate potential coverage opportunities.</p>'
+          + '<a class="ap-btn ap-btn--primary" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Speak with a Postnatal Care Concierge →</a>'
+          + '<button type="button" class="ap-download-block__redo" id="ap-download-redo">Re-download estimate</button>'
+        );
+        const redoBtn = document.getElementById('ap-download-redo');
+        if (redoBtn) {
+          redoBtn.addEventListener('click', handleDownloadEstimate);
+        }
+      }
+
+      function swapDownloadBlockToError() {
+        const block = document.getElementById('ap-download-block');
+        if (!block) return;
+        block.innerHTML = (
+          '<p class="ap-download-block__copy">Couldn\'t generate the estimate. Speak with a Postnatal Care Concierge and we\'ll send you one directly.</p>'
+          + '<a class="ap-btn ap-btn--primary" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Speak with a Postnatal Care Concierge →</a>'
         );
       }
 
@@ -3349,196 +3490,6 @@
         return submitHubspotPayload(buildEnrichmentFields(state), 'Plan Viewed');
       }
 
-      // ---------- PDF generation ----------
-      function formatPdfDate(date) {
-        try {
-          return new Intl.DateTimeFormat('en-US', {
-            year: 'numeric', month: 'long', day: 'numeric'
-          }).format(date);
-        } catch (e) {
-          return date.toDateString();
-        }
-      }
-
-      function renderPdfSnapshot(results) {
-        const eligibleAmounts = (results && results.eligibleAmounts) || {};
-        const coveredIds = Object.keys(eligibleAmounts);
-        const totalEligible = coveredIds.reduce(function (sum, id) {
-          return sum + eligibleAmounts[id];
-        }, 0);
-        const heroHtml = coveredIds.length > 0
-          ? '<div class="ap-pdf__hero">' + formatMoney(totalEligible) + ' eligible for coverage</div>'
-          : '<div class="ap-pdf__hero ap-pdf__hero--muted">No extended benefits — that\'s okay.</div>';
-
-        const showHsa = state.hasHsa === 'yes'
-          && typeof state.hsaBalance === 'number'
-          && state.hsaBalance > 0;
-        const hsaHtml = showHsa
-          ? '<div class="ap-pdf__hsa">+ ' + formatMoney(state.hsaBalance) + ' flexible HSA spend</div>'
-          : '';
-
-        const eligibleItems = coveredIds.map(function (id) {
-          const name = SERVICE_NAMES[id] || id;
-          return '<li>' + escapeHtml(name) + ' — <strong>' + formatMoney(eligibleAmounts[id]) + ' eligible</strong></li>';
-        }).join('');
-
-        const notCoveredIds = ALMA_SERVICES.filter(function (id) {
-          return coveredIds.indexOf(id) === -1;
-        });
-        const notEligibleItems = notCoveredIds.map(function (id) {
-          const name = SERVICE_NAMES[id] || id;
-          return '<li class="muted">' + escapeHtml(name) + '</li>';
-        }).join('');
-
-        const eligibleCol = '<div class="ap-pdf__cov-col"><h4>What\'s eligible for coverage</h4>'
-          + (coveredIds.length
-              ? '<ul>' + eligibleItems + '</ul>'
-              : '<ul><li class="muted">No services selected.</li></ul>')
-          + '</div>';
-
-        const notEligibleCol = notEligibleItems
-          ? '<div class="ap-pdf__cov-col"><h4>What\'s not eligible for coverage</h4><ul>' + notEligibleItems + '</ul></div>'
-          : '';
-
-        return (
-          '<section class="ap-pdf__panel">'
-          + '<h3>Your Coverage at a Glance</h3>'
-          + heroHtml
-          + hsaHtml
-          + eligibleCol
-          + notEligibleCol
-          + '</section>'
-        );
-      }
-
-      function renderPdfPlan(results) {
-        const recs = results.recommendations || [];
-        let body;
-        if (recs.length === 0) {
-          body = '<p>We didn\'t have enough info to build personalized recommendations — book a complimentary consultation and we\'ll walk through your options together.</p>';
-        } else {
-          body = recs.map(function (rec) {
-            const name = SERVICE_NAMES[rec.service] || rec.service;
-            const needsAsterisk = rec.service === 'postpartum_doula_care'
-              || rec.service === 'registered_nursing';
-            const asterisk = needsAsterisk ? ' *' : '';
-            return (
-              '<div class="ap-pdf__rec">'
-              + '<div class="ap-pdf__rec-title">' + escapeHtml(name) + asterisk + '</div>'
-              + '<div class="ap-pdf__rec-rationale">' + escapeHtml(rec.rationale || '') + '</div>'
-              + '</div>'
-            );
-          }).join('');
-        }
-        const hasAsterisk = recs.some(function (r) {
-          return r.service === 'postpartum_doula_care' || r.service === 'registered_nursing';
-        });
-        const footnote = hasAsterisk
-          ? '<p class="ap-pdf__footnote">* Pre-assessment approval may be required and varies by insurer. Book a consultation at almacare.ca/booking/book-a-call to get a tailored estimate.</p>'
-          : '';
-        return (
-          '<section class="ap-pdf__panel">'
-          + '<h3>Your Highest-Priority Postpartum Supports</h3>'
-          + body
-          + footnote
-          + '</section>'
-        );
-      }
-
-      function renderPdfWhatHappensNext() {
-        return (
-          '<section class="ap-pdf__panel">'
-          + '<h3>What Happens Next</h3>'
-          + '<ol class="ap-pdf__next">'
-          +   '<li>Book a complimentary consultation</li>'
-          +   '<li>Submit an intake form and refundable deposit</li>'
-          +   '<li>Receive bios of qualified Postnatal Care Specialists within 2 business days</li>'
-          +   '<li>Interview your candidates and select your care team</li>'
-          + '</ol>'
-          + '</section>'
-        );
-      }
-
-      function renderPdfSource(results) {
-        const today = formatPdfDate(new Date());
-        const lead = state.lead || {};
-        const fullName = ((lead.firstName || '') + ' ' + (lead.lastName || '')).trim();
-        const contact = [];
-        if (lead.email) contact.push(escapeHtml(lead.email));
-        if (lead.phone) contact.push(escapeHtml(lead.phone));
-
-        return (
-          '<div class="ap-pdf__letterhead">'
-          + '<div class="ap-pdf__brand">' + BRAND_MARK_SVG + '<span>Alma Care</span></div>'
-          + '<div class="ap-pdf__brand-tag">Postpartum care, personalized</div>'
-          + '<div class="ap-pdf__meta">'
-          + '<div><strong>Prepared for:</strong> ' + escapeHtml(fullName) + '</div>'
-          + (contact.length ? '<div>' + contact.join(' • ') + '</div>' : '')
-          + '<div><strong>Date:</strong> ' + escapeHtml(today) + '</div>'
-          + '</div>'
-          + '</div>'
-          + '<h2 class="ap-pdf__heading">Your Personalized Care Plan</h2>'
-          + '<p class="ap-pdf__clarifier">This care plan outlines eligible coverage pathways and recommended postpartum supports. After your complimentary consultation, we’ll prepare a tailored estimate with specific care providers, hours, and costs — ready to submit to your insurer.</p>'
-          + renderPdfSnapshot(results)
-          + renderPdfPlan(results)
-          + renderPdfWhatHappensNext()
-          + '<div class="ap-pdf__footer">'
-          + 'This care plan is based on the information you provided. Eligible amounts reflect your plan\'s annual maximums and reimbursement percentages — they are not a guarantee of coverage. Confirm details with your benefits provider.'
-          + '<br>Book your complimentary consultation: <span class="ap-pdf__footer-link">almacare.ca/booking/book-a-call</span>'
-          + '</div>'
-          + '<footer class="ap-pdf__brandline">Alma Care — care@almacare.ca — almacare.ca/benefits</footer>'
-        );
-      }
-
-      // Native print → "Save as PDF". Populates #ap-print-root with the
-      // branded care plan markup and triggers window.print(). The
-      // @media print CSS hides everything else on the page so the
-      // browser's PDF output is just the care plan.
-      function printCarePlan() {
-        if (!state.results) {
-          return Promise.reject(new Error('No results available to print.'));
-        }
-        return new Promise(function (resolve) {
-          // Remove any stale print root from a prior run.
-          const stale = document.getElementById('ap-print-root');
-          if (stale && stale.parentNode) stale.parentNode.removeChild(stale);
-
-          const printRoot = document.createElement('div');
-          printRoot.id = 'ap-print-root';
-          printRoot.innerHTML = renderPdfSource(state.results);
-          document.body.appendChild(printRoot);
-
-          // Set a clean document title so Chrome's PDF picker pre-fills with
-          // "Alma Care plan — [first name]" instead of the page URL.
-          const originalTitle = document.title;
-          const firstName = (state.lead && state.lead.firstName) ? state.lead.firstName.trim() : '';
-          document.title = 'Alma Care plan' + (firstName ? ' — ' + firstName : '');
-          const restoreTitle = function () { document.title = originalTitle; };
-          window.addEventListener('afterprint', restoreTitle, { once: true });
-
-          let cleaned = false;
-          function cleanup() {
-            if (cleaned) return;
-            cleaned = true;
-            window.removeEventListener('afterprint', cleanup);
-            if (printRoot.parentNode) printRoot.parentNode.removeChild(printRoot);
-            resolve();
-          }
-          window.addEventListener('afterprint', cleanup);
-          // Safety: some browsers don't fire afterprint reliably. Clean up
-          // after 60s no matter what.
-          setTimeout(cleanup, 60000);
-
-          // Defer print() one frame so the print root has a chance to lay out.
-          requestAnimationFrame(function () {
-            window.print();
-            track('care_plan_printed', {
-              has_recommendations: (state.results.recommendations || []).length > 0
-            });
-          });
-        });
-      }
-
       function renderResults(results) {
         const container = document.getElementById('ap-results');
         if (!container) return;
@@ -3549,22 +3500,18 @@
           + renderPlan(results)
           + renderWhatHappensNext()
           + renderGiftCardsCallout(results)
-          + renderFinalCta();
-
-        const printBtn = document.getElementById('ap-print-plan');
-        if (printBtn) {
-          printBtn.addEventListener('click', function () {
-            printCarePlan().catch(function (err) {
-              console.error('print failed', err);
-            });
-          });
-        }
+          + renderFinalCta(results);
 
         const consultBtn = document.getElementById('ap-consult-cta');
         if (consultBtn) {
           consultBtn.addEventListener('click', function () {
             track('consult_cta_clicked', { source: 'results_primary_cta' });
           });
+        }
+
+        const downloadBtn = document.getElementById('ap-download-estimate');
+        if (downloadBtn) {
+          downloadBtn.addEventListener('click', handleDownloadEstimate);
         }
       }
 
