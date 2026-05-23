@@ -41,7 +41,15 @@
                 </div>
                 <div class="input-group">
                     <label>Max Distance (km)</label>
-                    <input type="number" id="maxDistance" value="60">
+                    <input type="number" id="maxDistance" value="100">
+                </div>
+                <div class="input-group">
+                    <label>Shifts table name</label>
+                    <input id="shiftsTable" type="text" value="Shifts" />
+                </div>
+                <div class="input-group">
+                    <label>Full-load threshold (hrs/week)</label>
+                    <input id="loadThreshold" type="number" value="30" />
                 </div>
             </div>
             <button onclick="saveSettings()">💾 Save Settings</button>
@@ -78,6 +86,6 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=20260523e"></script>
 </body>
 </html>

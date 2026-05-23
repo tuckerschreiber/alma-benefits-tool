@@ -5,20 +5,26 @@ let allCareTeam = [];
 let selectedMatches = [];
 let currentClient = null;
 let geoCache = JSON.parse(localStorage.getItem('almaGeoCache') || '{}');
+let allMatches = [];
+let shiftsLoadFailure = null;
+let filters = {
+    credential: 'any',
+    maxDistance: null,    // null means use settings.maxDistance
+    status: 'any',
+    hasAvailability: true, // default ON — hides 'conflict'
+};
 
-// Geocode a city in Ontario via Nominatim (cached in localStorage)
+// Geocode a city in Ontario via /api/geocode (server-side Nominatim proxy).
 async function geocodeCity(city) {
     if (!city) return null;
     const key = city.trim().toLowerCase();
     if (geoCache[key]) return geoCache[key];
 
     try {
-        const res = await fetch(
-            `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city.trim())}&state=Ontario&country=Canada&format=json&limit=1`,
-            { headers: { 'User-Agent': 'AlmaClientMatcher/1.0' } }
-        );
+        const res = await fetch(`/api/geocode?city=${encodeURIComponent(city.trim())}`);
+        if (!res.ok) return null;
         const data = await res.json();
-        if (data.length > 0) {
+        if (Array.isArray(data) && data.length > 0) {
             const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
             geoCache[key] = result;
             localStorage.setItem('almaGeoCache', JSON.stringify(geoCache));
@@ -28,6 +34,45 @@ async function geocodeCity(city) {
         console.warn('Geocoding failed for', city, e);
     }
     return null;
+}
+
+// Extract Forward Sortation Area (first 3 chars) from a Canadian postal code.
+// Returns uppercase FSA like "M5V", or null if input is missing/invalid.
+function extractFSA(postalCode) {
+    if (!postalCode) return null;
+    const cleaned = postalCode.replace(/\s+/g, '').toUpperCase();
+    if (!/^[A-Z]\d[A-Z]/.test(cleaned)) return null;
+    return cleaned.slice(0, 3);
+}
+
+// Geocode an FSA via /api/geocode. Cached in localStorage under key "fsa:M5V".
+async function geocodeFSA(postalCode) {
+    const fsa = extractFSA(postalCode);
+    if (!fsa) return null;
+    const key = `fsa:${fsa}`;
+    if (geoCache[key]) return geoCache[key];
+
+    try {
+        const res = await fetch(`/api/geocode?postalcode=${fsa}`);
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+            const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+            geoCache[key] = result;
+            localStorage.setItem('almaGeoCache', JSON.stringify(geoCache));
+            return result;
+        }
+    } catch (e) {
+        console.warn('FSA geocoding failed for', fsa, e);
+    }
+    return null;
+}
+
+// Resolve a record's location: try postal code (FSA) first, fall back to city.
+async function geocodeLocation(postalCode, city) {
+    const fsaCoord = await geocodeFSA(postalCode);
+    if (fsaCoord) return fsaCoord;
+    return await geocodeCity(city);
 }
 
 // Haversine distance in km
@@ -43,28 +88,63 @@ function haversineKm(c1, c2) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// Defaults baked in so teammates only need to paste their own API key.
+const SETTINGS_DEFAULTS = {
+    apiKey: '',
+    baseId: 'appimHaFTD2NoqgrS',
+    clientsTable: 'Clients',
+    careTeamTable: 'Care Team',
+    maxDistance: 100,
+    shiftsTable: 'tblnACbHC0hBIbB8v',
+    loadThreshold: 30,
+};
+
+// Fetch the team-shared API key from the Vercel env var (if set) and
+// prefill the input. Silent if not configured — falls back to user-saved key.
+async function loadSharedApiKey() {
+    try {
+        const res = await fetch('/api/config');
+        if (!res.ok) return;
+        const cfg = await res.json();
+        if (cfg.apiKey) {
+            document.getElementById('apiKey').value = cfg.apiKey;
+            settings.apiKey = cfg.apiKey;
+        }
+    } catch (e) {
+        // Offline / endpoint missing — fine, use whatever's already loaded.
+    }
+}
+
 // Initialize
 loadSettings();
+const configReady = loadSharedApiKey();
 
 function loadSettings() {
     const saved = localStorage.getItem('almaSettings');
-    if (saved) {
-        settings = JSON.parse(saved);
-        document.getElementById('apiKey').value = settings.apiKey || '';
-        document.getElementById('baseId').value = settings.baseId || '';
-        document.getElementById('clientsTable').value = settings.clientsTable || 'Clients';
-        document.getElementById('careTeamTable').value = settings.careTeamTable || 'Care Team';
-        document.getElementById('maxDistance').value = settings.maxDistance || 60;
-    }
+    // Strip empty saved values so they don't override the defaults — older
+    // versions of this app saved '' for unset fields.
+    const cleaned = saved
+        ? Object.fromEntries(Object.entries(JSON.parse(saved)).filter(([, v]) => v !== '' && v != null))
+        : {};
+    settings = { ...SETTINGS_DEFAULTS, ...cleaned };
+    document.getElementById('apiKey').value = settings.apiKey;
+    document.getElementById('baseId').value = settings.baseId;
+    document.getElementById('clientsTable').value = settings.clientsTable;
+    document.getElementById('careTeamTable').value = settings.careTeamTable;
+    document.getElementById('maxDistance').value = settings.maxDistance;
+    document.getElementById('shiftsTable').value = settings.shiftsTable;
+    document.getElementById('loadThreshold').value = settings.loadThreshold;
 }
 
 function saveSettings() {
     settings = {
         apiKey: document.getElementById('apiKey').value.trim(),
-        baseId: document.getElementById('baseId').value.trim(),
-        clientsTable: document.getElementById('clientsTable').value.trim(),
-        careTeamTable: document.getElementById('careTeamTable').value.trim(),
-        maxDistance: parseInt(document.getElementById('maxDistance').value) || 60
+        baseId: document.getElementById('baseId').value.trim() || SETTINGS_DEFAULTS.baseId,
+        clientsTable: document.getElementById('clientsTable').value.trim() || SETTINGS_DEFAULTS.clientsTable,
+        careTeamTable: document.getElementById('careTeamTable').value.trim() || SETTINGS_DEFAULTS.careTeamTable,
+        maxDistance: parseInt(document.getElementById('maxDistance').value) || SETTINGS_DEFAULTS.maxDistance,
+        shiftsTable: document.getElementById('shiftsTable').value.trim() || SETTINGS_DEFAULTS.shiftsTable,
+        loadThreshold: parseInt(document.getElementById('loadThreshold').value) || SETTINGS_DEFAULTS.loadThreshold,
     };
     localStorage.setItem('almaSettings', JSON.stringify(settings));
     showMessage('Settings saved successfully!', 'success');
@@ -80,6 +160,7 @@ function showMessage(text, type) {
 }
 
 async function loadClients() {
+    await configReady;
     if (!settings.apiKey || !settings.baseId) {
         showMessage('Please configure and save your settings first', 'error');
         return;
@@ -175,8 +256,10 @@ async function findMatches() {
 
     try {
         const matches = await performMatching(currentClient, allCareTeam);
+        allMatches = matches;
+        filters.maxDistance = settings.maxDistance;
 
-        displayMatches(currentClient, matches);
+        displayMatches(currentClient);
         showMessage(`Found ${matches.length} potential matches!`, 'success');
 
     } catch (error) {
@@ -186,16 +269,168 @@ async function findMatches() {
     }
 }
 
+// Look up a field on a record with case/whitespace tolerance.
+function getField(record, name) {
+    if (record.fields[name] !== undefined) return record.fields[name];
+    const target = name.toLowerCase().replace(/\s+/g, '');
+    for (const k of Object.keys(record.fields)) {
+        if (k.toLowerCase().replace(/\s+/g, '') === target) return record.fields[k];
+    }
+    return undefined;
+}
+
+// Aggregate a care team member's credentials from the three attribute fields
+// into a deduped array of strings. Tolerates array/string/missing shapes.
+function getMemberCredentials(member) {
+    const fields = ['Certifications', 'Accreditation(s)', 'Areas of Specialization'];
+    const out = new Set();
+    for (const f of fields) {
+        const raw = getField(member, f);
+        if (raw == null) continue;
+        const items = Array.isArray(raw) ? raw : String(raw).split(/[,;]\s*/);
+        for (const item of items) {
+            const trimmed = String(item).trim();
+            if (trimmed) out.add(trimmed);
+        }
+    }
+    return Array.from(out);
+}
+
+// Pull the client's stated preferences from intake fields. Same shape tolerance.
+function getClientPreferences(client) {
+    const fields = ['Type(s) of Support? [Intake]', 'Education Goals [Intake]', 'Requested Add-Ons [Intake]'];
+    const out = new Set();
+    for (const f of fields) {
+        const raw = getField(client, f);
+        if (raw == null) continue;
+        const items = Array.isArray(raw) ? raw : String(raw).split(/[,;]\s*/);
+        for (const item of items) {
+            const trimmed = String(item).trim();
+            if (trimmed) out.add(trimmed);
+        }
+    }
+    return Array.from(out);
+}
+
+// Score the overlap between client preferences and member credentials.
+// +5 per credential that any client preference touches (case-insensitive
+// substring either direction), capped at +30. Returns { score, hits } where
+// hits is the list of credentials that matched, for UI highlighting.
+function getCredentialsScore(clientPrefs, memberCreds) {
+    if (clientPrefs.length === 0 || memberCreds.length === 0) {
+        return { score: 0, hits: [] };
+    }
+    const lcPrefs = clientPrefs.map(p => p.toLowerCase());
+    const hits = [];
+    for (const cred of memberCreds) {
+        const lc = cred.toLowerCase();
+        const matched = lcPrefs.some(p => lc.includes(p) || p.includes(lc));
+        if (matched) hits.push(cred);
+    }
+    return { score: Math.min(hits.length * 5, 30), hits };
+}
+
+// Pull all shifts where Start is within [startDate, startDate + weeks].
+// Returns a Map keyed by care-team-member record ID → array of {start, end},
+// or null if the Shifts table couldn't be read (so callers can distinguish
+// "no shifts" from "couldn't determine"). If startDate is missing/invalid
+// (e.g. "TBD"), defaults to today so the window is still meaningful.
+async function loadShiftsForWindow(startDate, weeks = 8) {
+    let start = new Date(startDate);
+    if (isNaN(start.getTime())) start = new Date();
+    const end = new Date(start);
+    end.setDate(end.getDate() + weeks * 7);
+
+    const startISO = start.toISOString();
+    const endISO = end.toISOString();
+    const formula = `AND(IS_AFTER({start_at}, '${startISO}'), IS_BEFORE({start_at}, '${endISO}'))`;
+    const url = `https://api.airtable.com/v0/${settings.baseId}/${encodeURIComponent(settings.shiftsTable)}?filterByFormula=${encodeURIComponent(formula)}`;
+
+    try {
+        let offset;
+        const records = [];
+        do {
+            const u = offset ? `${url}&offset=${offset}` : url;
+            const res = await fetch(u, { headers: { 'Authorization': `Bearer ${settings.apiKey}` } });
+            if (!res.ok) {
+                console.warn('Shifts fetch failed:', res.status);
+                shiftsLoadFailure = `Shifts table "${settings.shiftsTable}" returned ${res.status} from Airtable. Check the table name/ID in settings.`;
+                return null;
+            }
+            const data = await res.json();
+            records.push(...data.records);
+            offset = data.offset;
+        } while (offset);
+        const byMember = new Map();
+        for (const shift of records) {
+            const memberIds = shift.fields['Care Team'] || [];
+            const ids = Array.isArray(memberIds) ? memberIds : [memberIds];
+            const shiftStart = shift.fields['start_at'];
+            const shiftEnd = shift.fields['end_at'];
+            if (!shiftStart || !shiftEnd) continue;
+            for (const id of ids) {
+                if (!byMember.has(id)) byMember.set(id, []);
+                byMember.get(id).push({ start: new Date(shiftStart), end: new Date(shiftEnd) });
+            }
+        }
+        return byMember;
+    } catch (e) {
+        console.warn('Shifts load error:', e);
+        shiftsLoadFailure = `Shifts load error: ${e.message}. Availability will show as unknown.`;
+        return null;
+    }
+}
+
+// Determine availability state for a member given their bookings and the client.
+// Returns 'available' | 'partial' | 'conflict' | 'unknown'.
+function checkAvailability(member, client, bookedByMember) {
+    if (bookedByMember == null) return 'unknown';
+    const memberShifts = bookedByMember.get(member.id);
+    if (!memberShifts || memberShifts.length === 0) return 'available';
+
+    // Try specific weekly schedule first.
+    const clientScheduleRaw = getField(client, 'Weekly Schedule') || getField(client, 'Schedule');
+    if (clientScheduleRaw) {
+        // Schedule expected as array of {dayOfWeek 0-6, startHour, endHour} or
+        // string like "Mon 9-17,Wed 9-17". For now: any text presence triggers
+        // overlap check by sampling — but if the structure is unknown we skip
+        // strict mode and fall through to load-threshold mode.
+        // (Document an explicit parser when the actual schedule field shape
+        // is confirmed with the user.)
+    }
+
+    // Load-threshold mode: total booked hours / weeks in window.
+    let start = new Date(client.fields['Start Date']);
+    if (isNaN(start.getTime())) start = new Date();
+    const weeks = 8;
+    const end = new Date(start);
+    end.setDate(end.getDate() + weeks * 7);
+
+    let totalHours = 0;
+    for (const s of memberShifts) {
+        const overlapStart = s.start > start ? s.start : start;
+        const overlapEnd = s.end < end ? s.end : end;
+        const diffMs = overlapEnd - overlapStart;
+        if (diffMs > 0) totalHours += diffMs / 1000 / 60 / 60;
+    }
+    const hoursPerWeek = totalHours / weeks;
+    const threshold = settings.loadThreshold || 30;
+
+    if (hoursPerWeek >= threshold) return 'conflict';
+    if (hoursPerWeek > 0) return 'partial';
+    return 'available';
+}
+
 async function performMatching(client, careTeam) {
     const matches = [];
-    const clientPostal = client.fields['Postal Code'];
     const clientCareType = client.fields['Daytime/Overnight [Intake]'] || client.fields['Daytime/Overnight'];
 
     // Geocode client city
     const clientCity = client.fields['City'];
-    const clientCoord = await geocodeCity(clientCity);
+    const clientPostalRaw = client.fields['Postal Code'];
+    const clientCoord = await geocodeLocation(clientPostalRaw, clientCity);
     if (!clientCoord) {
-        console.warn('Could not geocode client city:', clientCity);
+        console.warn('Could not geocode client location:', clientPostalRaw, clientCity);
         return matches;
     }
 
@@ -208,7 +443,7 @@ async function performMatching(client, careTeam) {
         const name = member.fields['Full Name'] || 'Unknown';
 
         if (status !== 'Active' && status !== 'Ready for Review') continue;
-        if (!memberPostal) continue;
+        if (!memberPostal && !member.fields['City']) continue;
 
         let careTypeMatch = false;
         if (memberCareTypes && clientCareType) {
@@ -221,61 +456,106 @@ async function performMatching(client, careTeam) {
         eligible.push(member);
     }
 
-    // Geocode all unique cities for eligible members (with rate limiting for uncached ones)
-    const uniqueCities = new Set(eligible.map(m => (m.fields['City'] || '').trim().toLowerCase()).filter(Boolean));
+    shiftsLoadFailure = null;
+    const bookedByMember = await loadShiftsForWindow(client.fields['Start Date']);
+    const clientPrefs = getClientPreferences(client);
+
+    // Pre-cache FSAs for all eligible members (rate-limited for uncached)
+    const uniqueFSAs = new Set();
+    for (const m of eligible) {
+        const fsa = extractFSA(m.fields['Postal Code']);
+        if (fsa) uniqueFSAs.add(fsa);
+        else {
+            const city = (m.fields['City'] || '').trim().toLowerCase();
+            if (city) uniqueFSAs.add(`city:${city}`);
+        }
+    }
     let uncachedCount = 0;
-    for (const city of uniqueCities) {
-        if (!geoCache[city]) uncachedCount++;
+    for (const k of uniqueFSAs) {
+        const cacheKey = k.startsWith('city:') ? k.slice(5) : `fsa:${k}`;
+        if (!geoCache[cacheKey]) uncachedCount++;
     }
     if (uncachedCount > 0) {
-        document.getElementById('resultsArea').innerHTML = `<div class="loading"><div class="spinner"></div><p>Geocoding ${uncachedCount} cities (one-time, cached after)...</p></div>`;
+        document.getElementById('resultsArea').innerHTML = `<div class="loading"><div class="spinner"></div><p>Geocoding ${uncachedCount} locations (one-time, cached after)...</p></div>`;
     }
-    for (const city of uniqueCities) {
-        if (!geoCache[city]) {
-            await geocodeCity(city);
-            await sleep(1100); // Nominatim rate limit: 1 req/sec
+    for (const k of uniqueFSAs) {
+        if (k.startsWith('city:')) {
+            const city = k.slice(5);
+            if (!geoCache[city]) { await geocodeCity(city); await sleep(1100); }
+        } else {
+            if (!geoCache[`fsa:${k}`]) { await geocodeFSA(k); await sleep(1100); }
         }
     }
 
     // Now calculate real distances
     for (const member of eligible) {
-        const memberCity = member.fields['City'];
-        const memberPostal = member.fields['Postal Code'];
         const memberCareTypes = member.fields['Daytime / Overnight'] || member.fields['Daytime/Overnight'];
         const status = member.fields['Status'];
 
-        const memberCoord = await geocodeCity(memberCity);
+        const memberCoord = await geocodeLocation(member.fields['Postal Code'], member.fields['City']);
         if (!memberCoord) continue;
 
         const distance = haversineKm(clientCoord, memberCoord);
         if (distance > settings.maxDistance) continue;
 
+        const memberCreds = getMemberCredentials(member);
+        const creds = getCredentialsScore(clientPrefs, memberCreds);
+
         let score = 100;
-        if (distance > 30) score -= 10;
-        if (distance > 45) score -= 10;
+        if (distance > 20 && distance <= 40) score -= 10;
+        else if (distance > 40 && distance <= 60) score -= 15;
+        else if (distance > 60) score -= 30;
         if (status === 'Ready for Review') score -= 5;
+        score += creds.score;
+
+        const availability = checkAvailability(member, client, bookedByMember);
+        if (availability === 'available') score += 20;
+        // 'partial' and 'unknown' contribute 0; 'conflict' is filtered below.
 
         matches.push({
             id: member.id,
             name: member.fields['Full Name'] || 'Unknown',
             email: member.fields['Email'] || member.fields['email'],
-            postalCode: memberPostal,
+            postalCode: member.fields['Postal Code'],
             distance: distance,
-            designation: member.fields['Designation'] || '',
+            credentials: memberCreds,
+            credentialHits: creds.hits,
             availableFor: Array.isArray(memberCareTypes) ? memberCareTypes.join(', ') : memberCareTypes,
             matchScore: score,
-            status: status
+            status: status,
+            availability,
         });
     }
 
     return matches.sort((a, b) => b.matchScore - a.matchScore);
 }
 
-function displayMatches(client, matches) {
-    const resultsArea = document.getElementById('resultsArea');
-    selectedMatches = [];
+function availabilityBadge(state) {
+    switch (state) {
+        case 'available': return '<span class="avail avail-ok">✅ Available</span>';
+        case 'partial':   return '<span class="avail avail-partial">⚠️ Partially booked</span>';
+        case 'conflict':  return '<span class="avail avail-conflict">⛔ Booked / over threshold</span>';
+        default:          return '<span class="avail avail-unknown">? Availability unknown</span>';
+    }
+}
 
-    if (matches.length === 0) {
+function applyFilters(all) {
+    return all.filter(m => {
+        if (filters.credential !== 'any' && !(m.credentials || []).includes(filters.credential)) return false;
+        if (filters.maxDistance != null && m.distance > filters.maxDistance) return false;
+        if (filters.status !== 'any' && m.status !== filters.status) return false;
+        if (filters.hasAvailability && (m.availability === 'conflict' || m.availability === 'unknown')) return false;
+        return true;
+    });
+}
+
+function displayMatches(client) {
+    const resultsArea = document.getElementById('resultsArea');
+    selectedMatches = selectedMatches.filter(id => allMatches.some(m => m.id === id));
+
+    const matches = applyFilters(allMatches);
+
+    if (allMatches.length === 0) {
         resultsArea.innerHTML = `
             <div class="card">
                 <div class="empty-state">
@@ -292,8 +572,19 @@ function displayMatches(client, matches) {
     const clientLocation = client.fields['Postal Code'] || 'Unknown';
     const clientCareType = client.fields['Daytime/Overnight [Intake]'] || client.fields['Daytime/Overnight'] || 'Unknown';
     const clientStartDate = client.fields['Start Date'] || 'TBD';
+    const startDateValid = !isNaN(new Date(client.fields['Start Date']).getTime());
 
-    let html = `
+    // Filter the dropdown to short tag-like strings — the underlying fields
+    // are free-text bios on many care team members, which produce prose-y
+    // entries when split on commas. Long ones still contribute to scoring
+    // via substring match, they just don't pollute the filter.
+    const isTagLike = s => s.length <= 30 && !/\d/.test(s) && !/[()]/.test(s);
+    const credentials = Array.from(new Set(
+        allMatches.flatMap(m => (m.credentials || []).filter(isTagLike))
+    )).sort();
+    const statuses = Array.from(new Set(allMatches.map(m => m.status).filter(Boolean))).sort();
+
+    resultsArea.innerHTML = `
         <div class="card">
             <div class="client-header">
                 <div class="client-name">${clientName}</div>
@@ -301,24 +592,55 @@ function displayMatches(client, matches) {
                 <span class="detail-badge">${clientCareType}</span>
                 <span class="detail-badge">Start: ${clientStartDate}</span>
             </div>
-            
+            <div class="filter-bar">
+                <label>Credential
+                    <select onchange="updateFilter('credential', this.value)">
+                        <option value="any">any</option>
+                        ${credentials.map(c => `<option value="${c}" ${filters.credential === c ? 'selected' : ''}>${c}</option>`).join('')}
+                    </select>
+                </label>
+                <label>Max distance
+                    <input type="number" min="0" max="${settings.maxDistance}" value="${filters.maxDistance ?? ''}" onchange="updateFilter('maxDistance', this.value === '' ? null : parseInt(this.value))" /> km
+                </label>
+                <label>Status
+                    <select onchange="updateFilter('status', this.value)">
+                        <option value="any">any</option>
+                        ${statuses.map(s => `<option value="${s}" ${filters.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                    </select>
+                </label>
+                <label>
+                    <input type="checkbox" ${filters.hasAvailability ? 'checked' : ''} onchange="updateFilter('hasAvailability', this.checked)" />
+                    Has availability
+                </label>
+                <span class="filter-count">Showing ${matches.length} of ${allMatches.length}</span>
+            </div>
+            ${shiftsLoadFailure ? `<div class="filter-note filter-note-error">⚠️ ${shiftsLoadFailure}</div>` : ''}
+            ${!startDateValid ? `<div class="filter-note">ℹ️ Start Date is TBD — availability is computed against the next 8 weeks from today.</div>` : ''}
             ${matches.map(match => `
-                <div class="match-card" onclick="toggleSelection('${match.id}')">
+                <div class="match-card ${selectedMatches.includes(match.id) ? 'selected' : ''}" onclick="toggleSelection('${match.id}')">
                     <div class="match-score">⭐ ${match.matchScore}</div>
                     <div class="match-name">${match.name}</div>
-                    ${match.designation ? `<div class="match-detail">🎓 ${match.designation}</div>` : ''}
+                    ${(match.credentials && match.credentials.length) ? `<div class="match-detail">🎓 ${match.credentials.map(c => {
+                        const display = c.length > 60 ? c.slice(0, 60).replace(/\s+\S*$/, '') + '…' : c;
+                        const title = c.length > 60 ? ` title="${c.replace(/"/g, '&quot;')}"` : '';
+                        const isHit = (match.credentialHits || []).includes(c);
+                        return isHit ? `<span class="pref-match"${title}>${display}</span>` : `<span${title}>${display}</span>`;
+                    }).join(', ')}</div>` : ''}
                     <div class="match-detail">📍 ${match.postalCode} (${match.distance.toFixed(1)} km away)</div>
                     <div class="match-detail">💼 ${match.status}</div>
+                    <div class="match-detail">${availabilityBadge(match.availability)}</div>
                     ${match.email ? `<div class="match-detail">✉️ ${match.email}</div>` : ''}
                     ${match.availableFor ? `<div class="match-detail">Available for: ${match.availableFor}</div>` : ''}
                 </div>
             `).join('')}
-            
             <button onclick="prepareEmails()" style="margin-top: 1rem;">📧 Email Selected Matches</button>
         </div>
     `;
+}
 
-    resultsArea.innerHTML = html;
+function updateFilter(key, value) {
+    filters[key] = value;
+    displayMatches(currentClient);
 }
 
 function toggleSelection(matchId) {
