@@ -694,7 +694,7 @@ function displayMatches(client) {
                     .join('\n');
                 return `
                 <div class="match-card ${selectedMatches.includes(match.id) ? 'selected' : ''}" onclick="toggleSelection('${match.id}')">
-                    <div class="match-score" title="${breakdownTitle.replace(/"/g, '&quot;')}">⭐ ${match.matchScore}</div>
+                    <div class="match-score" data-tooltip="${breakdownTitle.replace(/"/g, '&quot;')}">⭐ ${match.matchScore}</div>
                     <div class="match-name">${match.name}</div>
                     <div class="match-detail score-breakdown">${(match.scoreBreakdown || []).map(b => {
                         const sign = b.delta > 0 ? '+' : '';

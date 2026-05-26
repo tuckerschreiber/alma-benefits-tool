@@ -224,6 +224,36 @@ button:disabled {
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: 700;
+    cursor: help;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.match-score::after {
+    content: ' ⓘ';
+    opacity: 0.7;
+    font-weight: 400;
+}
+.match-score:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(212, 165, 116, 0.4);
+}
+.match-score:hover::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background: var(--warm-gray);
+    color: white;
+    padding: 0.6rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: pre-line;
+    text-align: left;
+    line-height: 1.5;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+    z-index: 20;
+    min-width: 200px;
+    pointer-events: none;
 }
 
 .match-name {
