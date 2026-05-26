@@ -324,6 +324,17 @@
         return out;
       }
 
+      function formatNightsLine(eligibleAmount, hourlyRate, nightHours) {
+        if (!eligibleAmount || eligibleAmount <= 0) return '';
+        if (!hourlyRate || hourlyRate <= 0) return '';
+        if (!nightHours || nightHours <= 0) return '';
+        const hours = Math.floor(eligibleAmount / hourlyRate);
+        const nights = Math.floor(hours / nightHours);
+        if (nights <= 0) return '';
+        const noun = nights === 1 ? 'night' : 'nights';
+        return '≈ ' + nights + ' ' + noun + ' of overnight care (' + nightHours + ' hrs each, before HST)';
+      }
+
       function computeResults(rawInputs, rules, almaServices, today) {
         if (!today) today = new Date();
         const normalized = normalizeInputs(rawInputs, today);
@@ -381,15 +392,18 @@
         };
       }
 
-      // ---------- PDF (mirror of pages/benefits/src/pdf.js + ALMA_RN_HOURLY_RATE from src/rules.js) ----------
-      // Last synced from src/pdf.js @ ada5ad2 (Phase E commit 1). When changing
+      // ---------- PDF (mirror of src/pdf.js + src/engine.js + src/rules.js) ----------
+      // Last synced from src/pdf.js @ 3a47695 (round 4 — Task 3). When changing
       // src/pdf.js, also update this mirror and bump the SHA above. Tests run against
       // src/pdf.js only — drift between source and mirror is silent in CI.
-      // Alma's published hourly rate for in-home postpartum nursing support.
-      // Used by buildEstimateDocDefinition to compute "Estimated Hours" from the
-      // eligible $ amount. Leave null pre-launch — the Download Coverage Estimate
-      // button is hidden until this is a numeric value.
-      const ALMA_RN_HOURLY_RATE = null;
+      // Alma's published hourly rates for in-home postpartum care.
+      // Used by buildEstimateDocDefinition to compute "Estimated Hours" from
+      // eligible $ amounts, and by formatNightsLine to display "≈ N nights of
+      // overnight care" sub-lines on the results snapshot. ALMA_NIGHT_HOURS
+      // defines the length of an overnight shift (typical 10pm–8am = 10 hrs).
+      const ALMA_RN_HOURLY_RATE = 50;
+      const ALMA_PSW_HOURLY_RATE = 50;
+      const ALMA_NIGHT_HOURS = 10;
 
       const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
                       'July', 'August', 'September', 'October', 'November', 'December'];
@@ -428,21 +442,68 @@
 
       /**
        * Build a pdfmake doc-definition object for the insurer coverage estimate.
-       * Returns null when no estimate should be generated.
+       * Renders one row per eligible pathway (RN, PSW) with a Total row when both
+       * are present. Returns null when no rows would render.
        *
        * @param {{lead: object}} state
-       * @param {{nursing?: {eligibleAmount: number}}} results
-       * @param {{hourlyRate: number|null, today: Date}} opts
+       * @param {{nursing?: {eligibleAmount: number}, psw?: {eligibleAmount: number}}} results
+       * @param {{rnHourlyRate: number|null, pswHourlyRate: number|null, today: Date}} opts
        */
       function buildEstimateDocDefinition(state, results, opts) {
-        const eligibleAmount = results && results.nursing && results.nursing.eligibleAmount;
-        const hourlyRate = opts && opts.hourlyRate;
-        if (!eligibleAmount || eligibleAmount <= 0) return null;
-        if (!hourlyRate || hourlyRate <= 0) return null;
-
         const today = (opts && opts.today) || new Date();
-        const estimatedHours = Math.floor(eligibleAmount / hourlyRate);
-        const estimatedCost = estimatedHours * hourlyRate;
+        const rnAmount = results && results.nursing && results.nursing.eligibleAmount;
+        const pswAmount = results && results.psw && results.psw.eligibleAmount;
+        const rnRate = opts && opts.rnHourlyRate;
+        const pswRate = opts && opts.pswHourlyRate;
+
+        const rows = [];
+        if (rnAmount > 0 && rnRate > 0) {
+          const hours = Math.floor(rnAmount / rnRate);
+          rows.push({
+            service: 'Private Duty Nursing (RN)',
+            rate: rnRate,
+            amount: rnAmount,
+            hours: hours
+          });
+        }
+        if (pswAmount > 0 && pswRate > 0) {
+          const hours = Math.floor(pswAmount / pswRate);
+          rows.push({
+            service: 'Personal Support Worker (PSW)',
+            rate: pswRate,
+            amount: pswAmount,
+            hours: hours
+          });
+        }
+        if (rows.length === 0) return null;
+
+        const tableBody = [
+          [
+            { text: 'Service', bold: true },
+            { text: 'Hourly rate', bold: true },
+            { text: 'Eligible amount', bold: true },
+            { text: 'Estimated hours', bold: true }
+          ]
+        ];
+        rows.forEach(function (r) {
+          tableBody.push([
+            r.service,
+            formatCurrency(r.rate),
+            formatCurrency(r.amount),
+            r.hours + ' hours'
+          ]);
+        });
+
+        if (rows.length > 1) {
+          const totalAmount = rows.reduce(function (s, r) { return s + r.amount; }, 0);
+          const totalHours = rows.reduce(function (s, r) { return s + r.hours; }, 0);
+          tableBody.push([
+            { text: 'Total', bold: true },
+            '',
+            { text: formatCurrency(totalAmount), bold: true },
+            { text: totalHours + ' hours', bold: true }
+          ]);
+        }
 
         return {
           pageSize: 'LETTER',
@@ -465,16 +526,7 @@
 
             { text: 'Service Estimate', fontSize: 11, bold: true, margin: [0, 0, 0, 6] },
             {
-              table: {
-                widths: [120, '*'],
-                body: [
-                  [{ text: 'Service Type', bold: true }, 'Postpartum In-Home Nursing Support'],
-                  [{ text: 'Pathway', bold: true }, 'RN eligible pathway'],
-                  [{ text: 'Hourly Rate', bold: true }, formatCurrency(hourlyRate)],
-                  [{ text: 'Estimated Hours', bold: true }, estimatedHours + ' hours'],
-                  [{ text: 'Estimated Cost', bold: true }, formatCurrency(estimatedCost)]
-                ]
-              },
+              table: { widths: [160, 70, '*', 80], body: tableBody },
               layout: {
                 hLineColor: function () { return '#ddd'; },
                 vLineColor: function () { return '#ddd'; },
@@ -1191,9 +1243,9 @@
       function renderClarifier() {
         return (
           '<p class="ap-results__clarifier">'
-          + 'This care plan outlines eligible coverage pathways and recommended postpartum supports. '
-          + 'After your complimentary consultation, we’ll prepare a tailored estimate with specific care '
-          + 'providers, hours, and costs — ready to submit to your insurer.'
+          + 'This estimate outlines potential care pathways based on your benefits shared. '
+          + 'After your complimentary consultation, our Postnatal Care Concierge will prepare a '
+          + 'holistic care plan that addresses your goals, total budget and scheduling.'
           + '</p>'
         );
       }
@@ -1208,8 +1260,19 @@
         const eligibleItems = coveredIds.map(function (id) {
           const name = SERVICE_NAMES[id] || id;
           const amt = formatMoney(eligibleAmounts[id]);
+          let nightsLine = '';
+          if (id === 'registered_nursing') {
+            nightsLine = formatNightsLine(eligibleAmounts[id], ALMA_RN_HOURLY_RATE, ALMA_NIGHT_HOURS);
+          } else if (id === 'psw') {
+            nightsLine = formatNightsLine(eligibleAmounts[id], ALMA_PSW_HOURLY_RATE, ALMA_NIGHT_HOURS);
+          }
+          const nightsHtml = nightsLine
+            ? '<div class="ap-coverage-list__nights">' + escapeHtml(nightsLine) + '</div>'
+            : '';
           return '<li><span class="ap-coverage-list__check">✓</span>'
-            + escapeHtml(name) + ' — <strong>' + amt + ' eligible</strong></li>';
+            + escapeHtml(name) + ' — <strong>' + amt + ' eligible</strong>'
+            + nightsHtml
+            + '</li>';
         }).join('');
 
         const notEligibleItems = notCoveredIds.map(function (id) {
@@ -1258,7 +1321,8 @@
       function renderRecCard(rec, rank) {
         const name = SERVICE_NAMES[rec.service] || rec.service;
         const needsAsterisk = rec.service === 'postpartum_doula_care'
-          || rec.service === 'registered_nursing';
+          || rec.service === 'registered_nursing'
+          || rec.service === 'psw';
         const priorityKey = rec.priority || '';
         const priorityLabel = priorityKey
           ? priorityKey.charAt(0).toUpperCase() + priorityKey.slice(1)
@@ -1305,7 +1369,7 @@
           }
         }
         const hasAsterisk = recs.some(function (r) {
-          return r.service === 'postpartum_doula_care' || r.service === 'registered_nursing';
+          return r.service === 'postpartum_doula_care' || r.service === 'registered_nursing' || r.service === 'psw';
         });
         const footnote = hasAsterisk
           ? '<p class="ap-rec__footnote">* Pre-assessment approval may be required and varies by insurer. '
@@ -1350,9 +1414,13 @@
       }
 
       function renderFinalCta(results) {
-        const eligibleNursing = (results && results.eligibleAmounts && results.eligibleAmounts.registered_nursing) || 0;
-        const rateConfigured = typeof ALMA_RN_HOURLY_RATE === 'number' && ALMA_RN_HOURLY_RATE > 0;
-        const showDownload = eligibleNursing > 0 && rateConfigured;
+        const eligibleAmounts = (results && results.eligibleAmounts) || {};
+        const eligibleNursing = eligibleAmounts.registered_nursing || 0;
+        const eligiblePsw = eligibleAmounts.psw || 0;
+        const rnConfigured = typeof ALMA_RN_HOURLY_RATE === 'number' && ALMA_RN_HOURLY_RATE > 0;
+        const pswConfigured = typeof ALMA_PSW_HOURLY_RATE === 'number' && ALMA_PSW_HOURLY_RATE > 0;
+        const showDownload =
+          (eligibleNursing > 0 && rnConfigured) || (eligiblePsw > 0 && pswConfigured);
 
         return (
           '<section class="ap-final-cta">'
@@ -1407,8 +1475,10 @@
       }
 
       function handleDownloadEstimate() {
-        const eligibleNursing = (state.results && state.results.eligibleAmounts && state.results.eligibleAmounts.registered_nursing) || 0;
-        if (eligibleNursing <= 0) return;
+        const eligibleAmounts = (state.results && state.results.eligibleAmounts) || {};
+        const eligibleNursing = eligibleAmounts.registered_nursing || 0;
+        const eligiblePsw = eligibleAmounts.psw || 0;
+        if (eligibleNursing <= 0 && eligiblePsw <= 0) return;
 
         const downloadBtn = document.getElementById('ap-download-estimate') || document.getElementById('ap-download-redo');
         const originalLabel = downloadBtn ? downloadBtn.textContent : '';
@@ -1417,10 +1487,14 @@
           downloadBtn.textContent = 'Generating…';
         }
 
-        const adapterResults = { nursing: { eligibleAmount: eligibleNursing } };
+        const adapterResults = {
+          nursing: { eligibleAmount: eligibleNursing },
+          psw: { eligibleAmount: eligiblePsw }
+        };
         const today = new Date();
         const doc = buildEstimateDocDefinition(state, adapterResults, {
-          hourlyRate: ALMA_RN_HOURLY_RATE,
+          rnHourlyRate: ALMA_RN_HOURLY_RATE,
+          pswHourlyRate: ALMA_PSW_HOURLY_RATE,
           today: today
         });
         if (!doc) {
@@ -1440,7 +1514,9 @@
           }
           // Fire-and-forget — user has already received the PDF, don't block UI on Hubspot.
           submitDownloadToHubspot(state);
-          track('estimate_downloaded', { hours_estimated: Math.floor(eligibleNursing / ALMA_RN_HOURLY_RATE) });
+          const rnHours = ALMA_RN_HOURLY_RATE > 0 ? Math.floor(eligibleNursing / ALMA_RN_HOURLY_RATE) : 0;
+          const pswHours = ALMA_PSW_HOURLY_RATE > 0 ? Math.floor(eligiblePsw / ALMA_PSW_HOURLY_RATE) : 0;
+          track('estimate_downloaded', { hours_estimated: rnHours + pswHours });
           swapDownloadBlockToDone();
         }).catch(function (err) {
           console.error('pdfmake load failed', err);
