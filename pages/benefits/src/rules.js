@@ -5,11 +5,14 @@ export const ALMA_SERVICES = [
   'mental_health', 'nutritionist'
 ];
 
-// Alma's published hourly rate for in-home postpartum nursing support.
-// Used by src/pdf.js to compute "Estimated Hours" from the eligible $ amount.
-// Leave null pre-launch — the Download Coverage Estimate button is hidden
-// until this is a numeric value.
-export const ALMA_RN_HOURLY_RATE = null;
+// Alma's published hourly rates for in-home postpartum care.
+// Used by src/pdf.js to compute "Estimated Hours" from eligible $ amounts,
+// and by engine's formatNightsLine helper to display "≈ N nights of overnight
+// care" sub-lines on the results snapshot. ALMA_NIGHT_HOURS defines the
+// length of an overnight shift (typical 10pm–8am = 10 hrs).
+export const ALMA_RN_HOURLY_RATE = 50;
+export const ALMA_PSW_HOURLY_RATE = 50;
+export const ALMA_NIGHT_HOURS = 10;
 
 export const RULES = [
   {
