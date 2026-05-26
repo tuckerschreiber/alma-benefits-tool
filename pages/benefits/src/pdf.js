@@ -40,21 +40,66 @@ function buildPreparedFor(lead) {
 
 /**
  * Build a pdfmake doc-definition object for the insurer coverage estimate.
- * Returns null when no estimate should be generated.
+ * Renders one row per eligible pathway (RN, PSW) with a Total row when both
+ * are present. Returns null when no rows would render.
  *
  * @param {{lead: object}} state
- * @param {{nursing?: {eligibleAmount: number}}} results
- * @param {{hourlyRate: number|null, today: Date}} opts
+ * @param {{nursing?: {eligibleAmount: number}, psw?: {eligibleAmount: number}}} results
+ * @param {{rnHourlyRate: number|null, pswHourlyRate: number|null, today: Date}} opts
  */
 export function buildEstimateDocDefinition(state, results, opts) {
-  const eligibleAmount = results && results.nursing && results.nursing.eligibleAmount;
-  const hourlyRate = opts && opts.hourlyRate;
-  if (!eligibleAmount || eligibleAmount <= 0) return null;
-  if (!hourlyRate || hourlyRate <= 0) return null;
-
   const today = (opts && opts.today) || new Date();
-  const estimatedHours = Math.floor(eligibleAmount / hourlyRate);
-  const estimatedCost = estimatedHours * hourlyRate;
+  const rnAmount = results && results.nursing && results.nursing.eligibleAmount;
+  const pswAmount = results && results.psw && results.psw.eligibleAmount;
+  const rnRate = opts && opts.rnHourlyRate;
+  const pswRate = opts && opts.pswHourlyRate;
+
+  const rows = [];
+  if (rnAmount > 0 && rnRate > 0) {
+    const hours = Math.floor(rnAmount / rnRate);
+    rows.push({
+      service: 'Private Duty Nursing (RN)',
+      rate: rnRate,
+      amount: rnAmount,
+      hours
+    });
+  }
+  if (pswAmount > 0 && pswRate > 0) {
+    const hours = Math.floor(pswAmount / pswRate);
+    rows.push({
+      service: 'Personal Support Worker (PSW)',
+      rate: pswRate,
+      amount: pswAmount,
+      hours
+    });
+  }
+  if (rows.length === 0) return null;
+
+  const tableBody = [
+    [
+      { text: 'Service', bold: true },
+      { text: 'Hourly rate', bold: true },
+      { text: 'Eligible amount', bold: true },
+      { text: 'Estimated hours', bold: true }
+    ],
+    ...rows.map((r) => [
+      r.service,
+      formatCurrency(r.rate),
+      formatCurrency(r.amount),
+      `${r.hours} hours`
+    ])
+  ];
+
+  if (rows.length > 1) {
+    const totalAmount = rows.reduce((s, r) => s + r.amount, 0);
+    const totalHours = rows.reduce((s, r) => s + r.hours, 0);
+    tableBody.push([
+      { text: 'Total', bold: true },
+      '',
+      { text: formatCurrency(totalAmount), bold: true },
+      { text: `${totalHours} hours`, bold: true }
+    ]);
+  }
 
   return {
     pageSize: 'LETTER',
@@ -77,16 +122,7 @@ export function buildEstimateDocDefinition(state, results, opts) {
 
       { text: 'Service Estimate', fontSize: 11, bold: true, margin: [0, 0, 0, 6] },
       {
-        table: {
-          widths: [120, '*'],
-          body: [
-            [{ text: 'Service Type', bold: true }, 'Postpartum In-Home Nursing Support'],
-            [{ text: 'Pathway', bold: true }, 'RN eligible pathway'],
-            [{ text: 'Hourly Rate', bold: true }, formatCurrency(hourlyRate)],
-            [{ text: 'Estimated Hours', bold: true }, `${estimatedHours} hours`],
-            [{ text: 'Estimated Cost', bold: true }, formatCurrency(estimatedCost)]
-          ]
-        },
+        table: { widths: [160, 70, '*', 80], body: tableBody },
         layout: {
           hLineColor: () => '#ddd',
           vLineColor: () => '#ddd',
