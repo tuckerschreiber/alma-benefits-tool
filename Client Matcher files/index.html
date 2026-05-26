@@ -58,16 +58,27 @@
         <div class="card">
             <div class="section-title">👤 Select Client to Match</div>
             <div class="input-group">
+                <label>Search mode</label>
+                <div class="mode-toggle">
+                    <label><input type="radio" name="searchMode" value="unmatched" checked> Unmatched (default)</label>
+                    <label><input type="radio" name="searchMode" value="all"> All clients (lead nurture / rematch)</label>
+                </div>
+                <div class="help-text">Unmatched: Matching Stage = "Unmatched", Deposit Received, Status ≠ "Cancelled". All clients: every client except Cancelled — use for prospects or rematching in-care clients.</div>
+            </div>
+            <div class="input-group">
                 <label>Start Date Filter (optional)</label>
                 <input type="date" id="startDateFilter">
                 <div class="help-text">Only show clients starting on or after this date</div>
+            </div>
+            <div class="input-group">
+                <label>Search by name <span id="clientFilterCount" class="filter-count-inline"></span></label>
+                <input type="text" id="clientNameFilter" placeholder="Type a name to filter the dropdown..." oninput="filterClientList(this.value)">
             </div>
             <div class="input-group">
                 <label>Choose Client</label>
                 <select id="clientSelect" disabled>
                     <option value="">-- Click "Load Clients" below --</option>
                 </select>
-                <div class="help-text">Filters: Matching Stage = "Unmatched", Deposit Received, Status ≠ "Cancelled"</div>
             </div>
             <button onclick="loadClients()">📋 Load Clients</button>
             <button onclick="findMatches()" id="matchBtn" disabled class="btn-secondary">🔍 Find Matches</button>
@@ -86,6 +97,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260523e"></script>
+    <script src="app.js?v=20260526e"></script>
 </body>
 </html>

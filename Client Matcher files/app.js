@@ -11,8 +11,9 @@ let filters = {
     credential: 'any',
     maxDistance: null,    // null means use settings.maxDistance
     status: 'any',
-    hasAvailability: true, // default ON — hides 'conflict'
+    hasAvailability: true, // default ON — hides 'conflict' and 'unknown'
 };
+let displayLimit = 15;
 
 // Geocode a city in Ontario via /api/geocode (server-side Nominatim proxy).
 async function geocodeCity(city) {
@@ -99,6 +100,12 @@ const SETTINGS_DEFAULTS = {
     loadThreshold: 30,
 };
 
+// Minimum hours/week of booked load before "partially booked" fires. Avoids
+// flagging members with a single short shift as partial. Effective floor is
+// max(this, 20% of loadThreshold).
+const PARTIAL_HOURS_FLOOR = 5;
+
+
 // Fetch the team-shared API key from the Vercel env var (if set) and
 // prefill the input. Silent if not configured — falls back to user-saved key.
 async function loadSharedApiKey() {
@@ -159,6 +166,38 @@ function showMessage(text, type) {
     setTimeout(() => div.remove(), 5000);
 }
 
+// Paginated Airtable fetch — Airtable returns max 100 records/page, so the
+// "all clients" mode needs to follow the offset cursor until exhausted.
+async function fetchAllRecords(table, formula) {
+    const baseUrl = `https://api.airtable.com/v0/${settings.baseId}/${encodeURIComponent(table)}`;
+    let offset;
+    const records = [];
+    do {
+        const params = new URLSearchParams();
+        if (formula) params.set('filterByFormula', formula);
+        if (offset) params.set('offset', offset);
+        const url = `${baseUrl}?${params.toString()}`;
+        const res = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${settings.apiKey}`,
+                'Content-Type': 'application/json',
+            },
+        });
+        if (!res.ok) {
+            throw new Error(`Failed to fetch ${table}: ${res.status}`);
+        }
+        const data = await res.json();
+        records.push(...data.records);
+        offset = data.offset;
+    } while (offset);
+    return records;
+}
+
+function getSearchMode() {
+    const checked = document.querySelector('input[name="searchMode"]:checked');
+    return checked ? checked.value : 'unmatched';
+}
+
 async function loadClients() {
     await configReady;
     if (!settings.apiKey || !settings.baseId) {
@@ -169,78 +208,104 @@ async function loadClients() {
     try {
         document.getElementById('resultsArea').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading clients and care team...</p></div>';
 
-        // Fetch clients with filters
-        const formula = 'AND({Matching Stage}="Unmatched",{Deposit Received Date}!="",{Status}!="Cancelled")';
-        const clientsUrl = `https://api.airtable.com/v0/${settings.baseId}/${encodeURIComponent(settings.clientsTable)}?filterByFormula=${encodeURIComponent(formula)}`;
-        
-        const clientsRes = await fetch(clientsUrl, {
-            headers: { 
-                'Authorization': `Bearer ${settings.apiKey}`,
-                'Content-Type': 'application/json'
-            }
-        });
+        const mode = getSearchMode();
+        // Unmatched mode: today's prioritized work list.
+        // All mode: drop the Matching Stage + Deposit gates so the tool can be
+        // used for lead nurture (pre-deposit) and rematch (already-matched).
+        const formula = mode === 'unmatched'
+            ? 'AND({Matching Stage}="Unmatched",{Deposit Received Date}!="",{Status}!="Cancelled")'
+            : '{Status}!="Cancelled"';
 
-        if (!clientsRes.ok) {
-            throw new Error(`Failed to fetch clients: ${clientsRes.status}`);
-        }
-
-        const clientsData = await clientsRes.json();
-        let clients = clientsData.records;
+        let clients = await fetchAllRecords(settings.clientsTable, formula);
 
         // Apply date filter if set
         const dateFilter = document.getElementById('startDateFilter').value;
         if (dateFilter) {
             const filterDate = new Date(dateFilter);
             clients = clients.filter(client => {
-                const startDate = client.fields['Start Date'] || client.fields['start date'];
-                if (!startDate) return false;
-                return new Date(startDate) >= filterDate;
+                const d = getStartDate(client);
+                return d != null && d >= filterDate;
             });
         }
 
         allClients = clients;
+        allCareTeam = await fetchAllRecords(settings.careTeamTable);
 
-        // Fetch care team
-        const careTeamUrl = `https://api.airtable.com/v0/${settings.baseId}/${encodeURIComponent(settings.careTeamTable)}`;
-        const careTeamRes = await fetch(careTeamUrl, {
-            headers: { 
-                'Authorization': `Bearer ${settings.apiKey}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!careTeamRes.ok) {
-            throw new Error(`Failed to fetch care team: ${careTeamRes.status}`);
-        }
-
-        const careTeamData = await careTeamRes.json();
-        allCareTeam = careTeamData.records;
-
-        // Populate dropdown
+        // Populate dropdown — show Matching Stage badge in 'all' mode so
+        // coordinators can tell prospects from in-care clients at a glance.
         const select = document.getElementById('clientSelect');
         select.innerHTML = '<option value="">-- Select a client --</option>';
-        
+
         allClients.forEach((client, index) => {
             const option = document.createElement('option');
             option.value = index;
             const name = client.fields["Mama's Full Name"] || client.fields.Name || 'Client ' + client.id;
-            const startDate = client.fields['Start Date'] || client.fields['start date'] || '';
-            option.textContent = name + (startDate ? ' (Start: ' + startDate + ')' : '');
+            const raw = getStartDateRaw(client);
+            const stage = client.fields['Matching Stage'];
+            const stageTag = (mode === 'all' && stage) ? ` [${stage}]` : '';
+            option.textContent = name + stageTag + (raw ? ' (Start: ' + raw + ')' : '');
             select.appendChild(option);
         });
 
         select.disabled = false;
         document.getElementById('matchBtn').disabled = false;
         document.getElementById('resultsArea').innerHTML = '';
-        
+
+        // Reset name filter input
+        const filterInput = document.getElementById('clientNameFilter');
+        if (filterInput) {
+            filterInput.value = '';
+            filterClientList('');
+        }
+
         const filterMsg = dateFilter ? ` starting on or after ${dateFilter}` : '';
-        showMessage(`Loaded ${allClients.length} clients${filterMsg} and ${allCareTeam.length} care team members`, 'success');
+        const modeMsg = mode === 'all' ? ' (all clients)' : '';
+        showMessage(`Loaded ${allClients.length} clients${filterMsg}${modeMsg} and ${allCareTeam.length} care team members`, 'success');
+
+        // Pre-warm geocode cache in the background so the first Find Matches
+        // run isn't slow waiting for cold-cache FSA lookups.
+        prewarmGeocodeCache();
 
     } catch (error) {
         console.error('Load error:', error);
         document.getElementById('resultsArea').innerHTML = '';
         showMessage('Error: ' + error.message, 'error');
     }
+}
+
+function filterClientList(query) {
+    const q = (query || '').toLowerCase().trim();
+    const select = document.getElementById('clientSelect');
+    if (!select) return;
+    let visible = 0;
+    Array.from(select.options).forEach(opt => {
+        if (!opt.value) return;
+        const match = !q || opt.textContent.toLowerCase().includes(q);
+        opt.hidden = !match;
+        if (match) visible++;
+    });
+    const counter = document.getElementById('clientFilterCount');
+    if (counter) {
+        counter.textContent = q ? `${visible} match${visible === 1 ? '' : 'es'}` : '';
+    }
+}
+
+// Fire-and-forget. Geocodes every unique care-team FSA so the first
+// findMatches doesn't pay cold-cache latency. FSA lookups hit a static
+// server-side table (no rate limit), so this runs fast.
+function prewarmGeocodeCache() {
+    if (!allCareTeam.length) return;
+    const fsas = new Set();
+    for (const m of allCareTeam) {
+        const fsa = extractFSA(m.fields['Postal Code']);
+        if (fsa && !geoCache[`fsa:${fsa}`]) fsas.add(fsa);
+    }
+    if (fsas.size === 0) return;
+    (async () => {
+        for (const fsa of fsas) {
+            try { await geocodeFSA(fsa); } catch (e) { /* swallow — best effort */ }
+        }
+    })();
 }
 
 async function findMatches() {
@@ -250,7 +315,12 @@ async function findMatches() {
         return;
     }
 
-    currentClient = allClients[clientIndex];
+    const nextClient = allClients[clientIndex];
+    if (!currentClient || currentClient.id !== nextClient.id) {
+        selectedMatches = [];
+        displayLimit = 15;
+    }
+    currentClient = nextClient;
     const resultsArea = document.getElementById('resultsArea');
     resultsArea.innerHTML = '<div class="loading"><div class="spinner"></div><p>Analyzing matches... This may take a moment...</p></div>';
 
@@ -277,6 +347,46 @@ function getField(record, name) {
         if (k.toLowerCase().replace(/\s+/g, '') === target) return record.fields[k];
     }
     return undefined;
+}
+
+const START_DATE_FIELDS = [
+    'Start Date',
+    'Start Date [Intake]',
+    'Care Start Date',
+    'Estimated Start Date',
+    'Anticipated Start Date',
+];
+
+function getStartDateRaw(client) {
+    for (const name of START_DATE_FIELDS) {
+        const v = getField(client, name);
+        if (v != null && String(v).trim() !== '') return v;
+    }
+    return null;
+}
+
+// Returns a valid Date or null. Trusts Airtable's ISO format but falls back
+// to permissive parsing for free-text fields.
+function getStartDate(client) {
+    const raw = getStartDateRaw(client);
+    if (!raw) return null;
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+// Just the structured Accreditation(s) field — picklist values, suitable for
+// the credential dropdown filter. Excludes the free-text bio fields that
+// pollute the list with prose.
+function getMemberAccreditations(member) {
+    const raw = getField(member, 'Accreditation(s)') ?? getField(member, 'Accreditations');
+    if (raw == null) return [];
+    const items = Array.isArray(raw) ? raw : String(raw).split(/[,;]\s*/);
+    const out = new Set();
+    for (const item of items) {
+        const t = String(item).trim();
+        if (t) out.add(t);
+    }
+    return Array.from(out);
 }
 
 // Aggregate a care team member's credentials from the three attribute fields
@@ -336,8 +446,8 @@ function getCredentialsScore(clientPrefs, memberCreds) {
 // "no shifts" from "couldn't determine"). If startDate is missing/invalid
 // (e.g. "TBD"), defaults to today so the window is still meaningful.
 async function loadShiftsForWindow(startDate, weeks = 8) {
-    let start = new Date(startDate);
-    if (isNaN(start.getTime())) start = new Date();
+    let start = startDate instanceof Date ? startDate : new Date(startDate);
+    if (!start || isNaN(start.getTime())) start = new Date();
     const end = new Date(start);
     end.setDate(end.getDate() + weeks * 7);
 
@@ -400,8 +510,7 @@ function checkAvailability(member, client, bookedByMember) {
     }
 
     // Load-threshold mode: total booked hours / weeks in window.
-    let start = new Date(client.fields['Start Date']);
-    if (isNaN(start.getTime())) start = new Date();
+    let start = getStartDate(client) || new Date();
     const weeks = 8;
     const end = new Date(start);
     end.setDate(end.getDate() + weeks * 7);
@@ -415,9 +524,12 @@ function checkAvailability(member, client, bookedByMember) {
     }
     const hoursPerWeek = totalHours / weeks;
     const threshold = settings.loadThreshold || 30;
+    // A single short shift shouldn't flag someone as "partially booked" — that
+    // was confusing coordinators. Require meaningful load before partial fires.
+    const partialFloor = Math.max(PARTIAL_HOURS_FLOOR, threshold * 0.2);
 
     if (hoursPerWeek >= threshold) return 'conflict';
-    if (hoursPerWeek > 0) return 'partial';
+    if (hoursPerWeek >= partialFloor) return 'partial';
     return 'available';
 }
 
@@ -457,7 +569,7 @@ async function performMatching(client, careTeam) {
     }
 
     shiftsLoadFailure = null;
-    const bookedByMember = await loadShiftsForWindow(client.fields['Start Date']);
+    const bookedByMember = await loadShiftsForWindow(getStartDate(client));
     const clientPrefs = getClientPreferences(client);
 
     // Pre-cache FSAs for all eligible members (rate-limited for uncached)
@@ -481,9 +593,13 @@ async function performMatching(client, careTeam) {
     for (const k of uniqueFSAs) {
         if (k.startsWith('city:')) {
             const city = k.slice(5);
+            // City lookups go to Nominatim — keep the courtesy delay between
+            // requests (1 req/sec is the public-tier limit).
             if (!geoCache[city]) { await geocodeCity(city); await sleep(1100); }
         } else {
-            if (!geoCache[`fsa:${k}`]) { await geocodeFSA(k); await sleep(1100); }
+            // FSA lookups hit a static server-side table; no rate limit, so
+            // skip the sleep that used to add ~1s per uncached FSA.
+            if (!geoCache[`fsa:${k}`]) await geocodeFSA(k);
         }
     }
 
@@ -500,16 +616,32 @@ async function performMatching(client, careTeam) {
 
         const memberCreds = getMemberCredentials(member);
         const creds = getCredentialsScore(clientPrefs, memberCreds);
+        const accreditations = getMemberAccreditations(member);
 
+        const breakdown = [{ label: 'Base', delta: 100 }];
         let score = 100;
-        if (distance > 20 && distance <= 40) score -= 10;
-        else if (distance > 40 && distance <= 60) score -= 15;
-        else if (distance > 60) score -= 30;
-        if (status === 'Ready for Review') score -= 5;
-        score += creds.score;
+        let distancePenalty = 0;
+        if (distance > 20 && distance <= 40) distancePenalty = -10;
+        else if (distance > 40 && distance <= 60) distancePenalty = -15;
+        else if (distance > 60) distancePenalty = -30;
+        if (distancePenalty) {
+            score += distancePenalty;
+            breakdown.push({ label: `Distance ${distance.toFixed(1)}km`, delta: distancePenalty });
+        }
+        if (status === 'Ready for Review') {
+            score -= 5;
+            breakdown.push({ label: 'Status: Ready for Review', delta: -5 });
+        }
+        if (creds.score) {
+            score += creds.score;
+            breakdown.push({ label: `Credentials match (${creds.hits.length})`, delta: creds.score });
+        }
 
         const availability = checkAvailability(member, client, bookedByMember);
-        if (availability === 'available') score += 20;
+        if (availability === 'available') {
+            score += 20;
+            breakdown.push({ label: 'Available', delta: 20 });
+        }
         // 'partial' and 'unknown' contribute 0; 'conflict' is filtered below.
 
         matches.push({
@@ -519,9 +651,11 @@ async function performMatching(client, careTeam) {
             postalCode: member.fields['Postal Code'],
             distance: distance,
             credentials: memberCreds,
+            accreditations,
             credentialHits: creds.hits,
             availableFor: Array.isArray(memberCareTypes) ? memberCareTypes.join(', ') : memberCareTypes,
             matchScore: score,
+            scoreBreakdown: breakdown,
             status: status,
             availability,
         });
@@ -553,7 +687,9 @@ function displayMatches(client) {
     const resultsArea = document.getElementById('resultsArea');
     selectedMatches = selectedMatches.filter(id => allMatches.some(m => m.id === id));
 
-    const matches = applyFilters(allMatches);
+    const filtered = applyFilters(allMatches);
+    const matches = filtered.slice(0, displayLimit);
+    const hiddenCount = filtered.length - matches.length;
 
     if (allMatches.length === 0) {
         resultsArea.innerHTML = `
@@ -571,16 +707,15 @@ function displayMatches(client) {
     const clientName = client.fields["Mama's Full Name"] || client.fields.Name || 'Client';
     const clientLocation = client.fields['Postal Code'] || 'Unknown';
     const clientCareType = client.fields['Daytime/Overnight [Intake]'] || client.fields['Daytime/Overnight'] || 'Unknown';
-    const clientStartDate = client.fields['Start Date'] || 'TBD';
-    const startDateValid = !isNaN(new Date(client.fields['Start Date']).getTime());
+    const startDate = getStartDate(client);
+    const startDateRaw = getStartDateRaw(client);
+    const startDateDisplay = startDateRaw || 'TBD';
 
-    // Filter the dropdown to short tag-like strings — the underlying fields
-    // are free-text bios on many care team members, which produce prose-y
-    // entries when split on commas. Long ones still contribute to scoring
-    // via substring match, they just don't pollute the filter.
-    const isTagLike = s => s.length <= 30 && !/\d/.test(s) && !/[()]/.test(s);
+    // Source the credential dropdown from the structured Accreditation(s)
+    // field only. Free-text certifications and specializations still feed the
+    // score, but their prose-y values were polluting the filter.
     const credentials = Array.from(new Set(
-        allMatches.flatMap(m => (m.credentials || []).filter(isTagLike))
+        allMatches.flatMap(m => m.accreditations || [])
     )).sort();
     const statuses = Array.from(new Set(allMatches.map(m => m.status).filter(Boolean))).sort();
 
@@ -590,7 +725,7 @@ function displayMatches(client) {
                 <div class="client-name">${clientName}</div>
                 <span class="detail-badge">📍 ${clientLocation}</span>
                 <span class="detail-badge">${clientCareType}</span>
-                <span class="detail-badge">Start: ${clientStartDate}</span>
+                <span class="detail-badge">Start: ${startDateDisplay}</span>
             </div>
             <div class="filter-bar">
                 <label>Credential
@@ -612,14 +747,23 @@ function displayMatches(client) {
                     <input type="checkbox" ${filters.hasAvailability ? 'checked' : ''} onchange="updateFilter('hasAvailability', this.checked)" />
                     Has availability
                 </label>
-                <span class="filter-count">Showing ${matches.length} of ${allMatches.length}</span>
+                <span class="filter-count">Showing ${matches.length} of ${filtered.length}${filtered.length !== allMatches.length ? ` (${allMatches.length} total)` : ''}</span>
             </div>
             ${shiftsLoadFailure ? `<div class="filter-note filter-note-error">⚠️ ${shiftsLoadFailure}</div>` : ''}
-            ${!startDateValid ? `<div class="filter-note">ℹ️ Start Date is TBD — availability is computed against the next 8 weeks from today.</div>` : ''}
-            ${matches.map(match => `
+            ${!startDate ? `<div class="filter-note">ℹ️ Start Date is ${startDateRaw ? `unparseable ("${startDateRaw}")` : 'missing'} — availability is computed against the next 8 weeks from today.</div>` : ''}
+            ${matches.map(match => {
+                const breakdownTitle = (match.scoreBreakdown || [])
+                    .map(b => `${b.delta >= 0 ? '+' : ''}${b.delta}  ${b.label}`)
+                    .join('\n');
+                return `
                 <div class="match-card ${selectedMatches.includes(match.id) ? 'selected' : ''}" onclick="toggleSelection('${match.id}')">
-                    <div class="match-score">⭐ ${match.matchScore}</div>
+                    <div class="match-score" data-tooltip="${breakdownTitle.replace(/"/g, '&quot;')}">⭐ ${match.matchScore}</div>
                     <div class="match-name">${match.name}</div>
+                    <div class="match-detail score-breakdown">${(match.scoreBreakdown || []).map(b => {
+                        const sign = b.delta > 0 ? '+' : '';
+                        const cls = b.delta < 0 ? 'score-neg' : (b.delta > 0 ? 'score-pos' : '');
+                        return `<span class="score-chip ${cls}">${sign}${b.delta} ${b.label}</span>`;
+                    }).join('')}</div>
                     ${(match.credentials && match.credentials.length) ? `<div class="match-detail">🎓 ${match.credentials.map(c => {
                         const display = c.length > 60 ? c.slice(0, 60).replace(/\s+\S*$/, '') + '…' : c;
                         const title = c.length > 60 ? ` title="${c.replace(/"/g, '&quot;')}"` : '';
@@ -632,10 +776,16 @@ function displayMatches(client) {
                     ${match.email ? `<div class="match-detail">✉️ ${match.email}</div>` : ''}
                     ${match.availableFor ? `<div class="match-detail">Available for: ${match.availableFor}</div>` : ''}
                 </div>
-            `).join('')}
+            `;}).join('')}
+            ${hiddenCount > 0 ? `<button class="btn-secondary" onclick="showAllMatches()" style="margin-top: 1rem;">Show all ${filtered.length} matches (${hiddenCount} more)</button>` : ''}
             <button onclick="prepareEmails()" style="margin-top: 1rem;">📧 Email Selected Matches</button>
         </div>
     `;
+}
+
+function showAllMatches() {
+    displayLimit = Infinity;
+    displayMatches(currentClient);
 }
 
 function updateFilter(key, value) {
@@ -665,45 +815,77 @@ function toggleSelection(matchId) {
     });
 }
 
+function buildEmailFor(match, client) {
+    const clientName = client.fields["Mama's Full Name"] || client.fields.Name || 'Client';
+    const location = client.fields['Postal Code'] || 'TBD';
+    const careType = client.fields['Daytime/Overnight [Intake]'] || client.fields['Daytime/Overnight'] || 'TBD';
+    const startDate = getStartDateRaw(client) || 'TBD';
+    const name = match.fields['Full Name'] || 'Team Member';
+    const email = match.fields['Email'] || match.fields['email'] || '';
+    const subject = `New Client Opportunity - ${clientName}`;
+    const body =
+        `Hi ${name},\n\n` +
+        `We have a new client opportunity that matches your profile:\n\n` +
+        `Client Location: ${location}\n` +
+        `Care Type: ${careType}\n` +
+        `Start Date: ${startDate}\n\n` +
+        `Are you available for this placement?\n\n` +
+        `Best,\nAlma Care Team`;
+    return { email, name, subject, body };
+}
+
+function mailtoHref(e) {
+    // The email address itself stays literal — encoding the @ breaks some
+    // mailto handlers. Only the query-string values are URI-encoded.
+    return `mailto:${e.email}?subject=${encodeURIComponent(e.subject)}&body=${encodeURIComponent(e.body)}`;
+}
+
 function prepareEmails() {
     if (selectedMatches.length === 0) {
         showMessage('Please select at least one care team member first', 'error');
         return;
     }
 
-    const clientName = currentClient.fields["Mama's Full Name"] || currentClient.fields.Name || 'Client';
-    const location = currentClient.fields['Postal Code'] || 'TBD';
-    const careType = currentClient.fields['Daytime/Overnight [Intake]'] || currentClient.fields['Daytime/Overnight'] || 'TBD';
-    const startDate = currentClient.fields['Start Date'] || 'TBD';
+    const drafts = selectedMatches
+        .map(id => allCareTeam.find(ct => ct.id === id))
+        .filter(Boolean)
+        .map(m => ({ id: m.id, ...buildEmailFor(m, currentClient) }));
 
-    let emailText = '';
-    
-    selectedMatches.forEach(matchId => {
-        const match = allCareTeam.find(ct => ct.id === matchId);
-        if (!match) return;
+    const rows = drafts.map(d => `
+        <div class="email-draft-row">
+            <div class="email-draft-meta">
+                <div class="email-draft-name">${d.name}</div>
+                <div class="email-draft-addr">${d.email || '<em>no email on file</em>'}</div>
+            </div>
+            ${d.email
+                ? `<a class="btn-secondary email-draft-btn" href="${mailtoHref(d)}">Open draft</a>`
+                : '<span class="email-draft-warn">missing email</span>'}
+        </div>
+    `).join('');
 
-        const email = match.fields['Email'] || match.fields['email'] || 'NO EMAIL';
-        const name = match.fields['Full Name'] || 'Team Member';
+    const fallbackText = drafts.map(d =>
+        `TO: ${d.email || 'NO EMAIL'}\nSUBJECT: ${d.subject}\n\n${d.body}\n\n---\n`
+    ).join('\n');
 
-        emailText += `TO: ${email}\n`;
-        emailText += `SUBJECT: New Client Opportunity - ${clientName}\n\n`;
-        emailText += `Hi ${name},\n\n`;
-        emailText += `We have a new client opportunity that matches your profile:\n\n`;
-        emailText += `Client Location: ${location}\n`;
-        emailText += `Care Type: ${careType}\n`;
-        emailText += `Start Date: ${startDate}\n\n`;
-        emailText += `Are you available for this placement?\n\n`;
-        emailText += `Best,\nAlma Care Team\n\n`;
-        emailText += `---\n\n`;
-    });
+    document.getElementById('emailContent').innerHTML = `
+        <p class="email-modal-intro">Opens one draft per recipient in your default mail client. Sending is still a manual click — this tool does not send for you.</p>
+        ${rows}
+        <div class="email-modal-actions">
+            <button class="btn-secondary" onclick="copyAllEmails()">📋 Copy all as text</button>
+        </div>
+        <textarea id="emailFallbackText" style="display:none;">${fallbackText.replace(/</g, '&lt;')}</textarea>
+    `;
+    document.getElementById('emailModal').classList.add('active');
+}
 
-    navigator.clipboard.writeText(emailText).then(() => {
-        showMessage(`📋 Copied ${selectedMatches.length} email(s) to clipboard! Paste into your email client.`, 'success');
-    }).catch(() => {
-        // Show in modal if clipboard fails
-        document.getElementById('emailContent').innerHTML = `<pre style="white-space: pre-wrap; font-size: 0.9rem;">${emailText}</pre>`;
-        document.getElementById('emailModal').classList.add('active');
-    });
+function copyAllEmails() {
+    const ta = document.getElementById('emailFallbackText');
+    if (!ta) return;
+    const text = ta.value;
+    navigator.clipboard.writeText(text).then(
+        () => showMessage(`📋 Copied ${selectedMatches.length} email(s) to clipboard.`, 'success'),
+        () => showMessage('Clipboard blocked — select the textarea text manually.', 'error'),
+    );
 }
 
 function closeEmailModal() {
