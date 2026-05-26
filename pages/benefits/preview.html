@@ -2968,7 +2968,8 @@
       function renderRecCard(rec, rank) {
         const name = SERVICE_NAMES[rec.service] || rec.service;
         const needsAsterisk = rec.service === 'postpartum_doula_care'
-          || rec.service === 'registered_nursing';
+          || rec.service === 'registered_nursing'
+          || rec.service === 'psw';
         const priorityKey = rec.priority || '';
         const priorityLabel = priorityKey
           ? priorityKey.charAt(0).toUpperCase() + priorityKey.slice(1)
@@ -3015,7 +3016,7 @@
           }
         }
         const hasAsterisk = recs.some(function (r) {
-          return r.service === 'postpartum_doula_care' || r.service === 'registered_nursing';
+          return r.service === 'postpartum_doula_care' || r.service === 'registered_nursing' || r.service === 'psw';
         });
         const footnote = hasAsterisk
           ? '<p class="ap-rec__footnote">* Pre-assessment approval may be required and varies by insurer. '
