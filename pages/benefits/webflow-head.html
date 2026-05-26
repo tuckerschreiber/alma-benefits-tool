@@ -1,4 +1,4 @@
-<script defer src="https://cdn.jsdelivr.net/gh/tuckerschreiber/alma-benefits-tool@main/pages/benefits/app.js?v=20260517"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/tuckerschreiber/alma-benefits-tool@main/pages/benefits/app.js?v=20260523"></script>
 
 <style>
     /* ---------- Reset / base ---------- */
@@ -140,6 +140,10 @@
       font-weight: 500;
       font-size: 14px;
     }
+
+    .ap-label__optional { color: #888; font-weight: 400; font-size: 0.9em; margin-left: 4px; }
+
+    .ap-field__error { color: #a4332b; font-size: 13px; margin: 6px 0 0; }
 
     .ap-optional {
       color: #999;
@@ -1127,276 +1131,54 @@
       align-self: flex-start;
     }
 
-    .ap-print-tip {
+    /* ---------- Insurance Coverage Estimate download block (results) ---------- */
+    .ap-download-block {
+      border: 2px solid #032215;
+      background: #f7f5ef;
+      border-radius: 8px;
+      padding: 24px 28px;
+      margin: 0 0 16px;
+      text-align: center;
+    }
+    .ap-download-block__eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      color: #032215;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .ap-download-block__copy {
+      font-size: 15px;
+      color: #333;
+      max-width: 520px;
+      margin: 0 auto 18px;
+    }
+    .ap-download-block__meta {
       font-size: 12px;
       color: #777;
-      font-style: italic;
-      margin-top: 8px;
-      margin-bottom: 0;
+      margin-top: 12px;
     }
-
-    /* ---------- Print-only care plan ----------
-       Hidden on screen. When the user clicks "send my care plan", we
-       populate #ap-print-root with the same markup the PDF used to use
-       and call window.print(). The @media print rule below makes the
-       root the only visible content during the print render, so the
-       browser's native "Save as PDF" produces a clean branded document. */
-    #ap-print-root { display: none; }
-
-    @media print {
-      /* Hide everything except the print root. */
-      body > *:not(#ap-print-root) { display: none !important; }
-      html, body {
-        background: #ffffff !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-      #ap-print-root {
-        display: block !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0.6in 0.6in 0.75in 0.6in !important;
-        color: #032215 !important;
-        font-family: 'Futura', 'Futura PT', 'Trebuchet MS', sans-serif !important;
-        font-weight: 400 !important;
-        line-height: 1.5 !important;
-        background: #ffffff !important;
-      }
-      @page {
-        size: letter;
-        margin: 0;
-      }
-      .ap-pdf__panel, .ap-pdf__rec, .ap-pdf__letterhead {
-        page-break-inside: avoid;
-        break-inside: avoid;
-      }
-      .ap-next, .ap-navigate {
-        page-break-inside: avoid;
-        break-inside: avoid;
-      }
+    .ap-download-block--done {
+      background: #eef5ee;
+      border-color: #2e6b2e;
     }
-
-    .ap-pdf-source * {
-      box-sizing: border-box;
-    }
-
-    .ap-pdf__letterhead {
-      border-bottom: 2px solid #156146;
-      padding-bottom: 16px;
-      margin-bottom: 24px;
-    }
-
-    .ap-pdf__brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 28px;
-      font-weight: 500;
-      color: #032215;
-      letter-spacing: 0.02em;
-    }
-    .ap-pdf__brand-mark {
-      width: 28px;
-      height: 32px;
-      flex-shrink: 0;
-    }
-
-    .ap-pdf__brand-tag {
-      font-size: 12px;
-      color: #555;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-top: 2px;
-    }
-
-    .ap-pdf__meta {
-      margin-top: 14px;
-      font-size: 13px;
-      color: #555;
-      line-height: 1.55;
-      overflow-wrap: break-word;
-      word-wrap: break-word;
-      word-break: break-word;
-    }
-
-    .ap-pdf__meta strong {
-      color: #032215;
-      font-weight: 500;
-    }
-
-    .ap-pdf__heading {
-      font-size: 22px;
-      font-weight: 500;
-      color: #032215;
-      margin-bottom: 20px;
-    }
-
-    .ap-pdf__panel {
-      border: 1px solid rgb(235, 225, 213);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 16px;
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-
-    .ap-pdf__panel h3 {
-      font-size: 16px;
-      font-weight: 500;
-      color: #156146;
+    .ap-download-block__check {
+      font-size: 32px;
+      line-height: 1;
+      color: #2e6b2e;
       margin-bottom: 8px;
     }
-
-    .ap-pdf__panel p {
-      font-size: 13px;
-      color: #555;
-      margin-bottom: 6px;
-    }
-
-    .ap-pdf__hero {
-      font-size: 28px;
-      font-weight: 500;
-      color: #156146;
-      margin: 8px 0;
-    }
-
-    .ap-pdf__hero--muted {
-      color: #999;
-      font-size: 18px;
-      font-weight: 400;
-    }
-
-    .ap-pdf__hsa {
+    .ap-download-block__redo {
       display: inline-block;
-      background: #F4E9DD;
-      color: #032215;
+      margin-top: 12px;
       font-size: 13px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      margin-bottom: 8px;
-    }
-
-    .ap-pdf__cov-grid {
-      margin-top: 8px;
-    }
-
-    .ap-pdf__cov-col {
-      margin-bottom: 10px;
-    }
-
-    .ap-pdf__cov-col h4 {
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
       color: #555;
-      margin-bottom: 4px;
-    }
-
-    .ap-pdf__cov-col ul {
-      list-style: none;
+      text-decoration: underline;
+      background: none;
+      border: none;
+      cursor: pointer;
       padding: 0;
-      margin: 0;
     }
-
-    .ap-pdf__cov-col li {
-      font-size: 13px;
-      color: #032215;
-      padding: 2px 0;
-    }
-
-    .ap-pdf__cov-col li.muted {
-      color: #999;
-    }
-
-    .ap-pdf__rec {
-      background: #FFFAF4;
-      border: 1px solid rgb(235, 225, 213);
-      border-radius: 8px;
-      padding: 14px;
-      margin-bottom: 10px;
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-
-    .ap-pdf__rec-title {
-      font-size: 15px;
-      font-weight: 500;
-      color: #032215;
-      margin-bottom: 4px;
-    }
-
-    .ap-pdf__rec-dosing {
-      font-size: 12px;
-      color: #156146;
-      font-weight: 500;
-      margin-bottom: 4px;
-    }
-
-    .ap-pdf__rec-rationale {
-      font-size: 12px;
-      color: #555;
-      margin-bottom: 8px;
-    }
-
-    .ap-pdf__cost {
-      background: #ffffff;
-      border: 1px solid rgb(235, 225, 213);
-      border-radius: 6px;
-      padding: 8px 10px;
-      font-size: 12px;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .ap-pdf__cost-row {
-      padding: 2px 0;
-    }
-
-    .ap-pdf__cost-row span:last-child {
-      float: right;
-    }
-
-    .ap-pdf__cost-row--covered { color: #156146; }
-    .ap-pdf__cost-row--oop { color: #888; }
-    .ap-pdf__cost-row--total { color: #032215; font-weight: 500; }
-
-    .ap-pdf__funding {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .ap-pdf__funding li {
-      font-size: 13px;
-      color: #032215;
-      padding: 4px 0 4px 14px;
-      position: relative;
-    }
-
-    .ap-pdf__funding li::before {
-      content: '•';
-      color: #156146;
-      font-weight: 700;
-      position: absolute;
-      left: 0;
-    }
-
-    .ap-pdf__footer {
-      margin-top: 20px;
-      padding-top: 14px;
-      border-top: 1px solid rgb(235, 225, 213);
-      font-size: 11px;
-      color: #888;
-      line-height: 1.55;
-    }
-
-    .ap-pdf__footer-link {
-      color: #156146;
-      font-weight: 500;
-    }
-
-    .ap-pdf__brandline { margin-top: 16px; padding-top: 8px; border-top: 1px solid rgb(235, 225, 213); font-size: 11px; color: #777; text-align: center; }
-    .ap-pdf__footer + .ap-pdf__brandline { border-top: none; margin-top: 8px; padding-top: 0; }
 
     /* ---------- Mobile ---------- */
     @media (max-width: 640px) {

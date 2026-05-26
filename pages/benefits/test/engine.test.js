@@ -201,7 +201,7 @@ test('applyRules: empty appliesWhen matches any normalized state for an eligible
   assert.equal(r2.length, 1);
 });
 
-test('applyRules: postpartum window conditions match weeksPostpartum, not weeksUntilDue', () => {
+test('applyRules: weeksPostpartum conditions act as implicit postpartum stage gate', () => {
   const rule = {
     service: 'massage_therapy',
     appliesWhen: { weeksPostpartumMax: 6 },
@@ -219,7 +219,7 @@ test('applyRules: postpartum window conditions match weeksPostpartum, not weeksU
     ['massage_therapy'],
     [rule]
   );
-  // When not postpartum, the postpartum condition is not constraining and should match
+  // Prenatal user should NOT match a postpartum-gated rule
   const prenatal = applyRules(
     { isPostpartum: false, weeksUntilDue: 4 },
     ['massage_therapy'],
@@ -227,14 +227,14 @@ test('applyRules: postpartum window conditions match weeksPostpartum, not weeksU
   );
   assert.equal(matchPP.length, 1);
   assert.equal(noMatchPP.length, 0);
-  assert.equal(prenatal.length, 1);
+  assert.equal(prenatal.length, 0);
 });
 
-test('applyRules: postpartum user matches rule with weeksUntilDueMax (prenatal condition skipped)', () => {
+test('applyRules: postpartum user does NOT match rule with weeksUntilDueMax (prenatal-only)', () => {
   const normalized = { isPostpartum: true, weeksPostpartum: 4 };
   const rules = [{ service: 'massage_therapy', appliesWhen: { weeksUntilDueMax: 8 }, dosing: {sessions:1, estimatedSessionCost:120}, rationale:'x', priority:'medium' }];
   const result = applyRules(normalized, ['massage_therapy'], rules);
-  assert.equal(result.length, 1);
+  assert.equal(result.length, 0);
 });
 
 // ----- computeResults -----
@@ -462,4 +462,45 @@ test('computeEligibleAmounts: missing reimbursementPercent defaults to 100', () 
 test('computeEligibleAmounts: empty / null coverage returns {}', () => {
   assert.deepStrictEqual(computeEligibleAmounts({}), {});
   assert.deepStrictEqual(computeEligibleAmounts(null), {});
+});
+
+// ---------- Round-3 regression: PDN duplicate bug ----------
+
+test('postpartum user does not match prenatal registered_nursing rule', () => {
+  const state = {
+    isPostpartum: true,
+    weeksPostpartum: 1,
+    firstTimeParent: false,
+    coverage: { registered_nursing: { amount: 2000, reimbursementPercent: 100 } },
+    hasHsa: false,
+    hsaBalance: 0,
+    concerns: ''
+  };
+  const normalized = normalizeInputs(state);
+  const eligible = eligibilityFilter(state.coverage, ALMA_SERVICES);
+  const matches = applyRules(normalized, eligible, RULES);
+  const pdnMatches = matches.filter((m) => m.service === 'registered_nursing');
+  assert.strictEqual(pdnMatches.length, 1, 'should only get one PDN recommendation');
+  assert.strictEqual(pdnMatches[0].priority, 'high', 'should be the postpartum (high) rule');
+});
+
+test('prenatal user at week 36 matches the prenatal registered_nursing rule once', () => {
+  const today = new Date('2026-05-23');
+  // due in 2 weeks → weeksUntilDue = 2 (matches weeksUntilDueMax: 4)
+  const dueDate = new Date('2026-06-06').toISOString();
+  const inputs = {
+    dueDate,
+    isPostpartum: false,
+    firstTimeParent: false,
+    coverage: { registered_nursing: { amount: 2000, reimbursementPercent: 100 } },
+    hasHsa: false,
+    hsaBalance: 0,
+    concerns: ''
+  };
+  const normalized = normalizeInputs(inputs, today);
+  const eligible = eligibilityFilter(inputs.coverage, ALMA_SERVICES);
+  const matches = applyRules(normalized, eligible, RULES);
+  const pdnMatches = matches.filter((m) => m.service === 'registered_nursing');
+  assert.strictEqual(pdnMatches.length, 1);
+  assert.strictEqual(pdnMatches[0].priority, 'medium');
 });
