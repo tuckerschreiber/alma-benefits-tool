@@ -412,10 +412,35 @@ button:disabled {
 .email-draft-meta { display: flex; flex-direction: column; }
 .email-draft-name { font-weight: 600; color: var(--warm-gray); }
 .email-draft-addr { font-size: 0.85rem; color: var(--sage); }
+.email-draft-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
 .email-draft-btn {
     text-decoration: none;
     padding: 0.5rem 0.9rem;
     font-size: 0.9rem;
+    border-radius: 6px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.email-draft-btn-primary {
+    background: var(--terracotta);
+    color: white;
+}
+.email-draft-btn-primary:hover {
+    background: var(--deep-terracotta);
+}
+.email-draft-btn-secondary {
+    background: transparent;
+    color: var(--sage);
+    border: 1px solid var(--light-sage);
+}
+.email-draft-btn-secondary:hover {
+    background: var(--light-sage);
+    color: var(--warm-gray);
 }
 .email-draft-warn {
     color: #a13;
