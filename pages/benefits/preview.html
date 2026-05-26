@@ -806,6 +806,15 @@
       color: #888;
     }
     .ap-coverage-list__check { color: #156146; font-weight: 700; margin-right: 8px; }
+    .ap-coverage-list__nights {
+      margin-left: 1.5rem;
+      font-size: 0.875rem;
+      color: var(--ap-text-muted, #6b6b6b);
+      margin-top: 0.15rem;
+    }
+    @media print {
+      .ap-coverage-list__nights { color: #555; }
+    }
     .ap-coverage-list__dash { color: #bbb; margin-right: 8px; }
     .ap-coverage-list__total {
       margin: 12px 0 0;
@@ -2898,8 +2907,19 @@
         const eligibleItems = coveredIds.map(function (id) {
           const name = SERVICE_NAMES[id] || id;
           const amt = formatMoney(eligibleAmounts[id]);
+          let nightsLine = '';
+          if (id === 'registered_nursing') {
+            nightsLine = formatNightsLine(eligibleAmounts[id], ALMA_RN_HOURLY_RATE, ALMA_NIGHT_HOURS);
+          } else if (id === 'psw') {
+            nightsLine = formatNightsLine(eligibleAmounts[id], ALMA_PSW_HOURLY_RATE, ALMA_NIGHT_HOURS);
+          }
+          const nightsHtml = nightsLine
+            ? '<div class="ap-coverage-list__nights">' + escapeHtml(nightsLine) + '</div>'
+            : '';
           return '<li><span class="ap-coverage-list__check">✓</span>'
-            + escapeHtml(name) + ' — <strong>' + amt + ' eligible</strong></li>';
+            + escapeHtml(name) + ' — <strong>' + amt + ' eligible</strong>'
+            + nightsHtml
+            + '</li>';
         }).join('');
 
         const notEligibleItems = notCoveredIds.map(function (id) {
