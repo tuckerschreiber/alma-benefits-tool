@@ -777,19 +777,6 @@ function mailtoHref(e) {
     return `mailto:${e.email}?subject=${encodeURIComponent(e.subject)}&body=${encodeURIComponent(e.body)}`;
 }
 
-function gmailHref(e) {
-    // Gmail compose URL — works regardless of OS default mail app. Right for
-    // Alma since the team is on Google Workspace.
-    const params = new URLSearchParams({
-        view: 'cm',
-        fs: '1',
-        to: e.email,
-        su: e.subject,
-        body: e.body,
-    });
-    return `https://mail.google.com/mail/?${params.toString()}`;
-}
-
 function prepareEmails() {
     if (selectedMatches.length === 0) {
         showMessage('Please select at least one care team member first', 'error');
@@ -808,10 +795,7 @@ function prepareEmails() {
                 <div class="email-draft-addr">${d.email || '<em>no email on file</em>'}</div>
             </div>
             ${d.email
-                ? `<div class="email-draft-actions">
-                    <a class="email-draft-btn email-draft-btn-primary" href="${gmailHref(d)}" target="_blank" rel="noopener">Open in Gmail</a>
-                    <a class="email-draft-btn email-draft-btn-secondary" href="${mailtoHref(d)}">Mail app</a>
-                  </div>`
+                ? `<a class="btn-secondary email-draft-btn" href="${mailtoHref(d)}">Open draft</a>`
                 : '<span class="email-draft-warn">missing email</span>'}
         </div>
     `).join('');
