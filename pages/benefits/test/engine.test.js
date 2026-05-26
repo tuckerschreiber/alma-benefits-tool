@@ -7,6 +7,7 @@ import {
   computeResults,
   detectConcerns,
   computeEligibleAmounts,
+  formatNightsLine,
   SERVICE_NAMES
 } from '../src/engine.js';
 import { ALMA_SERVICES, RULES } from '../src/rules.js';
@@ -503,4 +504,41 @@ test('prenatal user at week 36 matches the prenatal registered_nursing rule once
   const pdnMatches = matches.filter((m) => m.service === 'registered_nursing');
   assert.strictEqual(pdnMatches.length, 1);
   assert.strictEqual(pdnMatches[0].priority, 'medium');
+});
+
+// ----- formatNightsLine -----
+
+test('formatNightsLine: $10,000 at $50/hr, 10hr nights → "≈ 20 nights of overnight care (10 hrs each, before HST)"', () => {
+  assert.strictEqual(
+    formatNightsLine(10000, 50, 10),
+    '≈ 20 nights of overnight care (10 hrs each, before HST)'
+  );
+});
+
+test('formatNightsLine: floors fractional nights', () => {
+  // $1,000 / $50 = 20 hrs; 20 / 10 = 2 nights exactly
+  assert.strictEqual(formatNightsLine(1000, 50, 10), '≈ 2 nights of overnight care (10 hrs each, before HST)');
+  // $1,099 / $50 = 21.98 hrs → 21 hrs floor → 2.1 nights → 2 nights floor
+  assert.strictEqual(formatNightsLine(1099, 50, 10), '≈ 2 nights of overnight care (10 hrs each, before HST)');
+});
+
+test('formatNightsLine: returns "" when amount is 0/missing', () => {
+  assert.strictEqual(formatNightsLine(0, 50, 10), '');
+  assert.strictEqual(formatNightsLine(null, 50, 10), '');
+  assert.strictEqual(formatNightsLine(undefined, 50, 10), '');
+});
+
+test('formatNightsLine: returns "" when hourlyRate is null/0', () => {
+  assert.strictEqual(formatNightsLine(10000, null, 10), '');
+  assert.strictEqual(formatNightsLine(10000, 0, 10), '');
+});
+
+test('formatNightsLine: returns "" when result would be 0 nights', () => {
+  // $100 / $50 = 2 hrs; 2 / 10 = 0 nights → show nothing rather than "≈ 0 nights"
+  assert.strictEqual(formatNightsLine(100, 50, 10), '');
+});
+
+test('formatNightsLine: singular "1 night" when exactly one', () => {
+  // $500 / $50 = 10 hrs; 10 / 10 = 1 night
+  assert.strictEqual(formatNightsLine(500, 50, 10), '≈ 1 night of overnight care (10 hrs each, before HST)');
 });

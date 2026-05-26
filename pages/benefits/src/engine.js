@@ -256,6 +256,26 @@ export function computeEligibleAmounts(coverage) {
 }
 
 /**
+ * Format the "≈ N nights of overnight care" sub-line shown under each RN/PSW
+ * row in the Coverage at a Glance snapshot. Returns '' when the line should be
+ * hidden — when the eligible amount is missing/zero, the hourly rate is unset,
+ * or the math would produce 0 nights.
+ *
+ * The math is intentionally pre-HST: insurer maximums are pre-tax, and the
+ * "(before HST)" qualifier keeps clients from confusing this with a final bill.
+ */
+export function formatNightsLine(eligibleAmount, hourlyRate, nightHours) {
+  if (!eligibleAmount || eligibleAmount <= 0) return '';
+  if (!hourlyRate || hourlyRate <= 0) return '';
+  if (!nightHours || nightHours <= 0) return '';
+  const hours = Math.floor(eligibleAmount / hourlyRate);
+  const nights = Math.floor(hours / nightHours);
+  if (nights <= 0) return '';
+  const noun = nights === 1 ? 'night' : 'nights';
+  return `≈ ${nights} ${noun} of overnight care (${nightHours} hrs each, before HST)`;
+}
+
+/**
  * Top-level orchestrator. Composes the full pipeline and produces the data shape the
  * results UI consumes.
  */
