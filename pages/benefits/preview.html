@@ -2000,6 +2000,17 @@
         return out;
       }
 
+      function formatNightsLine(eligibleAmount, hourlyRate, nightHours) {
+        if (!eligibleAmount || eligibleAmount <= 0) return '';
+        if (!hourlyRate || hourlyRate <= 0) return '';
+        if (!nightHours || nightHours <= 0) return '';
+        const hours = Math.floor(eligibleAmount / hourlyRate);
+        const nights = Math.floor(hours / nightHours);
+        if (nights <= 0) return '';
+        const noun = nights === 1 ? 'night' : 'nights';
+        return '≈ ' + nights + ' ' + noun + ' of overnight care (' + nightHours + ' hrs each, before HST)';
+      }
+
       function computeResults(rawInputs, rules, almaServices, today) {
         if (!today) today = new Date();
         const normalized = normalizeInputs(rawInputs, today);
@@ -2058,14 +2069,17 @@
       }
 
       // ---------- PDF (mirror of pages/benefits/src/pdf.js + ALMA_RN_HOURLY_RATE from src/rules.js) ----------
-      // Last synced from src/pdf.js @ ada5ad2 (Phase E commit 1). When changing
+      // Last synced from src/pdf.js @ 3a47695 (round 4). When changing
       // src/pdf.js, also update this mirror and bump the SHA above. Tests run against
       // src/pdf.js only — drift between source and mirror is silent in CI.
-      // Alma's published hourly rate for in-home postpartum nursing support.
-      // Used by buildEstimateDocDefinition to compute "Estimated Hours" from the
-      // eligible $ amount. Leave null pre-launch — the Download Coverage Estimate
-      // button is hidden until this is a numeric value.
-      const ALMA_RN_HOURLY_RATE = null;
+      // Alma's published hourly rates for in-home postpartum care.
+      // Used by buildEstimateDocDefinition to compute "Estimated Hours" from
+      // eligible $ amounts, and by formatNightsLine to display "≈ N nights of
+      // overnight care" sub-lines on the results snapshot. ALMA_NIGHT_HOURS
+      // defines the length of an overnight shift (typical 10pm–8am = 10 hrs).
+      const ALMA_RN_HOURLY_RATE = 50;
+      const ALMA_PSW_HOURLY_RATE = 50;
+      const ALMA_NIGHT_HOURS = 10;
 
       const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
                       'July', 'August', 'September', 'October', 'November', 'December'];
