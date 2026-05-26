@@ -166,6 +166,38 @@ function showMessage(text, type) {
     setTimeout(() => div.remove(), 5000);
 }
 
+// Paginated Airtable fetch — Airtable returns max 100 records/page, so the
+// "all clients" mode needs to follow the offset cursor until exhausted.
+async function fetchAllRecords(table, formula) {
+    const baseUrl = `https://api.airtable.com/v0/${settings.baseId}/${encodeURIComponent(table)}`;
+    let offset;
+    const records = [];
+    do {
+        const params = new URLSearchParams();
+        if (formula) params.set('filterByFormula', formula);
+        if (offset) params.set('offset', offset);
+        const url = `${baseUrl}?${params.toString()}`;
+        const res = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${settings.apiKey}`,
+                'Content-Type': 'application/json',
+            },
+        });
+        if (!res.ok) {
+            throw new Error(`Failed to fetch ${table}: ${res.status}`);
+        }
+        const data = await res.json();
+        records.push(...data.records);
+        offset = data.offset;
+    } while (offset);
+    return records;
+}
+
+function getSearchMode() {
+    const checked = document.querySelector('input[name="searchMode"]:checked');
+    return checked ? checked.value : 'unmatched';
+}
+
 async function loadClients() {
     await configReady;
     if (!settings.apiKey || !settings.baseId) {
@@ -176,23 +208,15 @@ async function loadClients() {
     try {
         document.getElementById('resultsArea').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading clients and care team...</p></div>';
 
-        // Fetch clients with filters
-        const formula = 'AND({Matching Stage}="Unmatched",{Deposit Received Date}!="",{Status}!="Cancelled")';
-        const clientsUrl = `https://api.airtable.com/v0/${settings.baseId}/${encodeURIComponent(settings.clientsTable)}?filterByFormula=${encodeURIComponent(formula)}`;
-        
-        const clientsRes = await fetch(clientsUrl, {
-            headers: { 
-                'Authorization': `Bearer ${settings.apiKey}`,
-                'Content-Type': 'application/json'
-            }
-        });
+        const mode = getSearchMode();
+        // Unmatched mode: today's prioritized work list.
+        // All mode: drop the Matching Stage + Deposit gates so the tool can be
+        // used for lead nurture (pre-deposit) and rematch (already-matched).
+        const formula = mode === 'unmatched'
+            ? 'AND({Matching Stage}="Unmatched",{Deposit Received Date}!="",{Status}!="Cancelled")'
+            : '{Status}!="Cancelled"';
 
-        if (!clientsRes.ok) {
-            throw new Error(`Failed to fetch clients: ${clientsRes.status}`);
-        }
-
-        const clientsData = await clientsRes.json();
-        let clients = clientsData.records;
+        let clients = await fetchAllRecords(settings.clientsTable, formula);
 
         // Apply date filter if set
         const dateFilter = document.getElementById('startDateFilter').value;
@@ -205,48 +229,83 @@ async function loadClients() {
         }
 
         allClients = clients;
+        allCareTeam = await fetchAllRecords(settings.careTeamTable);
 
-        // Fetch care team
-        const careTeamUrl = `https://api.airtable.com/v0/${settings.baseId}/${encodeURIComponent(settings.careTeamTable)}`;
-        const careTeamRes = await fetch(careTeamUrl, {
-            headers: { 
-                'Authorization': `Bearer ${settings.apiKey}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!careTeamRes.ok) {
-            throw new Error(`Failed to fetch care team: ${careTeamRes.status}`);
-        }
-
-        const careTeamData = await careTeamRes.json();
-        allCareTeam = careTeamData.records;
-
-        // Populate dropdown
+        // Populate dropdown — show Matching Stage badge in 'all' mode so
+        // coordinators can tell prospects from in-care clients at a glance.
         const select = document.getElementById('clientSelect');
         select.innerHTML = '<option value="">-- Select a client --</option>';
-        
+
         allClients.forEach((client, index) => {
             const option = document.createElement('option');
             option.value = index;
             const name = client.fields["Mama's Full Name"] || client.fields.Name || 'Client ' + client.id;
             const raw = getStartDateRaw(client);
-            option.textContent = name + (raw ? ' (Start: ' + raw + ')' : '');
+            const stage = client.fields['Matching Stage'];
+            const stageTag = (mode === 'all' && stage) ? ` [${stage}]` : '';
+            option.textContent = name + stageTag + (raw ? ' (Start: ' + raw + ')' : '');
             select.appendChild(option);
         });
 
         select.disabled = false;
         document.getElementById('matchBtn').disabled = false;
         document.getElementById('resultsArea').innerHTML = '';
-        
+
+        // Reset name filter input
+        const filterInput = document.getElementById('clientNameFilter');
+        if (filterInput) {
+            filterInput.value = '';
+            filterClientList('');
+        }
+
         const filterMsg = dateFilter ? ` starting on or after ${dateFilter}` : '';
-        showMessage(`Loaded ${allClients.length} clients${filterMsg} and ${allCareTeam.length} care team members`, 'success');
+        const modeMsg = mode === 'all' ? ' (all clients)' : '';
+        showMessage(`Loaded ${allClients.length} clients${filterMsg}${modeMsg} and ${allCareTeam.length} care team members`, 'success');
+
+        // Pre-warm geocode cache in the background so the first Find Matches
+        // run isn't slow waiting for cold-cache FSA lookups.
+        prewarmGeocodeCache();
 
     } catch (error) {
         console.error('Load error:', error);
         document.getElementById('resultsArea').innerHTML = '';
         showMessage('Error: ' + error.message, 'error');
     }
+}
+
+function filterClientList(query) {
+    const q = (query || '').toLowerCase().trim();
+    const select = document.getElementById('clientSelect');
+    if (!select) return;
+    let visible = 0;
+    Array.from(select.options).forEach(opt => {
+        if (!opt.value) return;
+        const match = !q || opt.textContent.toLowerCase().includes(q);
+        opt.hidden = !match;
+        if (match) visible++;
+    });
+    const counter = document.getElementById('clientFilterCount');
+    if (counter) {
+        counter.textContent = q ? `${visible} match${visible === 1 ? '' : 'es'}` : '';
+    }
+}
+
+// Fire-and-forget. Geocodes every unique care-team FSA so the first
+// findMatches doesn't pay cold-cache latency. FSA lookups hit a static
+// server-side table (no rate limit), so this runs fast.
+function prewarmGeocodeCache() {
+    if (!allCareTeam.length) return;
+    const fsas = new Set();
+    for (const m of allCareTeam) {
+        const fsa = extractFSA(m.fields['Postal Code']);
+        if (fsa && !geoCache[`fsa:${fsa}`]) fsas.add(fsa);
+    }
+    if (fsas.size === 0) return;
+    (async () => {
+        for (const fsa of fsas) {
+            try { await geocodeFSA(fsa); } catch (e) { /* swallow — best effort */ }
+        }
+    })();
 }
 
 async function findMatches() {
@@ -534,9 +593,13 @@ async function performMatching(client, careTeam) {
     for (const k of uniqueFSAs) {
         if (k.startsWith('city:')) {
             const city = k.slice(5);
+            // City lookups go to Nominatim — keep the courtesy delay between
+            // requests (1 req/sec is the public-tier limit).
             if (!geoCache[city]) { await geocodeCity(city); await sleep(1100); }
         } else {
-            if (!geoCache[`fsa:${k}`]) { await geocodeFSA(k); await sleep(1100); }
+            // FSA lookups hit a static server-side table; no rate limit, so
+            // skip the sleep that used to add ~1s per uncached FSA.
+            if (!geoCache[`fsa:${k}`]) await geocodeFSA(k);
         }
     }
 

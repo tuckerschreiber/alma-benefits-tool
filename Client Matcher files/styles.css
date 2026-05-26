@@ -447,6 +447,36 @@ button:disabled {
     padding: 0.5rem 0.9rem;
     font-size: 0.9rem;
 }
+
+.mode-toggle {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    padding: 0.6rem 0.85rem;
+    background: var(--warm-white);
+    border: 2px solid var(--light-sage);
+    border-radius: 8px;
+}
+.mode-toggle label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+    font-weight: 500;
+    cursor: pointer;
+}
+.mode-toggle input[type="radio"] {
+    width: auto;
+    margin: 0;
+    accent-color: var(--terracotta);
+}
+
+.filter-count-inline {
+    font-size: 0.8rem;
+    color: var(--sage);
+    font-weight: 400;
+    margin-left: 0.5rem;
+}
 .email-draft-warn {
     color: #a13;
     font-size: 0.85rem;
