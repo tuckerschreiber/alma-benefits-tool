@@ -41,7 +41,7 @@ test('returns null when hourlyRate is null/0/undefined', () => {
   );
 });
 
-test('$2000 nursing at $90/hr → 22 hours, $1,980 cost', () => {
+test('$2000 nursing at $90/hr → 22 hours, $2,000 eligible', () => {
   const doc = buildEstimateDocDefinition(baseState, baseResults, { rnHourlyRate: 90, pswHourlyRate: 90, today: TODAY });
   const flat = JSON.stringify(doc);
   assert.match(flat, /22 hours/);
@@ -49,7 +49,7 @@ test('$2000 nursing at $90/hr → 22 hours, $1,980 cost', () => {
   assert.match(flat, /\$90\.00/);
 });
 
-test('$1500 nursing at $100/hr → 15 hours, $1,500 cost (clean division)', () => {
+test('$1500 nursing at $100/hr → 15 hours, $1,500 eligible (clean division)', () => {
   const doc = buildEstimateDocDefinition(
     baseState,
     { nursing: { eligibleAmount: 1500 } },
@@ -90,6 +90,10 @@ test('includes purpose statement, disclaimer, and concierge footer', () => {
   assert.match(flat, /does not guarantee reimbursement/i);
   assert.match(flat, /Postnatal Care Concierge/i);
   assert.match(flat, /Private Duty Nursing/);
+  assert.match(flat, /Service Estimate/);
+  assert.match(flat, /Hourly rate/);
+  assert.match(flat, /Eligible amount/);
+  assert.match(flat, /Estimated hours/);
 });
 
 // ---------- Province inference + name fallback ----------
