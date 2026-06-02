@@ -11,7 +11,7 @@
         acupuncture: 'Acupuncture',
         lactation_consulting: 'Lactation Consultant / IBCLC',
         postpartum_doula_care: 'Certified Postpartum Doula',
-        registered_nursing: 'Private Duty Nursing',
+        registered_nursing: 'In-Home Postpartum Support',
         psw: 'Personal Support Worker (PSW)',
         mental_health: 'Psychotherapy / Mental Health Support',
         nutritionist: 'Nutrition Counselling'
@@ -79,7 +79,7 @@
           service: 'registered_nursing',
           appliesWhen: { weeksUntilDueMax: 4 },
           dosing: { sessions: 2, estimatedSessionCost: 220, window: 'first 2 weeks postpartum' },
-          rationale: 'A few in-home nursing visits in the first two weeks catch feeding, healing, and newborn questions before they escalate.',
+          rationale: 'Overnight in-home support in the first two weeks helps with sleep, feeding routines, and a smoother transition home.',
           priority: 'medium'
         },
         // ----- Postpartum-specific rules (apply when user is already postpartum) -----
@@ -87,7 +87,7 @@
           service: 'registered_nursing',
           appliesWhen: { isPostpartum: true, weeksPostpartumMax: 2 },
           dosing: { sessions: 2, estimatedSessionCost: 220, window: 'first 2 weeks postpartum' },
-          rationale: 'In-home nursing visits in the first two weeks help with feeding, healing, and newborn questions before they escalate.',
+          rationale: 'Overnight in-home support in the first two weeks helps with sleep, feeding routines, and a smoother transition home.',
           priority: 'high'
         },
         {
@@ -133,7 +133,7 @@
         },
         hbp: {
           service: 'registered_nursing',
-          rationale: 'With elevated blood pressure history, in-home nursing checks add an extra layer of monitoring during recovery.',
+          rationale: 'With a history of elevated blood pressure, overnight in-home support gives you an extra layer of help during the recovery weeks.',
           dosing: { sessions: 3, estimatedSessionCost: 220, window: 'first 3 weeks postpartum' },
           priority: 'high',
           concernCallout: true
@@ -161,7 +161,7 @@
         },
         ama: {
           service: 'registered_nursing',
-          rationale: 'Postpartum recovery for parents over 35 benefits from extra clinical follow-up in the first weeks.',
+          rationale: 'Recovery often takes a bit more time for parents over 35 — overnight in-home support in the early weeks helps you rest while you reset.',
           dosing: { sessions: 2, estimatedSessionCost: 220, window: 'first 2 weeks postpartum' },
           priority: 'high',
           concernCallout: true
@@ -372,36 +372,35 @@
 
         const eligibleAmounts = computeEligibleAmounts(normalized.coverage);
 
+        const recommendedSet = new Set(recommendations.map(function (r) { return r.service; }));
+        const alsoCovered = eligibleServiceIds.filter(function (id) { return !recommendedSet.has(id); });
+
         return {
           normalized: normalized,
           eligibleServiceIds: eligibleServiceIds,
           recommendations: recommendations,
           eligibleAmounts: eligibleAmounts,
-          detectedConcerns: detectedConcerns
+          detectedConcerns: detectedConcerns,
+          alsoCovered: alsoCovered
         };
       }
 
-      // ---------- PDF (mirror of pages/benefits/src/pdf.js + ALMA_RN_HOURLY_RATE from src/rules.js) ----------
-      // Last synced from src/pdf.js @ ada5ad2 (Phase E commit 1). When changing
-      // src/pdf.js, also update this mirror and bump the SHA above. Tests run against
+      // ---------- PDF (mirror of pages/benefits/src/pdf.js + ALMA_OVERNIGHT_HOURLY_RATE from src/rules.js) ----------
+      // When changing src/pdf.js, also update this mirror. Tests run against
       // src/pdf.js only — drift between source and mirror is silent in CI.
-      // Alma's published hourly rate for in-home postpartum nursing support.
-      // Used by buildEstimateDocDefinition to compute "Estimated Hours" from the
-      // eligible $ amount. Leave null pre-launch — the Download Coverage Estimate
-      // button is hidden until this is a numeric value.
-      const ALMA_RN_HOURLY_RATE = null;
+      const ALMA_OVERNIGHT_HOURLY_RATE = 48;
 
       const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
                       'July', 'August', 'September', 'October', 'November', 'December'];
 
-      // Canadian postal-code first-letter → province. Some letters span multiple
-      // provinces in reality; these are the dominant CRM-style assignments.
-      // X covers NT/NU — we collapse to NT for simplicity.
       const POSTAL_PROVINCE = {
         A: 'NL', B: 'NS', C: 'PE', E: 'NB', G: 'QC', H: 'QC', J: 'QC',
         K: 'ON', L: 'ON', M: 'ON', N: 'ON', P: 'ON',
         R: 'MB', S: 'SK', T: 'AB', V: 'BC', X: 'NT', Y: 'YT'
       };
+
+      const SHIFT_HOURS = 10;
+      const HST_RATE = 0.13;
 
       function formatLongDate(d) {
         return MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
@@ -411,28 +410,114 @@
         return '$' + n.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       }
 
-      function buildPreparedFor(lead) {
-        const name = ((lead.firstName || '').trim() + ' ' + (lead.lastName || '').trim()).trim() || '—';
+      function parseLocalDate(value) {
+        if (!value || typeof value !== 'string') return null;
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+        if (!m) return null;
+        return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+      }
+
+      function fullName(lead) {
+        return ((lead.firstName || '').trim() + ' ' + (lead.lastName || '').trim()).trim() || '—';
+      }
+
+      function clientAddressLines(lead) {
         const street = (lead.streetAddress || '').trim();
         const city = (lead.city || '').trim();
         const postal = (lead.postalCode || '').trim().toUpperCase();
         const province = postal ? POSTAL_PROVINCE[postal.charAt(0)] : '';
         const cityWithProv = [city, province].filter(Boolean).join(', ');
-        const cityLine = [cityWithProv, postal].filter(Boolean).join(' · ');
+        const cityLine = [cityWithProv, postal].filter(Boolean).join(' ');
+        const out = [];
+        if (street) out.push(street);
+        if (cityLine) out.push(cityLine);
+        return out;
+      }
 
-        const lines = [{ text: 'Prepared for: ' + name, fontSize: 12, margin: [0, 4, 0, 0] }];
-        if (street) lines.push({ text: street, fontSize: 10, color: '#555' });
-        if (cityLine) lines.push({ text: cityLine, fontSize: 10, color: '#555' });
+      function buildClientColumn(lead) {
+        const lines = [
+          { text: 'Service Recipient Details:', bold: true, fontSize: 10 },
+          { text: fullName(lead), fontSize: 10, margin: [0, 2, 0, 0] }
+        ];
+        const addrs = clientAddressLines(lead);
+        for (let i = 0; i < addrs.length; i++) {
+          lines.push({ text: addrs[i], fontSize: 10 });
+        }
+        if (lead.email) lines.push({ text: lead.email, fontSize: 10, margin: [0, 6, 0, 0] });
+        if (lead.phone) lines.push({ text: lead.phone, fontSize: 10 });
         return lines;
       }
 
+      function buildAlmaColumn() {
+        return [
+          { text: 'Alma Care Postnatal', bold: true, fontSize: 10 },
+          { text: '280 Bloor St W', fontSize: 10, margin: [0, 2, 0, 0] },
+          { text: 'Toronto, ON', fontSize: 10 },
+          { text: '647-947-2792', fontSize: 10, margin: [0, 6, 0, 0] },
+          { text: 'contact@almacare.ca', fontSize: 10 }
+        ];
+      }
+
+      function buildDescription(lead) {
+        const due = parseLocalDate(lead.dueDate);
+        const dueText = due ? formatLongDate(due) : '';
+        if (lead.isPostpartum && dueText) {
+          return 'The client gave birth on ' + dueText + ' and is currently in the postpartum recovery period. In-home overnight postpartum support is recommended to help with rest, sleep, and a smoother transition through the early weeks at home.';
+        }
+        if (lead.isPostpartum) {
+          return 'The client is currently in the postpartum recovery period. In-home overnight postpartum support is recommended to help with rest, sleep, and a smoother transition through the early weeks at home.';
+        }
+        if (dueText) {
+          return 'The client is expecting on ' + dueText + '. In-home overnight postpartum support is recommended in the early weeks after birth to help with rest, sleep, and a smoother transition home.';
+        }
+        return 'In-home overnight postpartum support is recommended in the early weeks after birth to help with rest, sleep, and a smoother transition home.';
+      }
+
+      function buildSupportBullets() {
+        const items = [
+          'Settling and soothing baby through the night so the parent can rest',
+          'Diaper changes, feeding support, and burping during overnight hours',
+          'Light household tasks tied to baby care — bottle washing, laundry, tidying the feeding station',
+          'Reassurance and check-ins during night feedings',
+          'A consistent overnight presence so the parent can recover and reset'
+        ];
+        return items.map(function (t) { return { text: '• ' + t, fontSize: 10, margin: [0, 1, 0, 1] }; });
+      }
+
+      function buildFeeTable(numShifts, hourlyRate) {
+        const shiftCost = SHIFT_HOURS * hourlyRate;
+        const header = [
+          { text: 'Visit', bold: true, alignment: 'center' },
+          { text: 'Shift Type', bold: true, alignment: 'center' },
+          { text: 'Total Hours', bold: true, alignment: 'center' },
+          { text: 'Hourly Rate', bold: true, alignment: 'center' },
+          { text: 'Cost per visit', bold: true, alignment: 'center' },
+          { text: 'Price', bold: true, alignment: 'center' }
+        ];
+        const subtotal = numShifts * shiftCost;
+        const subtotalText = formatCurrency(subtotal);
+        const middleRow = Math.floor((numShifts - 1) / 2);
+
+        const rows = [header];
+        for (let i = 1; i <= numShifts; i++) {
+          rows.push([
+            { text: String(i), alignment: 'center' },
+            { text: 'Overnight', alignment: 'center' },
+            { text: String(SHIFT_HOURS), alignment: 'center' },
+            { text: formatCurrency(hourlyRate), alignment: 'center' },
+            { text: formatCurrency(shiftCost), alignment: 'center' },
+            i === middleRow + 1
+              ? { text: subtotalText, alignment: 'right' }
+              : { text: '' }
+          ]);
+        }
+        return rows;
+      }
+
       /**
-       * Build a pdfmake doc-definition object for the insurer coverage estimate.
-       * Returns null when no estimate should be generated.
-       *
-       * @param {{lead: object}} state
-       * @param {{nursing?: {eligibleAmount: number}}} results
-       * @param {{hourlyRate: number|null, today: Date}} opts
+       * Build a pdfmake doc-definition object for the coverage estimate.
+       * Returns null when there isn't enough eligible coverage for at least one
+       * full overnight shift, or when the hourly rate isn't configured.
        */
       function buildEstimateDocDefinition(state, results, opts) {
         const eligibleAmount = results && results.nursing && results.nursing.eligibleAmount;
@@ -440,71 +525,101 @@
         if (!eligibleAmount || eligibleAmount <= 0) return null;
         if (!hourlyRate || hourlyRate <= 0) return null;
 
+        const shiftCost = SHIFT_HOURS * hourlyRate;
+        const numShifts = Math.floor(eligibleAmount / shiftCost);
+        if (numShifts < 1) return null;
+
         const today = (opts && opts.today) || new Date();
-        const estimatedHours = Math.floor(eligibleAmount / hourlyRate);
-        const estimatedCost = estimatedHours * hourlyRate;
+        const lead = state.lead || {};
+        const subtotal = numShifts * shiftCost;
+        const tax = Math.round(subtotal * HST_RATE * 100) / 100;
+        const total = Math.round((subtotal + tax) * 100) / 100;
+
+        const feeRows = buildFeeTable(numShifts, hourlyRate);
+        const blankCell = { text: '', border: [false, false, false, false] };
+        const totalsRows = [
+          [blankCell, blankCell, blankCell, blankCell,
+           { text: 'Subtotal', alignment: 'right', bold: true }, { text: formatCurrency(subtotal), alignment: 'right' }],
+          [blankCell, blankCell, blankCell, blankCell,
+           { text: 'Tax', alignment: 'right', bold: true }, { text: formatCurrency(tax), alignment: 'right' }],
+          [blankCell, blankCell, blankCell, blankCell,
+           { text: 'Total Cost of Care Visits', alignment: 'right', bold: true },
+           { text: formatCurrency(total), alignment: 'right', bold: true }]
+        ];
 
         return {
           pageSize: 'LETTER',
-          pageMargins: [72, 72, 72, 72],
+          pageMargins: [54, 54, 54, 54],
           defaultStyle: { font: 'Roboto', fontSize: 10, color: '#222' },
           content: [
-            { text: 'POSTPARTUM SUPPORT COVERAGE ESTIMATE', fontSize: 16, bold: true, color: '#032215' },
-            { text: 'Alma Care', fontSize: 10, color: '#555', margin: [0, 2, 0, 8] },
+            { text: 'alma care', alignment: 'center', fontSize: 16, color: '#156146', italics: true, margin: [0, 0, 0, 24] },
 
-            ...buildPreparedFor(state.lead || {}),
-            { text: 'Generated: ' + formatLongDate(today), fontSize: 10, color: '#555', margin: [0, 2, 0, 16] },
+            { text: formatLongDate(today), fontSize: 10 },
+            { text: 'ESTIMATE', bold: true, fontSize: 12, margin: [0, 6, 0, 12] },
 
-            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 468, y2: 0, lineWidth: 0.5, lineColor: '#999' }] },
-
-            { text: 'Purpose', fontSize: 11, bold: true, margin: [0, 14, 0, 4] },
             {
-              text: 'This estimate is intended to support insurance coverage inquiry or pre-determination requests. Coverage approval remains subject to insurer policies and eligibility requirements.',
-              fontSize: 10, margin: [0, 0, 0, 14]
+              columns: [
+                { width: '*', stack: buildAlmaColumn() },
+                { width: '*', stack: buildClientColumn(lead) }
+              ],
+              columnGap: 20,
+              margin: [0, 0, 0, 14]
             },
 
-            { text: 'Service Estimate', fontSize: 11, bold: true, margin: [0, 0, 0, 6] },
+            { text: 'Description of Services', bold: true, fontSize: 11, margin: [0, 0, 0, 4] },
+            { text: buildDescription(lead), fontSize: 10, margin: [0, 0, 0, 10] },
+
+            { text: 'Anticipated overnight support includes:', bold: true, fontSize: 11, margin: [0, 0, 0, 4] },
+            ...buildSupportBullets(),
+            {
+              text: 'In-home overnight support is focused on helping the parent rest, recover, and feel supported through the early weeks at home.',
+              fontSize: 10, margin: [0, 8, 0, 14]
+            },
+
+            { text: 'In-Home Postpartum Support', bold: true, fontSize: 11 },
+            { text: 'Provider assigned at booking through Alma Care concierge.', fontSize: 10, color: '#555', margin: [0, 0, 0, 14] },
+
+            { text: 'Preliminary Care Plan & Fee Structure', bold: true, fontSize: 11, margin: [0, 0, 0, 6] },
             {
               table: {
-                widths: [120, '*'],
-                body: [
-                  [{ text: 'Service Type', bold: true }, 'Postpartum In-Home Nursing Support'],
-                  [{ text: 'Pathway', bold: true }, 'RN eligible pathway'],
-                  [{ text: 'Hourly Rate', bold: true }, formatCurrency(hourlyRate)],
-                  [{ text: 'Estimated Hours', bold: true }, estimatedHours + ' hours'],
-                  [{ text: 'Estimated Cost', bold: true }, formatCurrency(estimatedCost)]
-                ]
+                headerRows: 1,
+                widths: ['auto', '*', 'auto', 'auto', 'auto', 'auto'],
+                body: feeRows
               },
               layout: {
-                hLineColor: function () { return '#ddd'; },
-                vLineColor: function () { return '#ddd'; },
+                hLineColor: function () { return '#999'; },
+                vLineColor: function () { return '#999'; },
                 hLineWidth: function () { return 0.5; },
                 vLineWidth: function () { return 0.5; },
-                paddingTop: function () { return 6; },
-                paddingBottom: function () { return 6; },
-                paddingLeft: function () { return 10; },
-                paddingRight: function () { return 10; }
+                paddingTop: function () { return 3; },
+                paddingBottom: function () { return 3; },
+                paddingLeft: function () { return 6; },
+                paddingRight: function () { return 6; }
               }
             },
             {
-              text: 'Final care plans are customized based on family needs and coverage requirements.',
-              fontSize: 9, italics: true, color: '#555', margin: [0, 8, 0, 14]
+              table: {
+                widths: ['auto', '*', 'auto', 'auto', 'auto', 'auto'],
+                body: totalsRows
+              },
+              layout: {
+                hLineColor: function () { return '#999'; },
+                vLineColor: function () { return '#999'; },
+                hLineWidth: function () { return 0.5; },
+                vLineWidth: function () { return 0.5; },
+                paddingTop: function () { return 4; },
+                paddingBottom: function () { return 4; },
+                paddingLeft: function () { return 6; },
+                paddingRight: function () { return 6; }
+              },
+              margin: [0, 0, 0, 14]
             },
 
-            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 468, y2: 0, lineWidth: 0.5, lineColor: '#999' }] },
-
             {
-              text: 'This document is an estimate only and does not guarantee reimbursement or insurer approval.',
-              fontSize: 8, italics: true, color: '#777', margin: [0, 10, 0, 0]
+              text: 'This is a preliminary estimate. To customize hours, mix overnight and daytime support, or confirm provider assignment, email concierge@almacare.ca.',
+              fontSize: 9, italics: true, color: '#555', margin: [0, 8, 0, 0]
             }
-          ],
-          footer: {
-            text: 'Questions? Speak with an Alma Postnatal Care Concierge · almacare.ca',
-            alignment: 'center',
-            fontSize: 8,
-            color: '#777',
-            margin: [0, 20, 0, 0]
-          }
+          ]
         };
       }
 
@@ -527,7 +642,6 @@
 
       const STORAGE_KEY = 'ap_benefits_state';
       const STATE_SCHEMA_VERSION = 3;
-      const CONSULT_URL = 'https://www.almacare.ca/booking/book-a-call';
       const HUBSPOT = {
         portalId: 'TODO_FILL_IN',
         formId: 'TODO_FILL_IN'
@@ -910,10 +1024,14 @@
         currentStep = n;
 
         // Progress bar: visible during intake, hidden on results.
+        // Wizard nav: hidden on results too (no further steps to continue to).
+        const wizardNav = document.querySelector('.ap-nav');
         if (n > TOTAL_STEPS) {
           progressHeader.classList.add('ap-hidden');
+          if (wizardNav) wizardNav.classList.add('ap-hidden');
         } else {
           progressHeader.classList.remove('ap-hidden');
+          if (wizardNav) wizardNav.classList.remove('ap-hidden');
           progressLabel.textContent = `Step ${n} of ${TOTAL_STEPS}`;
           progressBar.setAttribute('aria-valuenow', String(n));
           progressSegments.forEach((seg, i) => {
@@ -1308,14 +1426,21 @@
           return r.service === 'postpartum_doula_care' || r.service === 'registered_nursing';
         });
         const footnote = hasAsterisk
-          ? '<p class="ap-rec__footnote">* Pre-assessment approval may be required and varies by insurer. '
-              + '<a href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a consultation</a> '
-              + 'to get a tailored estimate.</p>'
+          ? '<p class="ap-rec__footnote">* Some insurers require pre-determination before approving coverage. '
+              + '<a href="mailto:concierge@almacare.ca">Email Alma Care concierge</a> '
+              + 'for a tailored estimate.</p>'
+          : '';
+        const alsoCovered = (results && results.alsoCovered) || [];
+        const alsoCoveredHtml = (alsoCovered.length && recs.length)
+          ? '<p class="ap-recs__also-covered">Also covered by your plan: '
+              + alsoCovered.map(function (id) { return escapeHtml(SERVICE_NAMES[id] || id); }).join(' · ')
+              + '</p>'
           : '';
         return (
           '<section class="ap-panel ap-panel--plan">'
           + '<h2>Your highest-priority postpartum supports</h2>'
           + body
+          + alsoCoveredHtml
           + footnote
           + '</section>'
         );
@@ -1326,8 +1451,8 @@
           '<section class="ap-next">'
           + '<h2>What Happens Next</h2>'
           + '<ol class="ap-next__list">'
-          +   '<li><strong>Book a complimentary consultation</strong>'
-          +     '<a class="ap-btn ap-btn--primary ap-next__cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a call →</a>'
+          +   '<li><strong>Email the Alma Care concierge</strong>'
+          +     '<a class="ap-btn ap-btn--primary ap-next__cta" href="mailto:concierge@almacare.ca">Email concierge →</a>'
           +   '</li>'
           +   '<li>Submit an intake form and refundable deposit</li>'
           +   '<li>Receive bios of qualified Postnatal Care Specialists within 2 business days</li>'
@@ -1351,7 +1476,7 @@
 
       function renderFinalCta(results) {
         const eligibleNursing = (results && results.eligibleAmounts && results.eligibleAmounts.registered_nursing) || 0;
-        const rateConfigured = typeof ALMA_RN_HOURLY_RATE === 'number' && ALMA_RN_HOURLY_RATE > 0;
+        const rateConfigured = typeof ALMA_OVERNIGHT_HOURLY_RATE === 'number' && ALMA_OVERNIGHT_HOURLY_RATE > 0;
         const showDownload = eligibleNursing > 0 && rateConfigured;
 
         return (
@@ -1365,9 +1490,6 @@
                 + '</div>'
               : ''
             )
-          + '<div class="ap-cta-row">'
-          +   '<a class="ap-btn ap-btn--' + (showDownload ? 'secondary' : 'primary') + '" id="ap-consult-cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a complimentary consultation</a>'
-          + '</div>'
           + '</section>'
         );
       }
@@ -1419,8 +1541,15 @@
 
         const adapterResults = { nursing: { eligibleAmount: eligibleNursing } };
         const today = new Date();
-        const doc = buildEstimateDocDefinition(state, adapterResults, {
-          hourlyRate: ALMA_RN_HOURLY_RATE,
+        // The PDF reads dueDate and isPostpartum from `state.lead`, but the wizard
+        // stores those at the top level of `state`. Fold them into the lead shape
+        // the PDF expects without mutating the canonical state object.
+        const leadForPdf = Object.assign({}, state.lead, {
+          dueDate: state.dueDate,
+          isPostpartum: state.isPostpartum
+        });
+        const doc = buildEstimateDocDefinition({ lead: leadForPdf }, adapterResults, {
+          hourlyRate: ALMA_OVERNIGHT_HOURLY_RATE,
           today: today
         });
         if (!doc) {
@@ -1440,7 +1569,8 @@
           }
           // Fire-and-forget — user has already received the PDF, don't block UI on Hubspot.
           submitDownloadToHubspot(state);
-          track('estimate_downloaded', { hours_estimated: Math.floor(eligibleNursing / ALMA_RN_HOURLY_RATE) });
+          const shiftCost = 10 * ALMA_OVERNIGHT_HOURLY_RATE;
+          track('estimate_downloaded', { shifts_estimated: Math.floor(eligibleNursing / shiftCost) });
           swapDownloadBlockToDone();
         }).catch(function (err) {
           console.error('pdfmake load failed', err);
@@ -1455,8 +1585,8 @@
         block.innerHTML = (
           '<div class="ap-download-block__check">✓</div>'
           + '<div class="ap-download-block__eyebrow">Coverage estimate downloaded</div>'
-          + '<p class="ap-download-block__copy">We\'ll help customize your recovery plan and navigate potential coverage opportunities.</p>'
-          + '<a class="ap-btn ap-btn--primary" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Speak with a Postnatal Care Concierge →</a>'
+          + '<p class="ap-download-block__copy">Want to tailor your hours, mix overnight and daytime, or confirm provider assignment?</p>'
+          + '<a class="ap-btn ap-btn--primary" href="mailto:concierge@almacare.ca">Email Alma Care concierge →</a>'
           + '<button type="button" class="ap-download-block__redo" id="ap-download-redo">Re-download estimate</button>'
         );
         const redoBtn = document.getElementById('ap-download-redo');
@@ -1470,8 +1600,8 @@
         if (!block) return;
         block.classList.remove('ap-download-block--done');
         block.innerHTML = (
-          '<p class="ap-download-block__copy">Couldn\'t generate the estimate. Speak with a Postnatal Care Concierge and we\'ll send you one directly.</p>'
-          + '<a class="ap-btn ap-btn--primary" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Speak with a Postnatal Care Concierge →</a>'
+          '<p class="ap-download-block__copy">We couldn\'t generate the estimate just now. Email the Alma Care concierge and we\'ll send you one directly.</p>'
+          + '<a class="ap-btn ap-btn--primary" href="mailto:concierge@almacare.ca">Email Alma Care concierge →</a>'
         );
       }
 
@@ -1591,13 +1721,6 @@
           + renderWhatHappensNext()
           + renderGiftCardsCallout(results)
           + renderFinalCta(results);
-
-        const consultBtn = document.getElementById('ap-consult-cta');
-        if (consultBtn) {
-          consultBtn.addEventListener('click', function () {
-            track('consult_cta_clicked', { source: 'results_primary_cta' });
-          });
-        }
 
         const downloadBtn = document.getElementById('ap-download-estimate');
         if (downloadBtn) {
