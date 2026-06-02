@@ -504,3 +504,131 @@ test('prenatal user at week 36 matches the prenatal registered_nursing rule once
   assert.strictEqual(pdnMatches.length, 1);
   assert.strictEqual(pdnMatches[0].priority, 'medium');
 });
+
+test('computeResults: alsoCovered lists covered services with no matching rule', () => {
+  // Return parent, 8 weeks until due, covering 5 services:
+  //   - massage_therapy        -> rule fires (appliesWhen: {})
+  //   - acupuncture            -> rule fires (appliesWhen: {})
+  //   - lactation_consulting   -> rule requires firstTimeParent=true -> no match
+  //   - psw                    -> no rule exists at all
+  //   - nutritionist           -> no rule exists at all
+  // Expect alsoCovered = [lactation_consulting, psw, nutritionist].
+  const today = new Date('2026-05-10');
+  const inputs = {
+    dueDate: '2026-07-05',
+    firstTimeParent: false,
+    coverage: {
+      massage_therapy: { amount: 500, reimbursementPercent: 100 },
+      acupuncture: { amount: 300, reimbursementPercent: 100 },
+      lactation_consulting: { amount: 300, reimbursementPercent: 100 },
+      psw: { amount: 500, reimbursementPercent: 100 },
+      nutritionist: { amount: 200, reimbursementPercent: 100 }
+    },
+    concerns: ''
+  };
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  assert.ok(Array.isArray(result.alsoCovered), 'alsoCovered should be an array');
+  assert.ok(result.alsoCovered.includes('psw'), 'psw has no rule -> alsoCovered');
+  assert.ok(result.alsoCovered.includes('nutritionist'), 'nutritionist has no rule -> alsoCovered');
+  assert.ok(result.alsoCovered.includes('lactation_consulting'), 'lactation rule did not match (not first-time parent) -> alsoCovered');
+  // Services that did get a recommendation must NOT appear in alsoCovered
+  const recommendedIds = new Set(result.recommendations.map((r) => r.service));
+  for (const id of result.alsoCovered) {
+    assert.ok(!recommendedIds.has(id), `${id} should not appear in both recommendations and alsoCovered`);
+  }
+});
+
+test('computeResults: alsoCovered is empty when every covered service has a matching rule', () => {
+  const today = new Date('2026-05-10');
+  const inputs = {
+    dueDate: '2026-07-05', // 8 weeks out, first-time parent -> matches all five rule services
+    firstTimeParent: true,
+    coverage: {
+      massage_therapy: { amount: 500, reimbursementPercent: 100 },
+      acupuncture: { amount: 300, reimbursementPercent: 100 }
+    },
+    concerns: ''
+  };
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  assert.deepEqual(result.alsoCovered, []);
+});
+
+// ----- Regression: registered_nursing must never appear twice -----
+// Round 4 feedback: "PDN shows up twice, high and medium". The engine's
+// stage gating and concern-injection dedup should prevent this. These
+// tests pin the behavior so we catch any regression that re-introduces it.
+
+test('regression: postpartum user + hbp concern -> registered_nursing appears once', () => {
+  const today = new Date('2026-05-10');
+  const inputs = {
+    dueDate: '2026-05-03',     // 1 week postpartum
+    isPostpartum: true,
+    weeksPostpartum: 1,
+    firstTimeParent: false,
+    coverage: { registered_nursing: { amount: 10000, reimbursementPercent: 100 } },
+    concerns: 'history of high blood pressure'
+  };
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  const rnRecs = result.recommendations.filter((r) => r.service === 'registered_nursing');
+  assert.strictEqual(rnRecs.length, 1, 'registered_nursing must appear exactly once');
+});
+
+test('regression: postpartum user + ama concern -> registered_nursing appears once', () => {
+  const today = new Date('2026-05-10');
+  const inputs = {
+    dueDate: '2026-05-03',
+    isPostpartum: true,
+    weeksPostpartum: 1,
+    firstTimeParent: false,
+    coverage: { registered_nursing: { amount: 10000, reimbursementPercent: 100 } },
+    concerns: 'over 35'
+  };
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  const rnRecs = result.recommendations.filter((r) => r.service === 'registered_nursing');
+  assert.strictEqual(rnRecs.length, 1);
+});
+
+test('regression: postpartum user + both hbp and ama -> registered_nursing appears once', () => {
+  const today = new Date('2026-05-10');
+  const inputs = {
+    dueDate: '2026-05-03',
+    isPostpartum: true,
+    weeksPostpartum: 1,
+    firstTimeParent: false,
+    coverage: { registered_nursing: { amount: 10000, reimbursementPercent: 100 } },
+    concerns: 'over 35 with high blood pressure history'
+  };
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  const rnRecs = result.recommendations.filter((r) => r.service === 'registered_nursing');
+  assert.strictEqual(rnRecs.length, 1);
+});
+
+test('regression: prenatal user with no stage rule match + hbp concern -> registered_nursing appears once', () => {
+  // weeksUntilDue=10, so prenatal RN rule (weeksUntilDueMax: 4) does NOT match.
+  // Concern injection adds it. Should be exactly one card.
+  const today = new Date('2026-05-10');
+  const inputs = {
+    dueDate: '2026-07-19',
+    firstTimeParent: false,
+    coverage: { registered_nursing: { amount: 10000, reimbursementPercent: 100 } },
+    concerns: 'concerned about my blood pressure'
+  };
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  const rnRecs = result.recommendations.filter((r) => r.service === 'registered_nursing');
+  assert.strictEqual(rnRecs.length, 1);
+});
+
+test('regression: prenatal user week 3 + hbp concern -> registered_nursing appears once', () => {
+  // Both prenatal RN rule AND hbp concern want to add registered_nursing.
+  // Dedup should keep exactly one card.
+  const today = new Date('2026-05-10');
+  const inputs = {
+    dueDate: '2026-05-31',     // ~3 weeks until due
+    firstTimeParent: false,
+    coverage: { registered_nursing: { amount: 10000, reimbursementPercent: 100 } },
+    concerns: 'high blood pressure'
+  };
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  const rnRecs = result.recommendations.filter((r) => r.service === 'registered_nursing');
+  assert.strictEqual(rnRecs.length, 1);
+});
