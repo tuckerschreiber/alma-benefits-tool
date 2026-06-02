@@ -8,25 +8,34 @@ const baseState = {
     lastName: 'Doe',
     streetAddress: '123 Main St',
     city: 'Toronto',
-    postalCode: 'M5V 2T6'
+    postalCode: 'M5V 2T6',
+    email: 'jane@example.com',
+    phone: '(416) 555-0100',
+    dueDate: '2026-07-19',
+    isPostpartum: false
   }
-};
-
-const baseResults = {
-  nursing: { eligibleAmount: 2000 }
 };
 
 // Local-time constructor (month is 0-indexed). Avoids ISO-string parsing
 // that lands at UTC midnight and produces wrong dates west of UTC.
-const TODAY = new Date(2026, 4, 23);
+const TODAY = new Date(2026, 5, 2);   // June 2, 2026
+
+// At $48/hr × 10hr shifts = $480/shift.
+// $10,000 eligible → floor(10000/480) = 20 shifts.
+// Subtotal = 20 × 480 = $9,600. Tax 13% = $1,248. Total = $10,848.
+const baseResults = {
+  nursing: { eligibleAmount: 10000 }
+};
+
+// ---------- Null cases ----------
 
 test('returns null when nursing eligibleAmount is 0', () => {
-  const doc = buildEstimateDocDefinition(baseState, { nursing: { eligibleAmount: 0 } }, { hourlyRate: 90, today: TODAY });
+  const doc = buildEstimateDocDefinition(baseState, { nursing: { eligibleAmount: 0 } }, { hourlyRate: 48, today: TODAY });
   assert.strictEqual(doc, null);
 });
 
 test('returns null when nursing missing entirely', () => {
-  const doc = buildEstimateDocDefinition(baseState, {}, { hourlyRate: 90, today: TODAY });
+  const doc = buildEstimateDocDefinition(baseState, {}, { hourlyRate: 48, today: TODAY });
   assert.strictEqual(doc, null);
 });
 
@@ -41,110 +50,157 @@ test('returns null when hourlyRate is null/0/undefined', () => {
   );
 });
 
-test('$2000 nursing at $90/hr → 22 hours, $1,980 cost', () => {
-  const doc = buildEstimateDocDefinition(baseState, baseResults, { hourlyRate: 90, today: TODAY });
-  const flat = JSON.stringify(doc);
-  assert.match(flat, /22 hours/);
-  assert.match(flat, /\$1,980/);
-  assert.match(flat, /\$90\.00/);
-});
-
-test('$1500 nursing at $100/hr → 15 hours, $1,500 cost (clean division)', () => {
+test('returns null when eligible amount is less than one full overnight shift', () => {
+  // $200 < $480 (one 10-hour shift at $48/hr) -> 0 shifts -> null.
   const doc = buildEstimateDocDefinition(
     baseState,
-    { nursing: { eligibleAmount: 1500 } },
-    { hourlyRate: 100, today: TODAY }
+    { nursing: { eligibleAmount: 200 } },
+    { hourlyRate: 48, today: TODAY }
+  );
+  assert.strictEqual(doc, null);
+});
+
+// ---------- Math ----------
+
+test('$10,000 eligible at $48/hr → 20 overnight shifts; subtotal $9,600, tax $1,248, total $10,848', () => {
+  const doc = buildEstimateDocDefinition(baseState, baseResults, { hourlyRate: 48, today: TODAY });
+  const flat = JSON.stringify(doc);
+  assert.match(flat, /\$9,600\.00/);
+  assert.match(flat, /\$1,248\.00/);
+  assert.match(flat, /\$10,848\.00/);
+  // 20 visit rows: visit numbers 1..20 should all appear as cell texts.
+  for (let i = 1; i <= 20; i++) {
+    assert.match(flat, new RegExp(`"text":"${i}"`));
+  }
+});
+
+test('$5,000 eligible at $48/hr → 10 shifts (capped by floor); subtotal $4,800', () => {
+  const doc = buildEstimateDocDefinition(
+    baseState,
+    { nursing: { eligibleAmount: 5000 } },
+    { hourlyRate: 48, today: TODAY }
   );
   const flat = JSON.stringify(doc);
-  assert.match(flat, /15 hours/);
-  assert.match(flat, /\$1,500/);
+  // 5000 / 480 = 10.41 -> 10 shifts. 10 × 480 = 4800.
+  assert.match(flat, /\$4,800\.00/);
 });
 
-test('"Prepared for" includes name, street, city, postal code', () => {
-  const doc = buildEstimateDocDefinition(baseState, baseResults, { hourlyRate: 90, today: TODAY });
+// ---------- Header content ----------
+
+test('header includes Alma contact details + client contact details', () => {
+  const doc = buildEstimateDocDefinition(baseState, baseResults, { hourlyRate: 48, today: TODAY });
   const flat = JSON.stringify(doc);
+  assert.match(flat, /Alma Care Postnatal/);
+  assert.match(flat, /280 Bloor St W/);
+  assert.match(flat, /contact@almacare\.ca/);
+  assert.match(flat, /Service Recipient Details/);
   assert.match(flat, /Jane Doe/);
   assert.match(flat, /123 Main St/);
-  assert.match(flat, /Toronto/);
-  assert.match(flat, /M5V 2T6/);
+  assert.match(flat, /Toronto, ON M5V 2T6/);
+  assert.match(flat, /jane@example\.com/);
 });
 
-test('"Prepared for" gracefully omits street when missing', () => {
-  const state = { lead: { ...baseState.lead, streetAddress: '' } };
-  const doc = buildEstimateDocDefinition(state, baseResults, { hourlyRate: 90, today: TODAY });
+test('date renders in long form', () => {
+  const doc = buildEstimateDocDefinition(baseState, baseResults, { hourlyRate: 48, today: TODAY });
+  assert.match(JSON.stringify(doc), /June 2, 2026/);
+});
+
+test('estimate label appears', () => {
+  const doc = buildEstimateDocDefinition(baseState, baseResults, { hourlyRate: 48, today: TODAY });
+  assert.match(JSON.stringify(doc), /ESTIMATE/);
+});
+
+// ---------- Description branches ----------
+
+test('description branches on prenatal: mentions due date', () => {
+  const doc = buildEstimateDocDefinition(baseState, baseResults, { hourlyRate: 48, today: TODAY });
   const flat = JSON.stringify(doc);
-  assert.match(flat, /Toronto/);
-  assert.doesNotMatch(flat, /123 Main St/);
+  assert.match(flat, /expecting on July 19, 2026/);
+  assert.match(flat, /In-home overnight postpartum support/);
 });
 
-test('generated date uses long form (May 23, 2026)', () => {
-  const doc = buildEstimateDocDefinition(baseState, baseResults, { hourlyRate: 90, today: TODAY });
+test('description branches on postpartum: mentions birth date', () => {
+  const state = { lead: { ...baseState.lead, isPostpartum: true, dueDate: '2026-04-15' } };
+  const doc = buildEstimateDocDefinition(state, baseResults, { hourlyRate: 48, today: TODAY });
   const flat = JSON.stringify(doc);
-  assert.match(flat, /May 23, 2026/);
+  assert.match(flat, /gave birth on April 15, 2026/);
+  assert.match(flat, /currently in the postpartum recovery period/);
 });
 
-test('includes purpose statement, disclaimer, and concierge footer', () => {
-  const doc = buildEstimateDocDefinition(baseState, baseResults, { hourlyRate: 90, today: TODAY });
+// ---------- Non-medical language pinning ----------
+
+test('no medical/clinical language anywhere in the document', () => {
+  const doc = buildEstimateDocDefinition(baseState, baseResults, { hourlyRate: 48, today: TODAY });
   const flat = JSON.stringify(doc);
-  assert.match(flat, /insurance coverage inquiry or pre-determination/i);
-  assert.match(flat, /does not guarantee reimbursement/i);
-  assert.match(flat, /Postnatal Care Concierge/i);
-  assert.match(flat, /RN eligible pathway/);
-  assert.match(flat, /Postpartum In-Home Nursing Support/i);
+  assert.doesNotMatch(flat, /\bRN\b/);
+  assert.doesNotMatch(flat, /Registered Nurse/i);
+  assert.doesNotMatch(flat, /RNAO/i);
+  assert.doesNotMatch(flat, /Private Duty Nursing/i);
+  assert.doesNotMatch(flat, /clinical/i);
+  assert.doesNotMatch(flat, /vital signs/i);
+  assert.doesNotMatch(flat, /complication/i);
 });
 
-// ---------- Province inference + name fallback ----------
+test('service label uses "In-Home Postpartum Support"', () => {
+  const doc = buildEstimateDocDefinition(baseState, baseResults, { hourlyRate: 48, today: TODAY });
+  assert.match(JSON.stringify(doc), /In-Home Postpartum Support/);
+});
 
-test('"Prepared for" includes inferred province between city and postal code', () => {
-  const doc = buildEstimateDocDefinition(baseState, baseResults, { hourlyRate: 90, today: TODAY });
+test('footer points to concierge email, not consult booking', () => {
+  const doc = buildEstimateDocDefinition(baseState, baseResults, { hourlyRate: 48, today: TODAY });
   const flat = JSON.stringify(doc);
-  // M5V 2T6 → first letter M → ON
-  assert.match(flat, /Toronto, ON · M5V 2T6/);
+  assert.match(flat, /concierge@almacare\.ca/);
+  assert.doesNotMatch(flat, /book-a-call/);
+  assert.doesNotMatch(flat, /Book a consultation/i);
 });
 
-test('"Prepared for" infers province for a BC postal code', () => {
+// ---------- Province + name fallbacks ----------
+
+test('province is inferred from postal code (M → ON)', () => {
+  const doc = buildEstimateDocDefinition(baseState, baseResults, { hourlyRate: 48, today: TODAY });
+  assert.match(JSON.stringify(doc), /Toronto, ON M5V 2T6/);
+});
+
+test('province is inferred for a BC postal code', () => {
   const state = { lead: { ...baseState.lead, city: 'Vancouver', postalCode: 'V6B 5K3' } };
-  const doc = buildEstimateDocDefinition(state, baseResults, { hourlyRate: 90, today: TODAY });
-  assert.match(JSON.stringify(doc), /Vancouver, BC · V6B 5K3/);
+  const doc = buildEstimateDocDefinition(state, baseResults, { hourlyRate: 48, today: TODAY });
+  assert.match(JSON.stringify(doc), /Vancouver, BC V6B 5K3/);
 });
 
-test('"Prepared for" renders "—" when both first and last name are missing', () => {
-  const state = { lead: { firstName: '', lastName: '', city: 'Toronto', postalCode: 'M5V 2T6' } };
-  const doc = buildEstimateDocDefinition(state, baseResults, { hourlyRate: 90, today: TODAY });
-  assert.match(JSON.stringify(doc), /Prepared for: —/);
+test('name falls back to em-dash when both first and last are missing', () => {
+  const state = { lead: { firstName: '', lastName: '', city: 'Toronto', postalCode: 'M5V 2T6', dueDate: '2026-07-19' } };
+  const doc = buildEstimateDocDefinition(state, baseResults, { hourlyRate: 48, today: TODAY });
+  assert.match(JSON.stringify(doc), /"text":"—"/);
 });
 
-test('HSA-applied amount is reflected when caller folds it into eligibleAmount', () => {
-  // The pdf builder trusts the caller to have folded HSA dollars into
-  // results.nursing.eligibleAmount upstream. This test pins that contract.
-  const results = { nursing: { eligibleAmount: 2500 } }; // $2000 nursing benefit + $500 HSA
-  const doc = buildEstimateDocDefinition(baseState, results, { hourlyRate: 90, today: TODAY });
+test('street line is omitted when streetAddress is empty', () => {
+  const state = { lead: { ...baseState.lead, streetAddress: '' } };
+  const doc = buildEstimateDocDefinition(state, baseResults, { hourlyRate: 48, today: TODAY });
   const flat = JSON.stringify(doc);
-  // 2500 / 90 = 27.77 → floor 27 → cost 2430
-  assert.match(flat, /27 hours/);
-  assert.match(flat, /\$2,430/);
+  assert.doesNotMatch(flat, /123 Main St/);
+  assert.match(flat, /Toronto, ON M5V 2T6/);
 });
 
 // ---------- buildEstimateFilename ----------
 
 test('buildEstimateFilename: standard last name + date', () => {
   const name = buildEstimateFilename({ lead: { lastName: 'Doe' } }, TODAY);
-  assert.strictEqual(name, 'alma-coverage-estimate-doe-2026-05-23.pdf');
+  assert.strictEqual(name, 'alma-coverage-estimate-doe-2026-06-02.pdf');
 });
 
 test('buildEstimateFilename: strips non-alphanumeric from last name', () => {
   const name = buildEstimateFilename({ lead: { lastName: "O'Brien-Smith" } }, TODAY);
-  assert.strictEqual(name, 'alma-coverage-estimate-obriensmith-2026-05-23.pdf');
+  assert.strictEqual(name, 'alma-coverage-estimate-obriensmith-2026-06-02.pdf');
 });
 
 test('buildEstimateFilename: falls back to "family" when lastName is empty/missing', () => {
   assert.strictEqual(
     buildEstimateFilename({ lead: { lastName: '' } }, TODAY),
-    'alma-coverage-estimate-family-2026-05-23.pdf'
+    'alma-coverage-estimate-family-2026-06-02.pdf'
   );
   assert.strictEqual(
     buildEstimateFilename({ lead: {} }, TODAY),
-    'alma-coverage-estimate-family-2026-05-23.pdf'
+    'alma-coverage-estimate-family-2026-06-02.pdf'
   );
 });
 
