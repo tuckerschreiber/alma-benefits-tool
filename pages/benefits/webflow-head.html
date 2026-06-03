@@ -1,6 +1,24 @@
-<script defer src="https://cdn.jsdelivr.net/gh/tuckerschreiber/alma-benefits-tool@0dd3a8d/pages/benefits/app.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/tuckerschreiber/alma-benefits-tool@e6a42d4/pages/benefits/app.js"></script>
 
 <style>
+    /* ---------- Design tokens ---------- */
+    :root {
+      --ap-bg: #FFFAF4;
+      --ap-surface: #FFFFFF;
+      --ap-surface-2: #FBF6EC;     /* recessed/nested surface */
+      --ap-border: #E5D8C0;        /* slightly more visible than the prior bone */
+      --ap-border-soft: #EFE5D2;   /* for inner dividers */
+      --ap-ink: #032215;
+      --ap-ink-2: #2A3A32;
+      --ap-ink-3: #5C6660;
+      --ap-ink-4: #8A938E;
+      --ap-brand: #156146;
+      --ap-brand-tint: #E8F0EC;
+      --ap-accent: #B8860B;
+      --ap-warm: #F4E9DD;
+      --ap-shadow-card: 0 1px 2px rgba(3,34,21,0.04), 0 6px 18px rgba(3,34,21,0.04);
+    }
+
     /* ---------- Reset / base ---------- */
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -79,16 +97,64 @@
     }
 
     /* ---------- Landing screen ---------- */
-    .ap-landing { display: flex; flex-direction: column; gap: 28px; }
+    .ap-landing { display: flex; flex-direction: column; gap: 20px; }
     .ap-landing--hidden { display: none; }
-    .ap-landing__hero h1 { font-size: 32px; line-height: 1.2; margin-bottom: 16px; }
-    .ap-landing__hero p { color: #2a3a32; margin-bottom: 16px; }
-    .ap-landing__chips { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0 0 16px 0; }
-    .ap-landing__chips li { background: rgb(235, 225, 213); color: #032215; padding: 6px 14px; border-radius: 999px; font-size: 14px; }
-    .ap-landing__registry { font-style: italic; color: #4a5a52; }
-    .ap-landing__panel { background: rgba(21, 97, 70, 0.04); border: 1px solid rgb(235, 225, 213); border-radius: 12px; padding: 24px; }
-    .ap-landing__panel h2 { font-size: 20px; margin-bottom: 10px; }
-    .ap-landing__disclaimer { font-size: 12px; color: #777; line-height: 1.5; }
+    .ap-landing__hero h1 {
+      font-size: 34px;
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      margin-bottom: 16px;
+    }
+    .ap-landing__hero p {
+      color: var(--ap-ink-2);
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .ap-landing__chips {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0;
+      margin: 0 0 8px 0;
+    }
+    .ap-landing__chips li {
+      display: inline-flex;
+      background: var(--ap-warm);
+      color: var(--ap-ink);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      line-height: 1.3;
+      width: auto;
+    }
+    .ap-landing__registry {
+      color: var(--ap-ink-3);
+      font-size: 14px;
+      line-height: 1.55;
+      margin-top: 8px;
+    }
+    .ap-landing__disclaimer {
+      font-size: 12px;
+      color: var(--ap-ink-4);
+      line-height: 1.5;
+      margin-top: 8px;
+    }
+    .ap-landing__cta-row {
+      margin-top: 8px;
+      display: flex;
+      justify-content: flex-start;
+    }
+    .ap-landing__cta-row .ap-btn--continue {
+      width: auto;
+      min-width: 220px;
+      padding: 14px 32px;
+    }
+    @media (max-width: 480px) {
+      .ap-landing__hero h1 { font-size: 28px; }
+      .ap-landing__cta-row .ap-btn--continue { width: 100%; }
+    }
     .ap-assessment--hidden { display: none; }
 
     /* ---------- Step sections ---------- */
@@ -109,23 +175,59 @@
     }
 
     .ap-step__header h2 {
-      font-size: 28px;
-      line-height: 1.25;
+      font-size: 26px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
       font-weight: 500;
-      color: #032215;
+      color: var(--ap-ink);
     }
 
     .ap-step__subhead {
-      color: #555;
+      color: var(--ap-ink-3);
       font-size: 15px;
+      line-height: 1.5;
+    }
+
+    /* A visual section break inside a step — used to chunk "about you"
+       from "your contact details" so step 1 doesn't read as a wall of form. */
+    .ap-step__divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 12px 0 4px;
+      color: var(--ap-ink-3);
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .ap-step__divider::before,
+    .ap-step__divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--ap-border-soft);
+    }
+
+    /* Two-column field row for paired inputs (first/last name, city/postal). */
+    .ap-field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 480px) {
+      .ap-field-row {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
     }
 
     /* ---------- Card (reserved for later use) ---------- */
     .ap-card {
-      background: #ffffff;
-      border: 1px solid rgb(235, 225, 213);
+      background: var(--ap-surface);
+      border: 1px solid var(--ap-border);
       border-radius: 12px;
       padding: 24px;
+      box-shadow: var(--ap-shadow-card);
     }
 
     /* ---------- Field group ---------- */
@@ -664,53 +766,66 @@
 
     /* ---------- Gift cards callout (Step 2 + results) ---------- */
     .ap-gift-callout {
-      margin-top: 32px;
+      margin-top: 8px;
       padding: 20px 24px;
-      background: #f5f1ea;
-      border-left: 4px solid #032215;
-      border-radius: 8px;
+      background: var(--ap-warm);
+      border-radius: 12px;
     }
     .ap-gift-callout h3 {
-      margin: 0 0 8px;
-      font-size: 18px;
-      color: #032215;
+      margin: 0 0 6px;
+      font-size: 17px;
+      color: var(--ap-ink);
+      font-weight: 500;
+      letter-spacing: -0.005em;
     }
     .ap-gift-callout p {
       margin: 0 0 12px;
-      color: #2a3a32;
+      color: var(--ap-ink-2);
+      font-size: 14px;
+      line-height: 1.55;
     }
     .ap-gift-callout__cta {
-      color: #032215;
-      font-weight: 600;
+      color: var(--ap-brand);
+      font-weight: 500;
       text-decoration: underline;
+      text-underline-offset: 2px;
+      font-size: 14px;
     }
+    .ap-gift-callout__cta:hover { text-decoration: none; }
 
     /* ---------- Results panels ---------- */
     .ap-panel {
-      background: #ffffff;
-      border: 1px solid rgb(235, 225, 213);
+      background: var(--ap-surface);
+      border: 1px solid var(--ap-border);
       border-radius: 12px;
-      padding: 32px;
-      margin-bottom: 24px;
+      padding: 28px;
+      margin-bottom: 20px;
       display: flex;
       flex-direction: column;
       gap: 16px;
+      box-shadow: var(--ap-shadow-card);
     }
 
     .ap-panel h2 {
       font-weight: 500;
-      font-size: 24px;
-      color: #032215;
+      font-size: 22px;
+      letter-spacing: -0.005em;
+      color: var(--ap-ink);
     }
 
     .ap-panel p {
-      color: #555;
+      color: var(--ap-ink-3);
       font-size: 15px;
     }
 
-    .ap-results__intro { margin: 24px 0 24px; }
-    .ap-results__intro h2 { font-size: 22px; line-height: 1.3; margin-bottom: 8px; }
-    .ap-results__intro p { color: #2a3a32; }
+    .ap-results__intro { margin: 8px 0 20px; }
+    .ap-results__intro h2 {
+      font-size: 26px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      margin-bottom: 10px;
+    }
+    .ap-results__intro p { color: var(--ap-ink-2); font-size: 15px; line-height: 1.6; }
 
     .ap-hsa { background: rgba(21, 97, 70, 0.04); border: 1px solid rgb(235, 225, 213); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
     .ap-hsa h2 { font-size: 18px; margin-bottom: 12px; }
@@ -718,9 +833,22 @@
     .ap-hsa li { padding: 3px 0; }
     .ap-hsa__footnote { font-size: 13px; color: #4a5a52; margin-top: 12px; }
 
-    .ap-next { padding: 24px 0; border-top: 1px solid rgb(235, 225, 213); }
-    .ap-next h2 { font-size: 20px; margin-bottom: 12px; }
-    .ap-next ol { padding-left: 24px; color: #2a3a32; }
+    .ap-next {
+      background: var(--ap-surface);
+      border: 1px solid var(--ap-border);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: var(--ap-shadow-card);
+    }
+    .ap-next h2 {
+      font-size: 22px;
+      letter-spacing: -0.005em;
+      margin-bottom: 14px;
+      color: var(--ap-ink);
+      font-weight: 500;
+    }
+    .ap-next ol { padding-left: 24px; color: var(--ap-ink-2); }
     .ap-next li { padding: 6px 0; }
 
     .ap-navigate { background: #ffffff; border: 1px solid rgb(235, 225, 213); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
@@ -732,11 +860,6 @@
     .ap-permission h2 { font-size: 18px; margin-bottom: 10px; color: #2a3a32; font-weight: 500; }
     .ap-permission p { color: #2a3a32; line-height: 1.65; }
 
-    .ap-final-cta { padding: 24px 0; }
-    .ap-final-cta h2 { font-size: 22px; margin-bottom: 8px; }
-    .ap-final-cta p { color: #2a3a32; margin-bottom: 8px; }
-    .ap-final-cta ul { padding-left: 20px; margin-bottom: 16px; color: #2a3a32; }
-    .ap-final-cta li { padding: 3px 0; }
     .ap-trust { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; padding-top: 24px; border-top: 1px solid rgb(235, 225, 213); }
     .ap-trust__item { text-align: center; font-size: 13px; color: #4a5a52; }
     .ap-trust__item strong { display: block; color: #032215; font-weight: 500; margin-bottom: 4px; }
@@ -770,62 +893,96 @@
       align-self: flex-start;
     }
 
-    /* ---------- Stacked coverage cards ---------- */
-    .ap-coverage-card {
-      margin-top: 16px;
-      padding: 20px 24px;
-      background: #fbf9f4;
-      border: 1px solid rgb(235, 225, 213);
-      border-radius: 10px;
-    }
-    .ap-coverage-card h3 {
-      margin: 0 0 12px;
-      font-size: 16px;
-      font-weight: 600;
-      color: #032215;
-    }
-    .ap-coverage-card ul {
+    /* ---------- Snapshot list (Coverage at a Glance) ---------- */
+    .ap-snapshot__eligible {
       list-style: none;
       padding: 0;
-      margin: 0;
+      margin: 4px 0 0;
       display: flex;
       flex-direction: column;
-      gap: 6px;
     }
-    .ap-coverage-card li {
+    .ap-snapshot__eligible li {
       font-size: 15px;
-      color: #032215;
+      color: var(--ap-ink);
       overflow-wrap: break-word;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--ap-border-soft);
     }
-    .ap-coverage-card li.ap-coverage-list__item--muted,
-    .ap-coverage-card .ap-coverage-list__item--muted {
-      color: #888;
+    .ap-snapshot__eligible li:last-child { border-bottom: none; }
+    .ap-coverage-list__item--muted { color: var(--ap-ink-4); }
+    .ap-coverage-list__check {
+      color: var(--ap-brand);
+      font-weight: 700;
+      margin-right: 10px;
     }
-    .ap-coverage-list__check { color: #156146; font-weight: 700; margin-right: 8px; }
     .ap-coverage-list__nights {
       margin-left: 1.5rem;
-      font-size: 0.875rem;
-      color: var(--ap-text-muted, #6b6b6b);
-      margin-top: 0.15rem;
+      font-size: 13px;
+      color: var(--ap-ink-3);
+      margin-top: 4px;
     }
     @media print {
       .ap-coverage-list__nights { color: #555; }
     }
-    .ap-coverage-list__dash { color: #bbb; margin-right: 8px; }
+    .ap-coverage-list__dash { color: var(--ap-ink-4); margin-right: 10px; }
     .ap-coverage-list__total {
-      margin: 12px 0 0;
-      padding-top: 12px;
-      border-top: 1px solid rgb(235, 225, 213);
-      color: #032215;
+      margin: 14px 0 0;
+      padding-top: 14px;
+      border-top: 1px solid var(--ap-border-soft);
+      color: var(--ap-ink);
       font-size: 15px;
     }
+
+    /* Collapsed "what isn't covered" — visible but quiet. */
+    .ap-snapshot__not-eligible {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--ap-border-soft);
+    }
+    .ap-snapshot__not-eligible > summary {
+      cursor: pointer;
+      list-style: none;
+      color: var(--ap-ink-3);
+      font-size: 14px;
+      padding: 4px 0;
+    }
+    .ap-snapshot__not-eligible > summary::-webkit-details-marker { display: none; }
+    .ap-snapshot__not-eligible > summary::before { content: '▾ '; color: var(--ap-ink-4); }
+    .ap-snapshot__not-eligible[open] > summary::before { content: '▴ '; }
+    .ap-snapshot__not-eligible ul {
+      list-style: none;
+      padding: 8px 0 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .ap-snapshot__not-eligible li {
+      font-size: 14px;
+      color: var(--ap-ink-4);
+    }
+
+    /* HSA accent — distinct from the snapshot rows. */
+    .ap-coverage-card {
+      margin-top: 16px;
+      padding: 16px 20px;
+      background: var(--ap-surface-2);
+      border: 1px solid var(--ap-border-soft);
+      border-radius: 10px;
+    }
+    .ap-coverage-card h3 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ap-ink);
+    }
     .ap-coverage-card--hsa {
-      border-left: 4px solid #032215;
+      border-left: 3px solid var(--ap-brand);
     }
     .ap-coverage-card--hsa p {
       margin: 0;
-      color: #555;
-      font-size: 14px;
+      color: var(--ap-ink-3);
+      font-size: 13px;
     }
 
     /* ---------- Results-page clarifier + footnote + priority badges ---------- */
@@ -856,76 +1013,109 @@
     .ap-rec-card__priority--low    { background: #f0f0f0; }
     .ap-rec__footnote {
       margin-top: 16px;
-      padding: 12px 16px;
-      background: #fafaf6;
-      border-left: 3px solid #b8860b;
-      font-size: 14px;
-      color: #2a3a32;
+      padding-top: 14px;
+      border-top: 1px solid var(--ap-border-soft);
+      font-size: 13px;
+      color: var(--ap-ink-3);
       line-height: 1.55;
-      border-radius: 4px;
     }
     .ap-rec__footnote a {
-      color: #032215;
-      font-weight: 600;
+      color: var(--ap-brand);
+      font-weight: 500;
+      text-decoration: underline;
+      text-underline-offset: 2px;
     }
+    .ap-rec__footnote a:hover { text-decoration: none; }
 
     /* ---------- New What Happens Next list ---------- */
     .ap-next__list {
-      padding-left: 24px;
+      padding-left: 0;
       margin: 0;
+      list-style: none;
+      counter-reset: ap-step;
     }
     .ap-next__list li {
-      margin: 12px 0;
+      position: relative;
+      padding: 10px 0 10px 36px;
       line-height: 1.55;
       font-size: 15px;
+      color: var(--ap-ink-2);
+      counter-increment: ap-step;
     }
+    .ap-next__list li::before {
+      content: counter(ap-step);
+      position: absolute;
+      left: 0;
+      top: 10px;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--ap-brand-tint);
+      color: var(--ap-brand);
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ap-next__list li strong { color: var(--ap-ink); font-weight: 500; }
     .ap-next__cta {
       display: inline-block;
-      margin-left: 12px;
-      padding: 6px 14px;
+      margin-top: 8px;
+      padding: 10px 18px;
       font-size: 14px;
     }
 
     .ap-rec-card {
-      background: #FFFAF4;
-      border: 1px solid rgb(235, 225, 213);
-      border-radius: 10px;
-      padding: 20px;
+      position: relative;
+      padding: 18px 0;
       display: flex;
       gap: 16px;
       align-items: flex-start;
+      border-bottom: 1px solid var(--ap-border-soft);
     }
+    .ap-rec-card:last-child { border-bottom: none; padding-bottom: 0; }
+    .ap-rec-card:first-child { padding-top: 0; }
 
-    .ap-rec-card__icon {
+    .ap-rec-card__bullet {
       flex-shrink: 0;
-      width: 44px;
-      height: 44px;
+      width: 6px;
+      height: 6px;
       border-radius: 999px;
-      background: #F4E9DD;
-      color: #032215;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      font-weight: 500;
-      text-align: center;
-      line-height: 44px;
+      background: var(--ap-brand);
+      margin-top: 10px;
     }
 
-    .ap-rec-card__rank { display: inline-flex; align-items: center; justify-content: center; background: #156146; color: #fff; width: 28px; height: 28px; border-radius: 50%; font-weight: 500; font-size: 14px; margin-right: 10px; flex-shrink: 0; }
-    .ap-recs__more { border-top: 1px solid rgb(235, 225, 213); padding-top: 12px; margin-top: 8px; }
-    .ap-recs__more > summary { cursor: pointer; color: #156146; font-weight: 500; padding: 8px 0; list-style: none; }
+    /* Old icon/rank kept as deprecated stubs in case any cached markup
+       references them — visually neutralized. */
+    .ap-rec-card__icon,
+    .ap-rec-card__rank { display: none; }
+
+    .ap-recs__more { padding-top: 8px; margin-top: 4px; }
+    .ap-recs__more > summary {
+      cursor: pointer;
+      color: var(--ap-brand);
+      font-weight: 500;
+      font-size: 14px;
+      padding: 6px 0;
+      list-style: none;
+    }
     .ap-recs__more > summary::-webkit-details-marker { display: none; }
     .ap-recs__more > summary::before { content: '▾ '; }
     .ap-recs__more[open] > summary::before { content: '▴ '; }
-    .ap-recs__also-covered { font-size: 13px; color: #777; margin-top: 16px; }
+    .ap-recs__also-covered {
+      font-size: 13px;
+      color: var(--ap-ink-3);
+      margin-top: 8px;
+    }
+    .ap-recs__also-covered strong { color: var(--ap-ink-2); font-weight: 500; }
 
     .ap-rec-card__body {
       flex: 1;
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
 
     .ap-rec-card__title,
@@ -937,14 +1127,15 @@
     }
 
     .ap-rec-card__title {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 500;
-      color: #032215;
+      color: var(--ap-ink);
+      letter-spacing: -0.005em;
     }
 
     .ap-rec-card__dosing {
       font-size: 14px;
-      color: #156146;
+      color: var(--ap-brand);
       font-weight: 500;
     }
 
@@ -1143,46 +1334,56 @@
 
     /* ---------- Insurance Coverage Estimate download block (results) ---------- */
     .ap-download-block {
-      border: 2px solid #032215;
-      background: #f7f5ef;
-      border-radius: 8px;
+      background: var(--ap-surface);
+      border: 1px solid var(--ap-border);
+      border-left: 3px solid var(--ap-brand);
+      border-radius: 12px;
       padding: 24px 28px;
-      margin: 0 0 16px;
-      text-align: center;
+      margin: 0 0 20px;
+      box-shadow: var(--ap-shadow-card);
+      text-align: left;
     }
     .ap-download-block__eyebrow {
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      color: #032215;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--ap-brand);
       font-weight: 600;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
     }
     .ap-download-block__copy {
       font-size: 15px;
-      color: #333;
+      color: var(--ap-ink-2);
+      margin: 0 0 16px;
+      line-height: 1.55;
       max-width: 520px;
-      margin: 0 auto 18px;
     }
     .ap-download-block__meta {
       font-size: 12px;
-      color: #777;
-      margin-top: 12px;
+      color: var(--ap-ink-4);
+      margin-top: 10px;
     }
     .ap-download-block--done {
-      background: #eef5ee;
-      border-color: #2e6b2e;
+      text-align: center;
+      border-left-color: var(--ap-brand);
+      background: var(--ap-brand-tint);
+      border-color: rgba(21,97,70,0.18);
     }
     .ap-download-block__check {
-      font-size: 32px;
+      font-size: 28px;
       line-height: 1;
-      color: #2e6b2e;
+      color: var(--ap-brand);
       margin-bottom: 8px;
+    }
+    .ap-download-block--done .ap-download-block__copy {
+      margin-left: auto;
+      margin-right: auto;
     }
     .ap-download-block__redo {
       display: inline-block;
       margin-top: 12px;
       font-size: 13px;
-      color: #555;
+      color: var(--ap-ink-3);
       text-decoration: underline;
       background: none;
       border: none;
@@ -1212,7 +1413,7 @@
       }
 
       .ap-step__header h2 {
-        font-size: 24px;
+        font-size: 22px;
       }
 
       .ap-landing__hero h1 {
@@ -1220,19 +1421,17 @@
       }
 
       .ap-landing {
-        gap: 20px;
+        gap: 18px;
       }
 
-      .ap-landing__panel {
-        padding: 20px;
+      .ap-panel,
+      .ap-next {
+        padding: 22px;
       }
 
-      .ap-panel {
-        padding: 24px;
-      }
-
-      .ap-panel h2 {
-        font-size: 20px;
+      .ap-panel h2,
+      .ap-next h2 {
+        font-size: 19px;
       }
 
       .ap-cta-row {
@@ -1244,8 +1443,11 @@
       }
 
       .ap-rec-card {
-        padding: 16px;
         gap: 12px;
+      }
+
+      .ap-download-block {
+        padding: 20px;
       }
 
       .ap-modal__card {
@@ -1260,20 +1462,17 @@
         padding: 20px 12px 40px;
       }
 
-      .ap-panel {
+      .ap-panel,
+      .ap-next {
         padding: 20px 16px;
       }
 
-      .ap-rec-card {
-        padding: 14px;
-        gap: 10px;
+      .ap-download-block {
+        padding: 18px 16px;
       }
 
-      .ap-rec-card__icon {
-        width: 36px;
-        height: 36px;
-        line-height: 36px;
-        font-size: 16px;
+      .ap-rec-card {
+        gap: 10px;
       }
     }
   </style>

@@ -1379,41 +1379,36 @@
               + '</div>'
           : '';
 
+        const notEligibleBlock = notEligibleItems
+          ? '<details class="ap-snapshot__not-eligible">'
+            +   '<summary>See what isn\'t covered by your plan</summary>'
+            +   '<ul>' + notEligibleItems + '</ul>'
+            + '</details>'
+          : '';
+
         return (
           '<section class="ap-panel ap-panel--snapshot">'
           + '<h2>Your Coverage at a Glance</h2>'
-          + '<div class="ap-coverage-card ap-coverage-card--eligible">'
-          +   '<h3>✓ What\'s Eligible for Coverage</h3>'
-          +   (coveredIds.length
-                ? '<ul>' + eligibleItems + '</ul>' + totalLine
-                : '<p class="ap-coverage-list__item--muted">No services selected.</p>')
-          + '</div>'
-          + '<div class="ap-coverage-card ap-coverage-card--not-eligible">'
-          +   '<h3>✗ What\'s Not Eligible for Coverage</h3>'
-          +   (notEligibleItems
-                ? '<ul>' + notEligibleItems + '</ul>'
-                : '<p class="ap-coverage-list__item--muted">All services have coverage.</p>')
-          + '</div>'
+          + (coveredIds.length
+              ? '<ul class="ap-snapshot__eligible">' + eligibleItems + '</ul>' + totalLine
+              : '<p class="ap-coverage-list__item--muted">No services selected.</p>')
+          + notEligibleBlock
           + hsaHtml
           + '</section>'
         );
       }
 
-      function renderRecCard(rec, rank) {
+      function renderRecCard(rec) {
         const name = SERVICE_NAMES[rec.service] || rec.service;
         const needsAsterisk = rec.service === 'postpartum_doula_care'
           || rec.service === 'registered_nursing'
           || rec.service === 'psw';
-        const initial = (name || '').trim().charAt(0).toUpperCase();
-        const badgeHtml = (typeof rank === 'number')
-          ? '<div class="ap-rec-card__rank" aria-hidden="true">' + rank + '</div>'
-          : '<div class="ap-rec-card__icon" aria-hidden="true">' + escapeHtml(initial) + '</div>';
         const asterisk = needsAsterisk
           ? ' <span class="ap-rec-card__asterisk" aria-label="Pre-determination may be required">*</span>'
           : '';
         return (
           '<div class="ap-rec-card">'
-          + badgeHtml
+          + '<div class="ap-rec-card__bullet" aria-hidden="true"></div>'
           + '<div class="ap-rec-card__body">'
           + '<div class="ap-rec-card__title">' + escapeHtml(name) + asterisk + '</div>'
           + (rec.concernCallout
@@ -1433,11 +1428,11 @@
         } else {
           const topThree = recs.slice(0, 3);
           const rest = recs.slice(3);
-          body = topThree.map(function (rec, i) { return renderRecCard(rec, i + 1); }).join('');
+          body = topThree.map(function (rec) { return renderRecCard(rec); }).join('');
           if (rest.length) {
             body += '<details class="ap-recs__more">';
             body += '<summary>See additional recommendations</summary>';
-            body += rest.map(function (rec, i) { return renderRecCard(rec, i + 4); }).join('');
+            body += rest.map(function (rec) { return renderRecCard(rec); }).join('');
             body += '</details>';
           }
         }
@@ -1459,8 +1454,8 @@
           '<section class="ap-panel ap-panel--plan">'
           + '<h2>Care your plan covers</h2>'
           + body
-          + alsoCoveredHtml
           + footnote
+          + alsoCoveredHtml
           + '</section>'
         );
       }
@@ -1468,10 +1463,10 @@
       function renderWhatHappensNext() {
         return (
           '<section class="ap-next">'
-          + '<h2>What Happens Next</h2>'
+          + '<h2>What happens next</h2>'
           + '<ol class="ap-next__list">'
-          +   '<li><strong>Book a complimentary consultation</strong>'
-          +     '<a class="ap-btn ap-btn--primary ap-next__cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a call →</a>'
+          +   '<li><strong>Book a complimentary consultation</strong><br>'
+          +     '<a class="ap-btn ap-btn--primary ap-next__cta" id="ap-consult-cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a call →</a>'
           +   '</li>'
           +   '<li>Submit an intake form and refundable deposit</li>'
           +   '<li>Receive bios of qualified Postnatal Care Specialists within 2 business days</li>'
@@ -1493,7 +1488,7 @@
         );
       }
 
-      function renderFinalCta(results) {
+      function renderDownloadBlock(results) {
         const eligibleAmounts = (results && results.eligibleAmounts) || {};
         const eligibleNursing = eligibleAmounts.registered_nursing || 0;
         const eligiblePsw = eligibleAmounts.psw || 0;
@@ -1501,22 +1496,14 @@
         const pswConfigured = typeof ALMA_PSW_HOURLY_RATE === 'number' && ALMA_PSW_HOURLY_RATE > 0;
         const showDownload =
           (eligibleNursing > 0 && rnConfigured) || (eligiblePsw > 0 && pswConfigured);
-
+        if (!showDownload) return '';
         return (
-          '<section class="ap-final-cta">'
-          + (showDownload
-              ? '<div class="ap-download-block" id="ap-download-block">'
-                +   '<div class="ap-download-block__eyebrow">INSURANCE COVERAGE ESTIMATE</div>'
-                +   '<p class="ap-download-block__copy">Download a one-page coverage estimate you can share with your insurer for pre-determination or coverage verification.</p>'
-                +   '<button type="button" class="ap-btn ap-btn--primary" id="ap-download-estimate">⬇ Download Coverage Estimate</button>'
-                +   '<div class="ap-download-block__meta">PDF · One page · Insurer-ready</div>'
-                + '</div>'
-              : ''
-            )
-          + '<div class="ap-cta-row">'
-          +   '<a class="ap-btn ap-btn--' + (showDownload ? 'secondary' : 'primary') + '" id="ap-consult-cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a complimentary consultation</a>'
+          '<div class="ap-download-block" id="ap-download-block">'
+          +   '<div class="ap-download-block__eyebrow">Insurance Coverage Estimate</div>'
+          +   '<p class="ap-download-block__copy">Download a one-page coverage estimate you can share with your insurer for pre-determination or coverage verification.</p>'
+          +   '<button type="button" class="ap-btn ap-btn--primary" id="ap-download-estimate">⬇ Download Coverage Estimate</button>'
+          +   '<div class="ap-download-block__meta">PDF · One page · Insurer-ready</div>'
           + '</div>'
-          + '</section>'
         );
       }
 
@@ -1742,14 +1729,16 @@
       function renderResults(results) {
         const container = document.getElementById('ap-results');
         if (!container) return;
+        // Order: intro -> snapshot -> recommendations -> download (value extraction)
+        // -> what happens next (carries the book-a-call CTA) -> gift cards (fallback).
         container.innerHTML =
           renderIntro()
           + renderClarifier()
           + renderSnapshot(results)
           + renderPlan(results)
+          + renderDownloadBlock(results)
           + renderWhatHappensNext()
-          + renderGiftCardsCallout(results)
-          + renderFinalCta(results);
+          + renderGiftCardsCallout(results);
 
         const consultBtn = document.getElementById('ap-consult-cta');
         if (consultBtn) {
