@@ -3089,10 +3089,6 @@
         const needsAsterisk = rec.service === 'postpartum_doula_care'
           || rec.service === 'registered_nursing'
           || rec.service === 'psw';
-        const priorityKey = rec.priority || '';
-        const priorityLabel = priorityKey
-          ? priorityKey.charAt(0).toUpperCase() + priorityKey.slice(1)
-          : '';
         const initial = (name || '').trim().charAt(0).toUpperCase();
         const badgeHtml = (typeof rank === 'number')
           ? '<div class="ap-rec-card__rank" aria-hidden="true">' + rank + '</div>'
@@ -3100,15 +3096,11 @@
         const asterisk = needsAsterisk
           ? ' <span class="ap-rec-card__asterisk" aria-label="Pre-determination may be required">*</span>'
           : '';
-        const priorityBadge = priorityLabel
-          ? ' <span class="ap-rec-card__priority ap-rec-card__priority--' + escapeHtml(priorityKey) + '">'
-              + escapeHtml(priorityLabel) + '</span>'
-          : '';
         return (
           '<div class="ap-rec-card">'
           + badgeHtml
           + '<div class="ap-rec-card__body">'
-          + '<div class="ap-rec-card__title">' + escapeHtml(name) + asterisk + priorityBadge + '</div>'
+          + '<div class="ap-rec-card__title">' + escapeHtml(name) + asterisk + '</div>'
           + (rec.concernCallout
               ? '<p class="ap-rec-card__callout">Based on what you shared, we’d especially encourage this.</p>'
               : '')
@@ -3150,7 +3142,7 @@
           : '';
         return (
           '<section class="ap-panel ap-panel--plan">'
-          + '<h2>Your highest-priority postpartum supports</h2>'
+          + '<h2>Care your plan covers</h2>'
           + body
           + alsoCoveredHtml
           + footnote
