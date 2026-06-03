@@ -97,7 +97,7 @@
           <input type="text" id="ap-postal-code" name="postalCode" autocomplete="postal-code" maxlength="7" class="ap-input" placeholder="A1A 1A1" required>
           <p class="ap-field__error" data-error-for="postalCode" hidden>Enter a valid Canadian postal code (e.g. M5V 2T6).</p>
         </div>
-      </div>
+        </div>
     </section>
 
     <section id="ap-step-2" class="ap-step">
@@ -148,7 +148,7 @@
           <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
           <input type="number" id="ap-hsa-balance" name="hsaBalance" min="0" step="50" placeholder="e.g. 1500" class="ap-input">
         </div>
-      </div>
+        </div>
     </section>
 
     <section id="ap-step-3" class="ap-step">
@@ -172,17 +172,6 @@
               <input type="number" id="ap-cov-amount-massage_therapy" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="massage_therapy">
             </div>
           </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-cap-massage_therapy">Per-visit cap <span class="ap-optional">(optional)</span></label>
-            <div class="ap-input-currency">
-              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
-              <input type="number" id="ap-cov-cap-massage_therapy" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="massage_therapy">
-            </div>
-          </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-pct-massage_therapy">Reimbursement % <span class="ap-optional">(optional)</span></label>
-            <input type="number" id="ap-cov-pct-massage_therapy" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="massage_therapy">
-          </div>
         </div>
 
         <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="acupuncture">
@@ -197,17 +186,6 @@
               <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
               <input type="number" id="ap-cov-amount-acupuncture" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="acupuncture">
             </div>
-          </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-cap-acupuncture">Per-visit cap <span class="ap-optional">(optional)</span></label>
-            <div class="ap-input-currency">
-              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
-              <input type="number" id="ap-cov-cap-acupuncture" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="acupuncture">
-            </div>
-          </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-pct-acupuncture">Reimbursement % <span class="ap-optional">(optional)</span></label>
-            <input type="number" id="ap-cov-pct-acupuncture" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="acupuncture">
           </div>
         </div>
 
@@ -224,17 +202,6 @@
               <input type="number" id="ap-cov-amount-lactation_consulting" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="lactation_consulting">
             </div>
           </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-cap-lactation_consulting">Per-visit cap <span class="ap-optional">(optional)</span></label>
-            <div class="ap-input-currency">
-              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
-              <input type="number" id="ap-cov-cap-lactation_consulting" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="lactation_consulting">
-            </div>
-          </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-pct-lactation_consulting">Reimbursement % <span class="ap-optional">(optional)</span></label>
-            <input type="number" id="ap-cov-pct-lactation_consulting" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="lactation_consulting">
-          </div>
         </div>
 
         <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="postpartum_doula_care">
@@ -249,17 +216,6 @@
               <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
               <input type="number" id="ap-cov-amount-postpartum_doula_care" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="postpartum_doula_care">
             </div>
-          </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-cap-postpartum_doula_care">Per-visit cap <span class="ap-optional">(optional)</span></label>
-            <div class="ap-input-currency">
-              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
-              <input type="number" id="ap-cov-cap-postpartum_doula_care" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="postpartum_doula_care">
-            </div>
-          </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-pct-postpartum_doula_care">Reimbursement % <span class="ap-optional">(optional)</span></label>
-            <input type="number" id="ap-cov-pct-postpartum_doula_care" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="postpartum_doula_care">
           </div>
         </div>
 
@@ -276,17 +232,6 @@
               <input type="number" id="ap-cov-amount-registered_nursing" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="registered_nursing">
             </div>
           </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-cap-registered_nursing">Per-visit cap <span class="ap-optional">(optional)</span></label>
-            <div class="ap-input-currency">
-              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
-              <input type="number" id="ap-cov-cap-registered_nursing" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="registered_nursing">
-            </div>
-          </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-pct-registered_nursing">Reimbursement % <span class="ap-optional">(optional)</span></label>
-            <input type="number" id="ap-cov-pct-registered_nursing" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="registered_nursing">
-          </div>
         </div>
 
         <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="psw">
@@ -301,17 +246,6 @@
               <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
               <input type="number" id="ap-cov-amount-psw" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="psw">
             </div>
-          </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-cap-psw">Per-visit cap <span class="ap-optional">(optional)</span></label>
-            <div class="ap-input-currency">
-              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
-              <input type="number" id="ap-cov-cap-psw" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="psw">
-            </div>
-          </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-pct-psw">Reimbursement % <span class="ap-optional">(optional)</span></label>
-            <input type="number" id="ap-cov-pct-psw" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="psw">
           </div>
         </div>
 
@@ -328,17 +262,6 @@
               <input type="number" id="ap-cov-amount-mental_health" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="mental_health">
             </div>
           </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-cap-mental_health">Per-visit cap <span class="ap-optional">(optional)</span></label>
-            <div class="ap-input-currency">
-              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
-              <input type="number" id="ap-cov-cap-mental_health" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="mental_health">
-            </div>
-          </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-pct-mental_health">Reimbursement % <span class="ap-optional">(optional)</span></label>
-            <input type="number" id="ap-cov-pct-mental_health" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="mental_health">
-          </div>
         </div>
 
         <button class="ap-service-card" type="button" role="checkbox" aria-checked="false" data-service="nutritionist">
@@ -353,19 +276,7 @@
               <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
               <input type="number" id="ap-cov-amount-nutritionist" class="ap-input" min="0" step="50" inputmode="decimal" data-coverage-field="amount" data-service="nutritionist">
             </div>
-          </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-cap-nutritionist">Per-visit cap <span class="ap-optional">(optional)</span></label>
-            <div class="ap-input-currency">
-              <span class="ap-input-currency__prefix" aria-hidden="true">$</span>
-              <input type="number" id="ap-cov-cap-nutritionist" class="ap-input" min="0" step="5" inputmode="decimal" data-coverage-field="perVisitCap" data-service="nutritionist">
-            </div>
-          </div>
-          <div class="ap-field">
-            <label class="ap-label" for="ap-cov-pct-nutritionist">Reimbursement % <span class="ap-optional">(optional)</span></label>
-            <input type="number" id="ap-cov-pct-nutritionist" class="ap-input" min="0" max="100" step="1" inputmode="decimal" placeholder="100" data-coverage-field="reimbursementPercent" data-service="nutritionist">
-          </div>
-        </div>
+          </div>                  </div>
 
       </div>
 

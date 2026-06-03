@@ -655,7 +655,7 @@
       // === END ENGINE ===
 
       const STORAGE_KEY = 'ap_benefits_state';
-      const STATE_SCHEMA_VERSION = 3;
+      const STATE_SCHEMA_VERSION = 4;
       const CONSULT_URL = 'https://www.almacare.ca/booking/book-a-call';
       const HUBSPOT = {
         portalId: 'TODO_FILL_IN',
@@ -906,8 +906,6 @@
 
       function clearCoverageInputs(serviceId) {
         setCoverageInputValue(serviceId, 'amount', null);
-        setCoverageInputValue(serviceId, 'perVisitCap', null);
-        setCoverageInputValue(serviceId, 'reimbursementPercent', null);
       }
 
       function toggleService(serviceId) {
@@ -918,9 +916,8 @@
           setCardChecked(serviceId, false);
           clearCoverageInputs(serviceId);
         } else {
-          state.coverage[serviceId] = { amount: null, perVisitCap: null, reimbursementPercent: 100 };
+          state.coverage[serviceId] = { amount: null };
           setCardChecked(serviceId, true);
-          setCoverageInputValue(serviceId, 'reimbursementPercent', 100);
         }
         saveState();
         updateContinueButton();
@@ -948,12 +945,6 @@
           setCardChecked(serviceId, isChecked);
           if (isChecked) {
             setCoverageInputValue(serviceId, 'amount', entry.amount);
-            setCoverageInputValue(serviceId, 'perVisitCap', entry.perVisitCap);
-            setCoverageInputValue(
-              serviceId,
-              'reimbursementPercent',
-              entry.reimbursementPercent == null ? '' : entry.reimbursementPercent
-            );
           } else {
             clearCoverageInputs(serviceId);
           }
@@ -1039,14 +1030,14 @@
         currentStep = n;
 
         // Progress bar: visible during intake, hidden on results.
-        // Wizard nav: also hidden on results (no further steps to continue to).
-        const wizardNav = document.querySelector('.ap-nav');
+        // On the results step we still want Back to work (so the user can edit
+        // their answers), but the Continue button is meaningless — hide only that.
         if (n > TOTAL_STEPS) {
           progressHeader.classList.add('ap-hidden');
-          if (wizardNav) wizardNav.classList.add('ap-hidden');
+          continueBtn.classList.add('ap-hidden');
         } else {
           progressHeader.classList.remove('ap-hidden');
-          if (wizardNav) wizardNav.classList.remove('ap-hidden');
+          continueBtn.classList.remove('ap-hidden');
           progressLabel.textContent = `Step ${n} of ${TOTAL_STEPS}`;
           progressBar.setAttribute('aria-valuenow', String(n));
           progressSegments.forEach((seg, i) => {
@@ -1490,12 +1481,16 @@
 
       function renderDownloadBlock(results) {
         const eligibleAmounts = (results && results.eligibleAmounts) || {};
-        const eligibleNursing = eligibleAmounts.registered_nursing || 0;
-        const eligiblePsw = eligibleAmounts.psw || 0;
-        const rnConfigured = typeof ALMA_RN_HOURLY_RATE === 'number' && ALMA_RN_HOURLY_RATE > 0;
-        const pswConfigured = typeof ALMA_PSW_HOURLY_RATE === 'number' && ALMA_PSW_HOURLY_RATE > 0;
-        const showDownload =
-          (eligibleNursing > 0 && rnConfigured) || (eligiblePsw > 0 && pswConfigured);
+        // The PDF describes in-home overnight care, but the eligible dollars
+        // can come from any of the in-home-care benefit lines: doula, RN, or PSW.
+        // Sum them — if the total covers at least one full shift, show the download.
+        const eligibleTotal =
+          (eligibleAmounts.postpartum_doula_care || 0)
+          + (eligibleAmounts.registered_nursing || 0)
+          + (eligibleAmounts.psw || 0);
+        const rateConfigured = typeof ALMA_RN_HOURLY_RATE === 'number' && ALMA_RN_HOURLY_RATE > 0;
+        const oneShift = ALMA_RN_HOURLY_RATE * ALMA_NIGHT_HOURS;
+        const showDownload = rateConfigured && eligibleTotal >= oneShift;
         if (!showDownload) return '';
         return (
           '<div class="ap-download-block" id="ap-download-block">'
@@ -1543,10 +1538,13 @@
 
       function handleDownloadEstimate() {
         const eligibleAmounts = (state.results && state.results.eligibleAmounts) || {};
-        const eligibleNursing = eligibleAmounts.registered_nursing || 0;
-        const eligiblePsw = eligibleAmounts.psw || 0;
-        // PDF is single-pathway "In-Home Postpartum Support" — sum RN + PSW.
-        const eligibleTotal = eligibleNursing + eligiblePsw;
+        // PDF is single-pathway "In-Home Postpartum Support" — sum every in-home
+        // care benefit line: doula + RN + PSW. Any of those dollars can be
+        // billed toward overnight care.
+        const eligibleTotal =
+          (eligibleAmounts.postpartum_doula_care || 0)
+          + (eligibleAmounts.registered_nursing || 0)
+          + (eligibleAmounts.psw || 0);
         if (eligibleTotal <= 0) return;
 
         const downloadBtn = document.getElementById('ap-download-estimate') || document.getElementById('ap-download-redo');
