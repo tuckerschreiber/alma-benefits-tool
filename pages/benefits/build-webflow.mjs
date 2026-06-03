@@ -27,6 +27,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { execSync } from 'node:child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const previewPath = join(__dirname, 'preview.html');
@@ -35,11 +36,15 @@ const bodyOutPath = join(__dirname, 'webflow-body.html');
 const appJsPath = join(__dirname, 'app.js');
 const testOutPath = join(__dirname, 'webflow-test.html');
 
-// URL where the hosted app.js lives in production. Tucker swaps this after
-// uploading app.js to his hosting (jsDelivr, Webflow assets, etc).
-// For the local test page, we override to a relative path so the Python server
-// serves the file directly.
-const APP_JS_URL_PROD = 'https://cdn.jsdelivr.net/gh/tuckerschreiber/alma-benefits-tool@main/pages/benefits/app.js?v=20260602';
+// URL where the hosted app.js lives in production. We pin to the current HEAD
+// commit SHA rather than `@main` because jsDelivr caches the branch->commit
+// resolution for ~12 hours, which means new pushes don't appear immediately
+// even after a purge. A SHA-pinned URL bypasses that — jsDelivr fetches the
+// exact commit's content on first request and never goes stale. The downside
+// is that Tucker has to re-paste webflow-head.html in Webflow on every deploy,
+// which he's already doing whenever head/body change.
+const gitSha = execSync('git rev-parse HEAD', { cwd: __dirname }).toString().trim().slice(0, 7);
+const APP_JS_URL_PROD = `https://cdn.jsdelivr.net/gh/tuckerschreiber/alma-benefits-tool@${gitSha}/pages/benefits/app.js`;
 const APP_JS_URL_TEST = './app.js';
 
 const html = readFileSync(previewPath, 'utf8');
