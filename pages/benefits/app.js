@@ -656,6 +656,7 @@
 
       const STORAGE_KEY = 'ap_benefits_state';
       const STATE_SCHEMA_VERSION = 3;
+      const CONSULT_URL = 'https://www.almacare.ca/booking/book-a-call';
       const HUBSPOT = {
         portalId: 'TODO_FILL_IN',
         formId: 'TODO_FILL_IN'
@@ -1469,8 +1470,8 @@
           '<section class="ap-next">'
           + '<h2>What Happens Next</h2>'
           + '<ol class="ap-next__list">'
-          +   '<li><strong>Email the Alma Care concierge</strong>'
-          +     '<a class="ap-btn ap-btn--primary ap-next__cta" href="mailto:concierge@almacare.ca">Email concierge →</a>'
+          +   '<li><strong>Book a complimentary consultation</strong>'
+          +     '<a class="ap-btn ap-btn--primary ap-next__cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a call →</a>'
           +   '</li>'
           +   '<li>Submit an intake form and refundable deposit</li>'
           +   '<li>Receive bios of qualified Postnatal Care Specialists within 2 business days</li>'
@@ -1512,6 +1513,9 @@
                 + '</div>'
               : ''
             )
+          + '<div class="ap-cta-row">'
+          +   '<a class="ap-btn ap-btn--' + (showDownload ? 'secondary' : 'primary') + '" id="ap-consult-cta" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Book a complimentary consultation</a>'
+          + '</div>'
           + '</section>'
         );
       }
@@ -1610,8 +1614,8 @@
         block.innerHTML = (
           '<div class="ap-download-block__check">✓</div>'
           + '<div class="ap-download-block__eyebrow">Coverage estimate downloaded</div>'
-          + '<p class="ap-download-block__copy">Want to tailor your hours, mix overnight and daytime, or confirm provider assignment?</p>'
-          + '<a class="ap-btn ap-btn--primary" href="mailto:concierge@almacare.ca">Email Alma Care concierge →</a>'
+          + '<p class="ap-download-block__copy">We\'ll help customize your recovery plan and navigate potential coverage opportunities.</p>'
+          + '<a class="ap-btn ap-btn--primary" href="' + CONSULT_URL + '" target="_blank" rel="noopener">Speak with a Postnatal Care Concierge →</a>'
           + '<button type="button" class="ap-download-block__redo" id="ap-download-redo">Re-download estimate</button>'
         );
         const redoBtn = document.getElementById('ap-download-redo');
@@ -1746,6 +1750,13 @@
           + renderWhatHappensNext()
           + renderGiftCardsCallout(results)
           + renderFinalCta(results);
+
+        const consultBtn = document.getElementById('ap-consult-cta');
+        if (consultBtn) {
+          consultBtn.addEventListener('click', function () {
+            track('consult_cta_clicked', { source: 'results_primary_cta' });
+          });
+        }
 
         const downloadBtn = document.getElementById('ap-download-estimate');
         if (downloadBtn) {
