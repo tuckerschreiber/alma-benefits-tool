@@ -6,7 +6,7 @@ export const SERVICE_NAMES = {
   acupuncture: 'Acupuncture',
   lactation_consulting: 'Lactation Consultant / IBCLC',
   postpartum_doula_care: 'Certified Postpartum Doula',
-  registered_nursing: 'Private Duty Nursing',
+  registered_nursing: 'In-Home Postpartum Support',
   psw: 'Personal Support Worker (PSW)',
   mental_health: 'Psychotherapy / Mental Health Support',
   nutritionist: 'Nutrition Counselling'
@@ -47,7 +47,7 @@ export const CONCERN_TO_SERVICE_RULE = {
   },
   hbp: {
     service: 'registered_nursing',
-    rationale: 'With elevated blood pressure history, in-home nursing checks add an extra layer of monitoring during recovery.',
+    rationale: 'With a history of elevated blood pressure, overnight in-home support gives you an extra layer of help during the recovery weeks.',
     dosing: { sessions: 3, estimatedSessionCost: 220, window: 'first 3 weeks postpartum' },
     priority: 'high',
     concernCallout: true
@@ -75,7 +75,7 @@ export const CONCERN_TO_SERVICE_RULE = {
   },
   ama: {
     service: 'registered_nursing',
-    rationale: 'Postpartum recovery for parents over 35 benefits from extra clinical follow-up in the first weeks.',
+    rationale: 'Recovery often takes a bit more time for parents over 35 — overnight in-home support in the early weeks helps you rest while you reset.',
     dosing: { sessions: 2, estimatedSessionCost: 220, window: 'first 2 weeks postpartum' },
     priority: 'high',
     concernCallout: true
@@ -326,11 +326,15 @@ export function computeResults(rawInputs, rules, almaServices, today = new Date(
 
   const eligibleAmounts = computeEligibleAmounts(normalized.coverage);
 
+  const recommendedSet = new Set(recommendations.map((r) => r.service));
+  const alsoCovered = eligibleServiceIds.filter((id) => !recommendedSet.has(id));
+
   return {
     normalized,
     eligibleServiceIds,
     recommendations,
     eligibleAmounts,
-    detectedConcerns
+    detectedConcerns,
+    alsoCovered
   };
 }

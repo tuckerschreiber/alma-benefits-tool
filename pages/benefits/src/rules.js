@@ -5,13 +5,14 @@ export const ALMA_SERVICES = [
   'mental_health', 'nutritionist'
 ];
 
-// Alma's published hourly rates for in-home postpartum care.
-// Used by src/pdf.js to compute "Estimated Hours" from eligible $ amounts,
+// Alma's published hourly rates for in-home overnight postpartum care.
+// Used by src/pdf.js to compute the visit table from eligible $ amounts,
 // and by engine's formatNightsLine helper to display "≈ N nights of overnight
 // care" sub-lines on the results snapshot. ALMA_NIGHT_HOURS defines the
-// length of an overnight shift (typical 10pm–8am = 10 hrs).
-export const ALMA_RN_HOURLY_RATE = 50;
-export const ALMA_PSW_HOURLY_RATE = 50;
+// length of an overnight shift (typical 10pm–8am = 10 hrs). Rate matches
+// Karla's real estimate ($48/hr overnight).
+export const ALMA_RN_HOURLY_RATE = 48;
+export const ALMA_PSW_HOURLY_RATE = 48;
 export const ALMA_NIGHT_HOURS = 10;
 
 export const RULES = [
@@ -54,7 +55,7 @@ export const RULES = [
     service: 'registered_nursing',
     appliesWhen: { weeksUntilDueMax: 4 },
     dosing: { sessions: 2, estimatedSessionCost: 220, window: 'first 2 weeks postpartum' },
-    rationale: 'A few in-home nursing visits in the first two weeks catch feeding, healing, and newborn questions before they escalate.',
+    rationale: 'Overnight in-home support in the first two weeks helps with sleep, feeding routines, and a smoother transition home.',
     priority: 'medium'
   },
   // ----- Postpartum-specific rules (apply when user is already postpartum) -----
@@ -62,7 +63,7 @@ export const RULES = [
     service: 'registered_nursing',
     appliesWhen: { isPostpartum: true, weeksPostpartumMax: 2 },
     dosing: { sessions: 2, estimatedSessionCost: 220, window: 'first 2 weeks postpartum' },
-    rationale: 'In-home nursing visits in the first two weeks help with feeding, healing, and newborn questions before they escalate.',
+    rationale: 'Overnight in-home support in the first two weeks helps with sleep, feeding routines, and a smoother transition home.',
     priority: 'high'
   },
   {

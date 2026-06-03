@@ -542,3 +542,127 @@ test('formatNightsLine: singular "1 night" when exactly one', () => {
   // $500 / $50 = 10 hrs; 10 / 10 = 1 night
   assert.strictEqual(formatNightsLine(500, 50, 10), '≈ 1 night of overnight care (10 hrs each, before HST)');
 });
+
+// ----- Round 5: alsoCovered + PDN-no-duplicates regression -----
+
+test('computeResults: alsoCovered lists covered services with no matching rule', () => {
+  // Return parent, 8 weeks until due, covering 5 services:
+  //   - massage_therapy        -> rule fires
+  //   - acupuncture            -> rule fires
+  //   - lactation_consulting   -> rule requires firstTimeParent=true -> no match
+  //   - psw                    -> no rule exists at all
+  //   - nutritionist           -> no rule exists at all
+  // Expect alsoCovered = [lactation_consulting, psw, nutritionist].
+  const today = new Date('2026-05-10');
+  const inputs = {
+    dueDate: '2026-07-05',
+    firstTimeParent: false,
+    coverage: {
+      massage_therapy: { amount: 500, reimbursementPercent: 100 },
+      acupuncture: { amount: 300, reimbursementPercent: 100 },
+      lactation_consulting: { amount: 300, reimbursementPercent: 100 },
+      psw: { amount: 500, reimbursementPercent: 100 },
+      nutritionist: { amount: 200, reimbursementPercent: 100 }
+    },
+    concerns: ''
+  };
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  assert.ok(Array.isArray(result.alsoCovered));
+  assert.ok(result.alsoCovered.includes('psw'));
+  assert.ok(result.alsoCovered.includes('nutritionist'));
+  assert.ok(result.alsoCovered.includes('lactation_consulting'));
+  const recommendedIds = new Set(result.recommendations.map((r) => r.service));
+  for (const id of result.alsoCovered) {
+    assert.ok(!recommendedIds.has(id), `${id} should not appear in both recommendations and alsoCovered`);
+  }
+});
+
+test('computeResults: alsoCovered is empty when every covered service has a matching rule', () => {
+  const today = new Date('2026-05-10');
+  const inputs = {
+    dueDate: '2026-07-05',
+    firstTimeParent: true,
+    coverage: {
+      massage_therapy: { amount: 500, reimbursementPercent: 100 },
+      acupuncture: { amount: 300, reimbursementPercent: 100 }
+    },
+    concerns: ''
+  };
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  assert.deepEqual(result.alsoCovered, []);
+});
+
+// Regression tests for the "PDN twice" bug Karla flagged on the live call.
+// Engine code already prevents this (round-3 stage gating + concern-injection
+// dedup at engine.js:295). These tests pin the invariant.
+
+test('regression: postpartum user + hbp concern -> registered_nursing appears once', () => {
+  const today = new Date('2026-05-10');
+  const inputs = {
+    dueDate: '2026-05-03',
+    isPostpartum: true,
+    weeksPostpartum: 1,
+    firstTimeParent: false,
+    coverage: { registered_nursing: { amount: 10000, reimbursementPercent: 100 } },
+    concerns: 'history of high blood pressure'
+  };
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  const rnRecs = result.recommendations.filter((r) => r.service === 'registered_nursing');
+  assert.strictEqual(rnRecs.length, 1);
+});
+
+test('regression: postpartum user + ama concern -> registered_nursing appears once', () => {
+  const today = new Date('2026-05-10');
+  const inputs = {
+    dueDate: '2026-05-03',
+    isPostpartum: true,
+    weeksPostpartum: 1,
+    firstTimeParent: false,
+    coverage: { registered_nursing: { amount: 10000, reimbursementPercent: 100 } },
+    concerns: 'over 35'
+  };
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  const rnRecs = result.recommendations.filter((r) => r.service === 'registered_nursing');
+  assert.strictEqual(rnRecs.length, 1);
+});
+
+test('regression: postpartum user + both hbp and ama -> registered_nursing appears once', () => {
+  const today = new Date('2026-05-10');
+  const inputs = {
+    dueDate: '2026-05-03',
+    isPostpartum: true,
+    weeksPostpartum: 1,
+    firstTimeParent: false,
+    coverage: { registered_nursing: { amount: 10000, reimbursementPercent: 100 } },
+    concerns: 'over 35 with high blood pressure history'
+  };
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  const rnRecs = result.recommendations.filter((r) => r.service === 'registered_nursing');
+  assert.strictEqual(rnRecs.length, 1);
+});
+
+test('regression: prenatal user with no stage rule match + hbp concern -> registered_nursing appears once', () => {
+  const today = new Date('2026-05-10');
+  const inputs = {
+    dueDate: '2026-07-19',
+    firstTimeParent: false,
+    coverage: { registered_nursing: { amount: 10000, reimbursementPercent: 100 } },
+    concerns: 'concerned about my blood pressure'
+  };
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  const rnRecs = result.recommendations.filter((r) => r.service === 'registered_nursing');
+  assert.strictEqual(rnRecs.length, 1);
+});
+
+test('regression: prenatal user week 3 + hbp concern -> registered_nursing appears once', () => {
+  const today = new Date('2026-05-10');
+  const inputs = {
+    dueDate: '2026-05-31',
+    firstTimeParent: false,
+    coverage: { registered_nursing: { amount: 10000, reimbursementPercent: 100 } },
+    concerns: 'high blood pressure'
+  };
+  const result = computeResults(inputs, RULES, ALMA_SERVICES, today);
+  const rnRecs = result.recommendations.filter((r) => r.service === 'registered_nursing');
+  assert.strictEqual(rnRecs.length, 1);
+});
