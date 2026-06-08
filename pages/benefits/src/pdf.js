@@ -154,9 +154,12 @@ export function buildEstimateDocDefinition(state, results, opts) {
   if (!eligibleAmount || eligibleAmount <= 0) return null;
   if (!hourlyRate || hourlyRate <= 0) return null;
 
-  // Build the visit list. Full shifts first, then a single partial-overnight
-  // row for any remaining hours. If the amount can't cover even one hour,
-  // there are no visits and we return null.
+  // Build the visit list. If the user can afford at least one full overnight,
+  // bill only full overnights — leftover dollars under one shift are deferred
+  // to a daytime/concierge follow-up rather than shown as a partial row.
+  // Otherwise (amount < one shift but ≥ one hour), bill a single partial
+  // overnight row covering the available whole hours. If the amount can't
+  // cover even one hour, return null.
   const shiftCost = SHIFT_HOURS * hourlyRate;
   const numFullShifts = Math.floor(eligibleAmount / shiftCost);
   const remainingAmount = eligibleAmount - numFullShifts * shiftCost;
