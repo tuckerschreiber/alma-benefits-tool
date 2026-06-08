@@ -88,6 +88,23 @@ test('partial-shift doc has exactly one visit row', () => {
   assert.doesNotMatch(flat, /"text":"2"/);
 });
 
+test('full-shift coverage with sub-shift leftover does NOT add a partial row', () => {
+  // $528 = $480 (1 full shift) + $48 (1 leftover hour). The mutual-exclusion
+  // rule defers the leftover to a daytime/concierge follow-up instead of
+  // stacking a partial row on top of a full overnight. So we expect exactly
+  // 1 "Overnight" row and zero "Partial overnight" rows; subtotal = $480.
+  const doc = buildEstimateDocDefinition(
+    baseState,
+    { nursing: { eligibleAmount: 528 } },
+    { hourlyRate: 48, today: TODAY }
+  );
+  const flat = JSON.stringify(doc);
+  assert.doesNotMatch(flat, /Partial overnight/);
+  assert.match(flat, /\$480\.00/);
+  // No visit "2" — only one full overnight visit row.
+  assert.doesNotMatch(flat, /"text":"2"/);
+});
+
 // ---------- Math ----------
 
 test('$10,000 eligible at $48/hr → 20 overnight shifts; subtotal $9,600, tax $1,248, total $10,848', () => {
