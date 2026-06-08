@@ -1656,19 +1656,28 @@
           console.warn('Hubspot config not set — skipping submission');
           return { ok: false, reason: 'not_configured' };
         }
-        const url = 'https://api.hsforms.com/submissions/v3/integrations/submit/' + HUBSPOT.portalId + '/' + HUBSPOT.formId;
-        const payload = {
-          fields: fields,
-          context: {
-            pageUri: window.location.href,
-            pageName: 'Benefits Eligibility Tool — ' + (pageNameSuffix || '')
-          }
-        };
+        // Using Hubspot's legacy v2 forms-upload endpoint. The v3 JSON endpoint
+        // at api.hsforms.com returns 404 for forms created via the in-app form
+        // builder. The v2 endpoint accepts URL-encoded submissions for any form
+        // and dedupes contacts by email. Note: custom contact properties that
+        // aren't dragged onto the form get silently dropped (Hubspot only
+        // writes form-mapped fields). The code submits all of them anyway —
+        // the unmapped ones are harmless and start landing automatically once
+        // added to the form.
+        const url = 'https://forms.hubspot.com/uploads/form/v2/' + HUBSPOT.portalId + '/' + HUBSPOT.formId;
+        const params = new URLSearchParams();
+        for (const f of fields) {
+          params.append(f.name, f.value);
+        }
+        params.append('hs_context', JSON.stringify({
+          pageUri: window.location.href,
+          pageName: 'Benefits Eligibility Tool — ' + (pageNameSuffix || '')
+        }));
         try {
           const res = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params.toString()
           });
           if (!res.ok) return { ok: false, reason: 'http_error', status: res.status };
           return { ok: true };
