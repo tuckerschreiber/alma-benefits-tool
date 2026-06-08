@@ -103,8 +103,10 @@ function buildSupportBullets() {
   ].map((t) => ({ text: '• ' + t, fontSize: 10, margin: [0, 1, 0, 1] }));
 }
 
-function buildFeeTable(numShifts, hourlyRate) {
-  const shiftCost = SHIFT_HOURS * hourlyRate;
+// `visits` is an array of { hours, shiftType } describing each row.
+// All rows are billed at `hourlyRate`. Subtotal sits in the middle of the
+// Price column to mirror Karla's layout.
+function buildFeeTable(visits, hourlyRate) {
   const header = [
     { text: 'Visit', bold: true, alignment: 'center' },
     { text: 'Shift Type', bold: true, alignment: 'center' },
@@ -113,37 +115,37 @@ function buildFeeTable(numShifts, hourlyRate) {
     { text: 'Cost per visit', bold: true, alignment: 'center' },
     { text: 'Price', bold: true, alignment: 'center' }
   ];
-  const subtotal = numShifts * shiftCost;
+  let subtotal = 0;
+  for (const v of visits) subtotal += v.hours * hourlyRate;
   const subtotalText = formatCurrency(subtotal);
-  const middleRow = Math.floor((numShifts - 1) / 2);
+  const middleRow = Math.floor((visits.length - 1) / 2);
 
   const rows = [header];
-  for (let i = 1; i <= numShifts; i++) {
+  visits.forEach((v, idx) => {
     rows.push([
-      { text: String(i), alignment: 'center' },
-      { text: 'Overnight', alignment: 'center' },
-      { text: String(SHIFT_HOURS), alignment: 'center' },
+      { text: String(idx + 1), alignment: 'center' },
+      { text: v.shiftType, alignment: 'center' },
+      { text: String(v.hours), alignment: 'center' },
       { text: formatCurrency(hourlyRate), alignment: 'center' },
-      { text: formatCurrency(shiftCost), alignment: 'center' },
-      // Subtotal sits in the middle of the Price column, mirroring Karla's
-      // layout where a single value spans the whole right column.
-      i === middleRow + 1
+      { text: formatCurrency(v.hours * hourlyRate), alignment: 'center' },
+      idx === middleRow
         ? { text: subtotalText, alignment: 'right' }
         : { text: '' }
     ]);
-  }
-  return rows;
+  });
+  return { rows, subtotal };
 }
 
 /**
  * Build a pdfmake doc-definition for the coverage estimate.
- * Returns null when the eligible amount can't cover at least one full overnight
- * shift, or when the hourly rate isn't configured.
+ * Returns null when the eligible amount can't cover at least one hour of
+ * care at the configured hourly rate, or when the hourly rate isn't set.
  *
  * @param {{lead: object}} state
  * @param {{nursing?: {eligibleAmount: number}}} results
- *   The caller sums RN + PSW eligible amounts upstream and passes the total
- *   here. We treat both as one "in-home postpartum support" pathway in the PDF.
+ *   The caller sums Doula + RN + PSW eligible amounts upstream and passes
+ *   the total here. We treat them as one "in-home postpartum support"
+ *   pathway in the PDF.
  * @param {{hourlyRate: number|null, today: Date}} opts
  */
 export function buildEstimateDocDefinition(state, results, opts) {
@@ -152,17 +154,29 @@ export function buildEstimateDocDefinition(state, results, opts) {
   if (!eligibleAmount || eligibleAmount <= 0) return null;
   if (!hourlyRate || hourlyRate <= 0) return null;
 
+  // Build the visit list. Full shifts first, then a single partial-overnight
+  // row for any remaining hours. If the amount can't cover even one hour,
+  // there are no visits and we return null.
   const shiftCost = SHIFT_HOURS * hourlyRate;
-  const numShifts = Math.floor(eligibleAmount / shiftCost);
-  if (numShifts < 1) return null;
+  const numFullShifts = Math.floor(eligibleAmount / shiftCost);
+  const remainingAmount = eligibleAmount - numFullShifts * shiftCost;
+  const partialHours = Math.floor(remainingAmount / hourlyRate);
+
+  const visits = [];
+  if (numFullShifts > 0) {
+    for (let i = 0; i < numFullShifts; i++) {
+      visits.push({ hours: SHIFT_HOURS, shiftType: 'Overnight' });
+    }
+  } else if (partialHours > 0) {
+    visits.push({ hours: partialHours, shiftType: 'Partial overnight' });
+  }
+  if (visits.length === 0) return null;
 
   const today = (opts && opts.today) || new Date();
   const lead = state.lead || {};
-  const subtotal = numShifts * shiftCost;
+  const { rows: feeRows, subtotal } = buildFeeTable(visits, hourlyRate);
   const tax = Math.round(subtotal * HST_RATE * 100) / 100;
   const total = Math.round((subtotal + tax) * 100) / 100;
-
-  const feeRows = buildFeeTable(numShifts, hourlyRate);
   const blankCell = { text: '', border: [false, false, false, false] };
   const totalsRows = [
     [blankCell, blankCell, blankCell, blankCell,

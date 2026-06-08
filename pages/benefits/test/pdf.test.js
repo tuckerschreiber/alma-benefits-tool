@@ -50,14 +50,42 @@ test('returns null when hourlyRate is null/0/undefined', () => {
   );
 });
 
-test('returns null when eligible amount is less than one full overnight shift', () => {
-  // $200 < $480 -> 0 shifts -> null.
+test('returns null when eligible amount is less than one hour of care', () => {
+  // $30 < $48/hr -> not enough for even one hour -> null.
+  const doc = buildEstimateDocDefinition(
+    baseState,
+    { nursing: { eligibleAmount: 30 } },
+    { hourlyRate: 48, today: TODAY }
+  );
+  assert.strictEqual(doc, null);
+});
+
+test('returns a partial-shift doc when amount covers some hours but less than one full shift', () => {
+  // $200 / $48 = 4 hours; less than 10-hr shift -> partial overnight row.
   const doc = buildEstimateDocDefinition(
     baseState,
     { nursing: { eligibleAmount: 200 } },
     { hourlyRate: 48, today: TODAY }
   );
-  assert.strictEqual(doc, null);
+  assert.notStrictEqual(doc, null);
+  const flat = JSON.stringify(doc);
+  // Single visit row with "Partial overnight" shift type and 4 hours.
+  assert.match(flat, /Partial overnight/);
+  assert.match(flat, /"text":"4"/);
+  // Cost per visit = 4 × $48 = $192. Subtotal = $192.
+  assert.match(flat, /\$192\.00/);
+});
+
+test('partial-shift doc has exactly one visit row', () => {
+  const doc = buildEstimateDocDefinition(
+    baseState,
+    { nursing: { eligibleAmount: 384 } }, // 8 hours
+    { hourlyRate: 48, today: TODAY }
+  );
+  const flat = JSON.stringify(doc);
+  // Visit "1" appears, but "2" does not.
+  assert.match(flat, /"text":"1"/);
+  assert.doesNotMatch(flat, /"text":"2"/);
 });
 
 // ---------- Math ----------
