@@ -5,8 +5,8 @@ export const SERVICE_NAMES = {
   massage_therapy: 'Registered Massage Therapy (RMT)',
   acupuncture: 'Acupuncture',
   lactation_consulting: 'Lactation Consultant / IBCLC',
-  postpartum_doula_care: 'Certified Postpartum Doula',
-  registered_nursing: 'In-Home Postpartum Support',
+  postpartum_doula_care: 'Certified Doula',
+  registered_nursing: 'In-Home Nursing',
   psw: 'Personal Support Worker (PSW)',
   mental_health: 'Psychotherapy / Mental Health Support',
   nutritionist: 'Nutrition Counselling'

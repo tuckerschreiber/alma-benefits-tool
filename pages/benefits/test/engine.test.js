@@ -270,6 +270,8 @@ test('computeResults: SERVICE_NAMES exports human-readable names', () => {
   assert.equal(SERVICE_NAMES.massage_therapy, 'Registered Massage Therapy (RMT)');
   assert.equal(SERVICE_NAMES.lactation_consulting, 'Lactation Consultant / IBCLC');
   assert.equal(SERVICE_NAMES.psw, 'Personal Support Worker (PSW)');
+  assert.equal(SERVICE_NAMES.postpartum_doula_care, 'Certified Doula');
+  assert.equal(SERVICE_NAMES.registered_nursing, 'In-Home Nursing');
 });
 
 // ----- detectConcerns -----
