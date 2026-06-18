@@ -94,11 +94,16 @@ const SETTINGS_DEFAULTS = {
     apiKey: '',
     baseId: 'appimHaFTD2NoqgrS',
     clientsTable: 'Clients',
+    leadsTable: 'Hubspot Leads',
     careTeamTable: 'Care Team',
     maxDistance: 100,
     shiftsTable: 'tblnACbHC0hBIbB8v',
     loadThreshold: 30,
 };
+
+// Which workflow the user is currently in: 'client' or 'lead'. Drives
+// table selection, dropdown rendering, scoring tolerance, and email template.
+let activeMode = 'client';
 
 // Minimum hours/week of booked load before "partially booked" fires. Avoids
 // flagging members with a single short shift as partial. Effective floor is
@@ -137,6 +142,7 @@ function loadSettings() {
     document.getElementById('apiKey').value = settings.apiKey;
     document.getElementById('baseId').value = settings.baseId;
     document.getElementById('clientsTable').value = settings.clientsTable;
+    document.getElementById('leadsTable').value = settings.leadsTable;
     document.getElementById('careTeamTable').value = settings.careTeamTable;
     document.getElementById('maxDistance').value = settings.maxDistance;
     document.getElementById('shiftsTable').value = settings.shiftsTable;
@@ -148,6 +154,7 @@ function saveSettings() {
         apiKey: document.getElementById('apiKey').value.trim(),
         baseId: document.getElementById('baseId').value.trim() || SETTINGS_DEFAULTS.baseId,
         clientsTable: document.getElementById('clientsTable').value.trim() || SETTINGS_DEFAULTS.clientsTable,
+        leadsTable: document.getElementById('leadsTable').value.trim() || SETTINGS_DEFAULTS.leadsTable,
         careTeamTable: document.getElementById('careTeamTable').value.trim() || SETTINGS_DEFAULTS.careTeamTable,
         maxDistance: parseInt(document.getElementById('maxDistance').value) || SETTINGS_DEFAULTS.maxDistance,
         shiftsTable: document.getElementById('shiftsTable').value.trim() || SETTINGS_DEFAULTS.shiftsTable,
@@ -198,6 +205,134 @@ function getSearchMode() {
     return checked ? checked.value : 'unmatched';
 }
 
+// Record-shape abstraction. Each shape knows which Airtable table backs it,
+// how to filter, and how to extract the human-facing fields (name, location,
+// timeline) from a record. Downstream code reads through activeShape() so
+// adding a third record type later is purely additive.
+const RECORD_SHAPES = {
+    client: {
+        kind: 'client',
+        recordNoun: 'client',
+        sectionTitle: '👤 Select Client to Match',
+        chooseLabel: 'Choose Client',
+        loadButtonLabel: '📋 Load Clients',
+        searchPlaceholder: 'Type a name to filter the dropdown...',
+        dateFilterLabel: 'Start Date Filter (optional)',
+        dateFilterHelp: 'Only show clients starting on or after this date',
+        timelineNoun: 'Start',
+        showSearchMode: true,
+        table: () => settings.clientsTable,
+        filterFor: (searchMode) => searchMode === 'unmatched'
+            ? 'AND({Matching Stage}="Unmatched",{Deposit Received Date}!="",{Status}!="Cancelled")'
+            : '{Status}!="Cancelled"',
+        getName: (r) =>
+            r.fields["Mama's Full Name"] || r.fields.Name || ('Client ' + r.id),
+        getCity: (r) => r.fields['City'] || null,
+        getPostal: (r) => r.fields['Postal Code'] || null,
+        getCareType: (r) =>
+            r.fields['Daytime/Overnight [Intake]'] || r.fields['Daytime/Overnight'] || null,
+        getTimelineRaw: (r) => getStartDateRaw(r),
+        getTimelineDate: (r) => getStartDate(r),
+        // No re-sort — preserve the Airtable view order coordinators already
+        // expect for the Clients workflow.
+        sortRecords: (records) => records,
+    },
+    lead: {
+        kind: 'lead',
+        recordNoun: 'lead',
+        sectionTitle: '👤 Select Lead to Match',
+        chooseLabel: 'Choose Lead',
+        loadButtonLabel: '📋 Load Leads',
+        searchPlaceholder: 'Type a name to filter the dropdown...',
+        dateFilterLabel: 'Due Date Filter (optional)',
+        dateFilterHelp: 'Only show leads due on or after this date',
+        timelineNoun: 'Due',
+        showSearchMode: false,
+        table: () => settings.leadsTable,
+        // Stay strict on Lifecycle Stage so MQLs / Customers / junk don't
+        // surface. Loosen if Kavya reports missing people.
+        filterFor: () => '{Lifecycle Stage}="Lead"',
+        getName: (r) => {
+            const first = String(r.fields['First Name'] || '').trim();
+            const last = String(r.fields['Last Name'] || '').trim();
+            const full = [first, last].filter(Boolean).join(' ');
+            return full
+                || r.fields['Primary Email']
+                || r.fields['Emails']
+                || ('Lead ' + r.id);
+        },
+        getCity: (r) => r.fields['City'] || null,
+        getPostal: (r) => r.fields['Postal Code'] || null,
+        // Leads carry no care-type preference — return null so performMatching
+        // skips the eligibility gate instead of rejecting everyone.
+        getCareType: () => null,
+        getTimelineRaw: (r) => r.fields['Due date'] || r.fields['Due Date'] || null,
+        getTimelineDate: (r) => {
+            const raw = r.fields['Due date'] || r.fields['Due Date'];
+            if (!raw) return null;
+            const d = new Date(raw);
+            return isNaN(d.getTime()) ? null : d;
+        },
+        // Soonest due first — the most useful ordering during a live consult.
+        // Records without a parsable due date sink to the bottom.
+        sortRecords: (records) => {
+            const withKey = records.map((r) => {
+                const d = RECORD_SHAPES.lead.getTimelineDate(r);
+                return { r, t: d ? d.getTime() : Number.POSITIVE_INFINITY };
+            });
+            withKey.sort((a, b) => a.t - b.t);
+            return withKey.map((x) => x.r);
+        },
+    },
+};
+
+function activeShape() {
+    return RECORD_SHAPES[activeMode] || RECORD_SHAPES.client;
+}
+
+// Switch workflow tab. Resets the dropdown to its empty state so the user
+// always re-Loads after switching — keeps people from accidentally matching
+// the wrong record type.
+function setActiveMode(mode) {
+    if (!RECORD_SHAPES[mode] || mode === activeMode) return;
+    activeMode = mode;
+    const shape = activeShape();
+
+    // Tab visual state
+    document.querySelectorAll('.record-tab').forEach((btn) => {
+        const isActive = btn.dataset.mode === mode;
+        btn.classList.toggle('tab-active', isActive);
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+
+    // Section title + labels
+    document.getElementById('selectSectionTitle').textContent = shape.sectionTitle;
+    document.getElementById('dateFilterLabel').textContent = shape.dateFilterLabel;
+    document.getElementById('dateFilterHelp').textContent = shape.dateFilterHelp;
+    document.getElementById('chooseRecordLabel').textContent = shape.chooseLabel;
+    document.getElementById('loadBtn').textContent = shape.loadButtonLabel;
+
+    // Search-mode radio only applies to the Clients workflow
+    const modeGroup = document.getElementById('searchModeGroup');
+    if (modeGroup) modeGroup.style.display = shape.showSearchMode ? '' : 'none';
+
+    // Reset record state so stale clients/leads can't bleed across tabs
+    allClients = [];
+    allMatches = [];
+    selectedMatches = [];
+    currentClient = null;
+    displayLimit = 15;
+    const select = document.getElementById('clientSelect');
+    select.innerHTML = `<option value="">-- Click "${shape.loadButtonLabel.replace(/^📋\s*/, '')}" below --</option>`;
+    select.disabled = true;
+    document.getElementById('matchBtn').disabled = true;
+    document.getElementById('resultsArea').innerHTML = '';
+    const filterInput = document.getElementById('clientNameFilter');
+    if (filterInput) filterInput.value = '';
+    const counter = document.getElementById('clientFilterCount');
+    if (counter) counter.textContent = '';
+}
+
 async function loadClients() {
     await configReady;
     if (!settings.apiKey || !settings.baseId) {
@@ -205,45 +340,48 @@ async function loadClients() {
         return;
     }
 
+    const shape = activeShape();
+    const noun = shape.recordNoun;        // 'client' or 'lead'
+    const nounPlural = noun + 's';
+
     try {
-        document.getElementById('resultsArea').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading clients and care team...</p></div>';
+        document.getElementById('resultsArea').innerHTML = `<div class="loading"><div class="spinner"></div><p>Loading ${nounPlural} and care team...</p></div>`;
 
-        const mode = getSearchMode();
-        // Unmatched mode: today's prioritized work list.
-        // All mode: drop the Matching Stage + Deposit gates so the tool can be
-        // used for lead nurture (pre-deposit) and rematch (already-matched).
-        const formula = mode === 'unmatched'
-            ? 'AND({Matching Stage}="Unmatched",{Deposit Received Date}!="",{Status}!="Cancelled")'
-            : '{Status}!="Cancelled"';
+        const mode = shape.showSearchMode ? getSearchMode() : null;
+        const formula = shape.filterFor(mode);
 
-        let clients = await fetchAllRecords(settings.clientsTable, formula);
+        let records = await fetchAllRecords(shape.table(), formula);
 
-        // Apply date filter if set
+        // Date filter applies to the shape's timeline field (start date for
+        // clients, due date for leads).
         const dateFilter = document.getElementById('startDateFilter').value;
         if (dateFilter) {
             const filterDate = new Date(dateFilter);
-            clients = clients.filter(client => {
-                const d = getStartDate(client);
+            records = records.filter((r) => {
+                const d = shape.getTimelineDate(r);
                 return d != null && d >= filterDate;
             });
         }
 
-        allClients = clients;
+        records = shape.sortRecords(records);
+        allClients = records;
         allCareTeam = await fetchAllRecords(settings.careTeamTable);
 
-        // Populate dropdown — show Matching Stage badge in 'all' mode so
-        // coordinators can tell prospects from in-care clients at a glance.
+        // Populate dropdown. In Clients/'all' mode, show the Matching Stage
+        // tag so prospects vs in-care are distinguishable at a glance.
         const select = document.getElementById('clientSelect');
-        select.innerHTML = '<option value="">-- Select a client --</option>';
+        select.innerHTML = `<option value="">-- Select a ${noun} --</option>`;
 
-        allClients.forEach((client, index) => {
+        allClients.forEach((record, index) => {
             const option = document.createElement('option');
             option.value = index;
-            const name = client.fields["Mama's Full Name"] || client.fields.Name || 'Client ' + client.id;
-            const raw = getStartDateRaw(client);
-            const stage = client.fields['Matching Stage'];
-            const stageTag = (mode === 'all' && stage) ? ` [${stage}]` : '';
-            option.textContent = name + stageTag + (raw ? ' (Start: ' + raw + ')' : '');
+            const name = shape.getName(record);
+            const raw = shape.getTimelineRaw(record);
+            const stage = record.fields['Matching Stage'];
+            const stageTag = (shape.kind === 'client' && mode === 'all' && stage) ? ` [${stage}]` : '';
+            const cityTag = (shape.kind === 'lead' && record.fields['City']) ? ` — ${record.fields['City']}` : '';
+            const timelineTag = raw ? ` (${shape.timelineNoun}: ${raw})` : '';
+            option.textContent = name + cityTag + stageTag + timelineTag;
             select.appendChild(option);
         });
 
@@ -258,9 +396,9 @@ async function loadClients() {
             filterClientList('');
         }
 
-        const filterMsg = dateFilter ? ` starting on or after ${dateFilter}` : '';
-        const modeMsg = mode === 'all' ? ' (all clients)' : '';
-        showMessage(`Loaded ${allClients.length} clients${filterMsg}${modeMsg} and ${allCareTeam.length} care team members`, 'success');
+        const filterMsg = dateFilter ? ` ${shape.timelineNoun.toLowerCase()} on or after ${dateFilter}` : '';
+        const modeMsg = (shape.kind === 'client' && mode === 'all') ? ' (all clients)' : '';
+        showMessage(`Loaded ${allClients.length} ${nounPlural}${filterMsg}${modeMsg} and ${allCareTeam.length} care team members`, 'success');
 
         // Pre-warm geocode cache in the background so the first Find Matches
         // run isn't slow waiting for cold-cache FSA lookups.
@@ -350,6 +488,7 @@ function getField(record, name) {
 }
 
 const START_DATE_FIELDS = [
+    'Requested Start Date [Intake]',
     'Start Date',
     'Start Date [Intake]',
     'Care Start Date',
@@ -510,7 +649,7 @@ function checkAvailability(member, client, bookedByMember) {
     }
 
     // Load-threshold mode: total booked hours / weeks in window.
-    let start = getStartDate(client) || new Date();
+    let start = activeShape().getTimelineDate(client) || new Date();
     const weeks = 8;
     const end = new Date(start);
     end.setDate(end.getDate() + weeks * 7);
@@ -534,15 +673,19 @@ function checkAvailability(member, client, bookedByMember) {
 }
 
 async function performMatching(client, careTeam) {
+    const shape = activeShape();
     const matches = [];
-    const clientCareType = client.fields['Daytime/Overnight [Intake]'] || client.fields['Daytime/Overnight'];
+    const clientCareType = shape.getCareType(client);
+    // Leads carry no care-type preference. When unknown, skip the eligibility
+    // gate (everyone passes) rather than rejecting everyone.
+    const careTypeKnown = clientCareType != null;
 
-    // Geocode client city
-    const clientCity = client.fields['City'];
-    const clientPostalRaw = client.fields['Postal Code'];
+    // Geocode the record's location
+    const clientCity = shape.getCity(client);
+    const clientPostalRaw = shape.getPostal(client);
     const clientCoord = await geocodeLocation(clientPostalRaw, clientCity);
     if (!clientCoord) {
-        console.warn('Could not geocode client location:', clientPostalRaw, clientCity);
+        console.warn('Could not geocode location:', clientPostalRaw, clientCity);
         return matches;
     }
 
@@ -552,25 +695,26 @@ async function performMatching(client, careTeam) {
         const status = member.fields['Status'];
         const memberPostal = member.fields['Postal Code'];
         const memberCareTypes = member.fields['Daytime / Overnight'] || member.fields['Daytime/Overnight'];
-        const name = member.fields['Full Name'] || 'Unknown';
 
         if (status !== 'Active' && status !== 'Ready for Review') continue;
         if (!memberPostal && !member.fields['City']) continue;
 
-        let careTypeMatch = false;
-        if (memberCareTypes && clientCareType) {
-            const memberTypes = Array.isArray(memberCareTypes) ? memberCareTypes : [memberCareTypes];
-            const clientTypes = Array.isArray(clientCareType) ? clientCareType : [clientCareType];
-            careTypeMatch = memberTypes.some(mt => clientTypes.includes(mt));
+        if (careTypeKnown) {
+            let careTypeMatch = false;
+            if (memberCareTypes) {
+                const memberTypes = Array.isArray(memberCareTypes) ? memberCareTypes : [memberCareTypes];
+                const clientTypes = Array.isArray(clientCareType) ? clientCareType : [clientCareType];
+                careTypeMatch = memberTypes.some(mt => clientTypes.includes(mt));
+            }
+            if (!careTypeMatch) continue;
         }
-        if (!careTypeMatch) continue;
 
         eligible.push(member);
     }
 
     shiftsLoadFailure = null;
-    const bookedByMember = await loadShiftsForWindow(getStartDate(client));
-    const clientPrefs = getClientPreferences(client);
+    const bookedByMember = await loadShiftsForWindow(shape.getTimelineDate(client));
+    const clientPrefs = shape.kind === 'client' ? getClientPreferences(client) : [];
 
     // Pre-cache FSAs for all eligible members (rate-limited for uncached)
     const uniqueFSAs = new Set();
@@ -704,11 +848,12 @@ function displayMatches(client) {
         return;
     }
 
-    const clientName = client.fields["Mama's Full Name"] || client.fields.Name || 'Client';
-    const clientLocation = client.fields['Postal Code'] || 'Unknown';
-    const clientCareType = client.fields['Daytime/Overnight [Intake]'] || client.fields['Daytime/Overnight'] || 'Unknown';
-    const startDate = getStartDate(client);
-    const startDateRaw = getStartDateRaw(client);
+    const shape = activeShape();
+    const clientName = shape.getName(client);
+    const clientLocation = shape.getPostal(client) || shape.getCity(client) || 'Unknown';
+    const clientCareType = shape.getCareType(client) || (shape.kind === 'lead' ? 'Lead (no care type on file)' : 'Unknown');
+    const startDate = shape.getTimelineDate(client);
+    const startDateRaw = shape.getTimelineRaw(client);
     const startDateDisplay = startDateRaw || 'TBD';
 
     // Source the credential dropdown from the structured Accreditation(s)
@@ -725,7 +870,7 @@ function displayMatches(client) {
                 <div class="client-name">${clientName}</div>
                 <span class="detail-badge">📍 ${clientLocation}</span>
                 <span class="detail-badge">${clientCareType}</span>
-                <span class="detail-badge">Start: ${startDateDisplay}</span>
+                <span class="detail-badge">${shape.timelineNoun}: ${startDateDisplay}</span>
             </div>
             <div class="filter-bar">
                 <label>Credential
@@ -750,7 +895,7 @@ function displayMatches(client) {
                 <span class="filter-count">Showing ${matches.length} of ${filtered.length}${filtered.length !== allMatches.length ? ` (${allMatches.length} total)` : ''}</span>
             </div>
             ${shiftsLoadFailure ? `<div class="filter-note filter-note-error">⚠️ ${shiftsLoadFailure}</div>` : ''}
-            ${!startDate ? `<div class="filter-note">ℹ️ Start Date is ${startDateRaw ? `unparseable ("${startDateRaw}")` : 'missing'} — availability is computed against the next 8 weeks from today.</div>` : ''}
+            ${!startDate ? `<div class="filter-note">ℹ️ ${shape.timelineNoun} Date is ${startDateRaw ? `unparseable ("${startDateRaw}")` : 'missing'} — availability is computed against the next 8 weeks from today.</div>` : ''}
             ${matches.map(match => {
                 const breakdownTitle = (match.scoreBreakdown || [])
                     .map(b => `${b.delta >= 0 ? '+' : ''}${b.delta}  ${b.label}`)
@@ -815,29 +960,117 @@ function toggleSelection(matchId) {
     });
 }
 
-function buildEmailFor(match, client) {
-    const clientName = client.fields["Mama's Full Name"] || client.fields.Name || 'Client';
-    const location = client.fields['Postal Code'] || 'TBD';
-    const careType = client.fields['Daytime/Overnight [Intake]'] || client.fields['Daytime/Overnight'] || 'TBD';
-    const startDate = getStartDateRaw(client) || 'TBD';
-    const name = match.fields['Full Name'] || 'Team Member';
-    const email = match.fields['Email'] || match.fields['email'] || '';
-    const subject = `New Client Opportunity - ${clientName}`;
-    const body =
-        `Hi ${name},\n\n` +
-        `We have a new client opportunity that matches your profile:\n\n` +
-        `Client Location: ${location}\n` +
-        `Care Type: ${careType}\n` +
-        `Start Date: ${startDate}\n\n` +
-        `Are you available for this placement?\n\n` +
-        `Best,\nAlma Care Team`;
-    return { email, name, subject, body };
+function firstNonEmptyField(record, names) {
+    for (const name of names) {
+        const v = getField(record, name);
+        if (v != null && String(v).trim() !== '') return v;
+    }
+    return null;
 }
 
-function mailtoHref(e) {
-    // The email address itself stays literal — encoding the @ breaks some
-    // mailto handlers. Only the query-string values are URI-encoded.
-    return `mailto:${e.email}?subject=${encodeURIComponent(e.subject)}&body=${encodeURIComponent(e.body)}`;
+function formatFieldValue(v) {
+    if (v == null) return '';
+    return Array.isArray(v) ? v.join(', ') : String(v);
+}
+
+function buildEmailFor(match, record) {
+    return activeShape().kind === 'lead'
+        ? buildLeadEmail(match, record)
+        : buildClientEmail(match, record);
+}
+
+function buildClientEmail(match, client) {
+    const memberName = match.fields['Full Name'] || 'Team Member';
+    const email = match.fields['Email'] || match.fields['email'] || '';
+
+    const city = getField(client, 'City');
+    const postal = getField(client, 'Postal Code');
+    const addressLong = [city, postal].filter(Boolean).join(', ') || 'TBD';
+    const addressShort = city || postal || 'TBD';
+
+    const careType = formatFieldValue(firstNonEmptyField(client, [
+        'Daytime/Overnight [Intake]', 'Daytime/Overnight',
+    ])) || 'TBD';
+    const schedule = formatFieldValue(firstNonEmptyField(client, [
+        'Requested Care Schedule [Intake]', 'Requested Care Schedule',
+        'Care Schedule [Intake]', 'Schedule [Intake]', 'Weekly Schedule',
+    ])) || 'TBD';
+    const startDate = getStartDateRaw(client) || 'TBD';
+    const duration = formatFieldValue(firstNonEmptyField(client, [
+        'Requested Duration [Intake]', 'Requested Duration',
+        'Duration of Care [Intake]', 'Duration of Care',
+    ])) || 'TBD';
+    const dueDate = formatFieldValue(firstNonEmptyField(client, [
+        'Due Date [Intake]', 'Due Date', 'Estimated Due Date',
+    ])) || 'TBD';
+    const numChildren = formatFieldValue(firstNonEmptyField(client, [
+        '# of children', '# of Children', '# of Children [Intake]',
+        'Number of Children [Intake]', 'Number of Siblings [Intake]',
+    ])) || 'TBD';
+    const pets = formatFieldValue(firstNonEmptyField(client, [
+        'About Pets [Intake]', 'About Pets', 'Pets [Intake]', 'Pets',
+    ])) || 'TBD';
+    const supportTypes = formatFieldValue(firstNonEmptyField(client, [
+        'Type(s) of Support? [Intake]', 'Types of Support [Intake]',
+        'Type of Support [Intake]',
+    ])) || 'TBD';
+    const educationGoals = formatFieldValue(firstNonEmptyField(client, [
+        'Education Goals [Intake]', 'Education Goals',
+    ])) || 'TBD';
+
+    const subject = `New Alma Opportunity ${addressShort}`;
+    const body =
+        `Hello ${memberName},\n\n` +
+        `We have an Alma Care family located at ${addressLong} seeking ${careType} support with the following details:\n\n` +
+        `Support type: ${careType}\n` +
+        `Schedule: ${schedule}\n` +
+        `Start Date: ${startDate}\n` +
+        `Duration of Care: ${duration}\n` +
+        `Due Date: ${dueDate}\n` +
+        `Number of siblings: ${numChildren}\n` +
+        `Pets: ${pets}\n` +
+        `Support: ${supportTypes}\n` +
+        `Education Goals: ${educationGoals}\n\n` +
+        `We think you'd be a great fit for this family and would love to have you support them.\n\n` +
+        `Please let me know if you're interested and reply within 24 hours; I'd be happy to send your bio to the family.\n\n` +
+        `With best wishes,\nSandra Bahoua`;
+    return { email, name: memberName, subject, body };
+}
+
+// Leads have far less intake data than clients — no schedule, duration,
+// support type, etc. Keep the email short: city, due date, a soft ask.
+function buildLeadEmail(match, lead) {
+    const memberName = match.fields['Full Name'] || 'Team Member';
+    const email = match.fields['Email'] || match.fields['email'] || '';
+
+    const shape = RECORD_SHAPES.lead;
+    const city = shape.getCity(lead);
+    const postal = shape.getPostal(lead);
+    const addressLong = [city, postal].filter(Boolean).join(', ') || 'TBD';
+    const addressShort = city || postal || 'TBD';
+    const dueDate = shape.getTimelineRaw(lead) || 'TBD';
+
+    const subject = `Potential Alma Care client — ${addressShort}`;
+    const body =
+        `Hello ${memberName},\n\n` +
+        `We're talking with a prospective Alma Care family located at ${addressLong}, with a due date of ${dueDate}.\n\n` +
+        `Before we go further with them, I wanted to gauge your interest based on location and timing — would you be open to supporting a family in this area around that timeframe?\n\n` +
+        `If yes, please reply within 24 hours and I'll send more details once they're confirmed.\n\n` +
+        `With best wishes,\nSandra Bahoua`;
+    return { email, name: memberName, subject, body };
+}
+
+// Build a Gmail compose URL that opens a prefilled draft in Gmail web.
+// Requires the user to be signed into Gmail in the same browser.
+function gmailDraftHref(e) {
+    const params = new URLSearchParams({
+        view: 'cm',
+        fs: '1',
+        to: e.email,
+        su: e.subject,
+        body: e.body,
+    });
+    return `https://mail.google.com/mail/?${params.toString()}`;
 }
 
 function prepareEmails() {
@@ -858,7 +1091,7 @@ function prepareEmails() {
                 <div class="email-draft-addr">${d.email || '<em>no email on file</em>'}</div>
             </div>
             ${d.email
-                ? `<a class="btn-secondary email-draft-btn" href="${mailtoHref(d)}">Open draft</a>`
+                ? `<a class="btn-secondary email-draft-btn" href="${gmailDraftHref(d)}" target="_blank" rel="noopener">Open Gmail draft</a>`
                 : '<span class="email-draft-warn">missing email</span>'}
         </div>
     `).join('');
@@ -868,7 +1101,7 @@ function prepareEmails() {
     ).join('\n');
 
     document.getElementById('emailContent').innerHTML = `
-        <p class="email-modal-intro">Opens one draft per recipient in your default mail client. Sending is still a manual click — this tool does not send for you.</p>
+        <p class="email-modal-intro">Opens one Gmail draft per recipient (you'll need to be signed into Gmail). Sending is still a manual click — this tool does not send for you.</p>
         ${rows}
         <div class="email-modal-actions">
             <button class="btn-secondary" onclick="copyAllEmails()">📋 Copy all as text</button>

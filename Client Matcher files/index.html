@@ -36,6 +36,10 @@
                     <input type="text" id="clientsTable" value="Clients">
                 </div>
                 <div class="input-group">
+                    <label>Leads Table</label>
+                    <input type="text" id="leadsTable" value="Hubspot Leads">
+                </div>
+                <div class="input-group">
                     <label>Care Team Table</label>
                     <input type="text" id="careTeamTable" value="Care Team">
                 </div>
@@ -56,8 +60,12 @@
         </div>
 
         <div class="card">
-            <div class="section-title">👤 Select Client to Match</div>
-            <div class="input-group">
+            <div class="section-title" id="selectSectionTitle">👤 Select Client to Match</div>
+            <div class="record-tabs" role="tablist">
+                <button type="button" class="record-tab tab-active" data-mode="client" role="tab" aria-selected="true" onclick="setActiveMode('client')">Clients</button>
+                <button type="button" class="record-tab" data-mode="lead" role="tab" aria-selected="false" onclick="setActiveMode('lead')">Leads</button>
+            </div>
+            <div class="input-group" id="searchModeGroup">
                 <label>Search mode</label>
                 <div class="mode-toggle">
                     <label><input type="radio" name="searchMode" value="unmatched" checked> Unmatched (default)</label>
@@ -66,21 +74,21 @@
                 <div class="help-text">Unmatched: Matching Stage = "Unmatched", Deposit Received, Status ≠ "Cancelled". All clients: every client except Cancelled — use for prospects or rematching in-care clients.</div>
             </div>
             <div class="input-group">
-                <label>Start Date Filter (optional)</label>
+                <label id="dateFilterLabel">Start Date Filter (optional)</label>
                 <input type="date" id="startDateFilter">
-                <div class="help-text">Only show clients starting on or after this date</div>
+                <div class="help-text" id="dateFilterHelp">Only show clients starting on or after this date</div>
             </div>
             <div class="input-group">
                 <label>Search by name <span id="clientFilterCount" class="filter-count-inline"></span></label>
                 <input type="text" id="clientNameFilter" placeholder="Type a name to filter the dropdown..." oninput="filterClientList(this.value)">
             </div>
             <div class="input-group">
-                <label>Choose Client</label>
+                <label id="chooseRecordLabel">Choose Client</label>
                 <select id="clientSelect" disabled>
                     <option value="">-- Click "Load Clients" below --</option>
                 </select>
             </div>
-            <button onclick="loadClients()">📋 Load Clients</button>
+            <button onclick="loadClients()" id="loadBtn">📋 Load Clients</button>
             <button onclick="findMatches()" id="matchBtn" disabled class="btn-secondary">🔍 Find Matches</button>
         </div>
 
@@ -97,6 +105,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260526e"></script>
+    <script src="app.js?v=20260618a"></script>
 </body>
 </html>
