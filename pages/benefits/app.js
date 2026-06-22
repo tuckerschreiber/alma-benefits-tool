@@ -683,6 +683,20 @@
         portalId: '43884148',
         formId: '725f61fe-40d8-4d46-9d8d-43a32b32b99a'
       };
+      // Tool insurer slug → HubSpot `insurance_provider` dropdown CRM value.
+      // Forma + Equitable have no exact dropdown match and fold into 'Other'.
+      const INSURER_HUBSPOT_VALUE = {
+        maven: 'Maven',
+        carrot_fertility: 'Carrot',
+        forma: 'Other',
+        canada_life: 'Canada Life',
+        desjardins: 'Desjardins',
+        equitable: 'Other',
+        green_shield: 'Green Shield',
+        manulife: 'Manulife',
+        sun_life: 'Sun Life',
+        other: 'Other'
+      };
 
       // Lightweight analytics: fires through Plausible and/or GA when present,
       // falls back to console.log in dev when neither is loaded. No PII allowed
@@ -1694,7 +1708,7 @@
           { name: 'email',              value: hsValue(lead.email) },
           { name: 'phone',              value: hsValue(lead.phone) },
           { name: 'due_date',           value: hsValue(state.dueDate) },
-          { name: 'are_you_currently_pregnant_or_postpartum_', value: hsValue(state.isPostpartum) },
+          { name: 'are_you_currently_pregnant_or_postpartum_', value: state.isPostpartum === true ? 'postpartum' : (state.isPostpartum === false ? 'pregnant' : '') },
           { name: 'is_this_your_first_child_', value: hsValue(state.firstTimeParent) },
           { name: 'major_concerns',     value: hsValue(state.concerns) },
           { name: 'address',            value: hsValue(lead.streetAddress) },
@@ -1726,7 +1740,7 @@
         const lead = state.lead || {};
         return [
           { name: 'email',                value: hsValue(lead.email) },
-          { name: 'insurance_provider',   value: hsValue(state.insurer) },
+          { name: 'insurance_provider',   value: state.insurer ? (INSURER_HUBSPOT_VALUE[state.insurer] || '') : '' },
           { name: 'has_hsa',              value: hsValue(state.hasHsa) },
           { name: 'hsa_balance',          value: hsValue(state.hsaBalance) },
           { name: 'services_covered',     value: hsValue(servicesCovered) },
