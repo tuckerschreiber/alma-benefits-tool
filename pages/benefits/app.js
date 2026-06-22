@@ -1694,9 +1694,9 @@
           { name: 'email',              value: hsValue(lead.email) },
           { name: 'phone',              value: hsValue(lead.phone) },
           { name: 'due_date',           value: hsValue(state.dueDate) },
-          { name: 'ap_is_postpartum',   value: hsValue(state.isPostpartum) },
-          { name: 'ap_first_time_parent', value: hsValue(state.firstTimeParent) },
-          { name: 'ap_concerns',        value: hsValue(state.concerns) },
+          { name: 'are_you_currently_pregnant_or_postpartum_', value: hsValue(state.isPostpartum) },
+          { name: 'is_this_your_first_child_', value: hsValue(state.firstTimeParent) },
+          { name: 'major_concerns',     value: hsValue(state.concerns) },
           { name: 'address',            value: hsValue(lead.streetAddress) },
           { name: 'city',               value: hsValue(lead.city) },
           { name: 'zip',                value: hsValue(lead.postalCode) }
@@ -1726,14 +1726,14 @@
         const lead = state.lead || {};
         return [
           { name: 'email',                value: hsValue(lead.email) },
-          { name: 'ap_insurer',           value: hsValue(state.insurer) },
-          { name: 'ap_has_hsa',           value: hsValue(state.hasHsa) },
-          { name: 'ap_hsa_balance',       value: hsValue(state.hsaBalance) },
-          { name: 'ap_services_covered',  value: hsValue(servicesCovered) },
-          { name: 'ap_total_coverage_value', value: hsValue(totalCoverageValue) },
-          { name: 'ap_total_eligible',    value: hsValue(totalEligible) },
-          { name: 'ap_recommended_services', value: hsValue(recommendedServices) },
-          { name: 'ap_detected_concerns', value: hsValue(detectedConcerns) }
+          { name: 'insurance_provider',   value: hsValue(state.insurer) },
+          { name: 'has_hsa',              value: hsValue(state.hasHsa) },
+          { name: 'hsa_balance',          value: hsValue(state.hsaBalance) },
+          { name: 'services_covered',     value: hsValue(servicesCovered) },
+          { name: 'total_coverage_value', value: hsValue(totalCoverageValue) },
+          { name: 'total_eligible',       value: hsValue(totalEligible) },
+          { name: 'recommended_services', value: hsValue(recommendedServices) },
+          { name: 'detected_concerns',    value: hsValue(detectedConcerns) }
         ];
       }
 
@@ -1749,8 +1749,8 @@
         const lead = state.lead || {};
         const fields = [
           { name: 'email',                      value: hsValue(lead.email) },
-          { name: 'ap_estimate_downloaded',     value: 'true' },
-          { name: 'ap_estimate_downloaded_at',  value: new Date().toISOString() }
+          { name: 'estimate_downloaded',        value: 'true' },
+          { name: 'estimate_downloaded_at',     value: new Date().toISOString() }
         ];
         return submitHubspotPayload(fields, 'estimate_downloaded');
       }
