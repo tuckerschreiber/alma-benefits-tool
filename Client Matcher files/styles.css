@@ -49,6 +49,67 @@ h1 {
     color: var(--sage);
 }
 
+#authGate {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.auth-form {
+    background: white;
+    border-radius: 16px;
+    padding: 2.5rem;
+    box-shadow: 0 4px 20px rgba(139, 155, 142, 0.12);
+    max-width: 26rem;
+    width: 100%;
+    text-align: center;
+}
+
+.auth-form h1 {
+    margin-bottom: 0.5rem;
+}
+
+.auth-form label {
+    display: block;
+    text-align: left;
+    margin: 1rem 0 0.4rem;
+    font-weight: 500;
+    color: var(--warm-gray);
+}
+
+.auth-form button {
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.auth-subtitle {
+    color: var(--sage);
+    margin-bottom: 0.5rem;
+}
+
+.auth-error {
+    margin-top: 1rem;
+    color: #b04a3a;
+    font-size: 0.95rem;
+}
+
+.user-chip {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--sage);
+}
+
+.user-chip a {
+    color: var(--terracotta);
+    text-decoration: none;
+}
+
+.user-chip a:hover {
+    text-decoration: underline;
+}
+
 .card {
     background: white;
     border-radius: 16px;

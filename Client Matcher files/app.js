@@ -1,3 +1,66 @@
+// Shared-password gate. The real credential is the Airtable PAT each
+// coordinator pastes in — this just keeps casual URL-guessers out.
+const AUTH_FLAG = 'matcherAuth';
+
+function showApp() {
+    document.getElementById('authGate').hidden = true;
+    document.getElementById('appRoot').hidden = false;
+    renderSignOut();
+}
+
+function showGate() {
+    document.getElementById('appRoot').hidden = true;
+    document.getElementById('authGate').hidden = false;
+    document.getElementById('authPassword').focus();
+}
+
+async function submitPassword(e) {
+    e.preventDefault();
+    const input = document.getElementById('authPassword');
+    const err = document.getElementById('authError');
+    err.hidden = true;
+    const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: input.value }),
+    });
+    if (res.ok) {
+        localStorage.setItem(AUTH_FLAG, '1');
+        showApp();
+    } else {
+        err.textContent = res.status === 401 ? 'Wrong password.' : 'Something went wrong. Try again.';
+        err.hidden = false;
+        input.value = '';
+        input.focus();
+    }
+}
+
+function renderSignOut() {
+    const chip = document.getElementById('userChip');
+    if (!chip || chip.dataset.rendered) return;
+    chip.dataset.rendered = '1';
+    const link = document.createElement('a');
+    link.href = '#';
+    link.textContent = 'Sign out';
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.removeItem(AUTH_FLAG);
+        location.reload();
+    });
+    chip.appendChild(link);
+}
+
+function initAuth() {
+    document.getElementById('authForm').addEventListener('submit', submitPassword);
+    if (localStorage.getItem(AUTH_FLAG) === '1') {
+        showApp();
+    } else {
+        showGate();
+    }
+}
+
+window.addEventListener('load', initAuth);
+
 // State
 let settings = {};
 let allClients = [];
