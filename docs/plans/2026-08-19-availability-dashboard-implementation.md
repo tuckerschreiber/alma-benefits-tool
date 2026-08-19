@@ -123,8 +123,12 @@ test("WRITE_LAST_UPDATED=true flips the flag", () => {
 ```js
 const REQUIRED = [
   "DASH_PASSWORD", "AIRTABLE_API_KEY", "AIRTABLE_BASE_ID", "AIRTABLE_ALLOWED_BASE_ID",
-  "AIRTABLE_CARE_TEAM_TABLE", "AIRTABLE_SYNC_LOG_TABLE", "GITHUB_TOKEN", "GITHUB_REPO",
+  "AIRTABLE_CARE_TEAM_TABLE", "AIRTABLE_SYNC_LOG_TABLE",
 ];
+
+// GITHUB_TOKEN/GITHUB_REPO are deliberately NOT required: they're only needed to
+// dispatch a send, and Task 16 fills the token in late. Requiring them here would
+// take down the status page and review queue too. /api/send calls requireGithub().
 
 export function loadConfig(env = process.env) {
   const missing = REQUIRED.filter((k) => !env[k]);
@@ -148,6 +152,19 @@ export function loadConfig(env = process.env) {
     github: { token: env.GITHUB_TOKEN, repo: env.GITHUB_REPO },
     writeLastUpdated: env.WRITE_LAST_UPDATED === "true",
   };
+}
+
+// Call from any route that actually dispatches a workflow. Throws a 503-tagged
+// error naming what's missing, so the UI can say "sending isn't configured"
+// instead of failing with an opaque GitHub 401.
+export function requireGithub(github) {
+  const missing = ["token", "repo"].filter((k) => !github[k]);
+  if (missing.length) {
+    throw Object.assign(
+      new Error(`Sending is not configured on the server: missing ${missing.map((k) => `GITHUB_${k.toUpperCase()}`).join(", ")}`),
+      { status: 503 },
+    );
+  }
 }
 ```
 
