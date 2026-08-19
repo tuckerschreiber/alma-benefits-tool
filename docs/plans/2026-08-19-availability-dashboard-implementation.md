@@ -1102,6 +1102,7 @@ const members = await at.listMembers();
 const me = members.find((m) => m.fields.Email === "schreibertuc@gmail.com");
 if (!me) throw new Error("test member schreibertuc@gmail.com not found");
 const originalNotes = me.fields["Other Scheduling Notes"] ?? "";
+const originalUntil = me.fields["Unavailable Until When"] ?? null;
 
 // 1. Seed a fake Needs Review row
 const stamp = `integration-${Date.now()}`;
@@ -1127,13 +1128,20 @@ try {
   // 3. Apply writes the member + resolves the row (typecast creates 'Resolved')
   const applied = await fetch(`${BASE}/api/review/apply`, { method: "POST", headers, body: JSON.stringify({
     syncRowId: rowId, memberId: me.id,
-    values: { "Other Scheduling Notes": stamp }, include: ["Other Scheduling Notes"],
+    // Include a DATE field deliberately: updateMember no longer sends typecast,
+    // so an ISO string only lands if the field's dateFormat accepts it. A faked-fetch
+    // unit test cannot catch a 422 here — this is the only place it gets exercised.
+    values: { "Other Scheduling Notes": stamp, "Unavailable Until When": "2026-09-30" },
+    include: ["Other Scheduling Notes", "Unavailable Until When"],
     expectedLastUpdated: item.member.lastUpdated, initials: "IT",
   }) });
   if (!applied.ok) throw new Error(`apply failed: ${await applied.text()}`);
 
   const after = await at.getMember(me.id);
   if (after.fields["Other Scheduling Notes"] !== stamp) throw new Error("member write missing");
+  if (!String(after.fields["Unavailable Until When"] ?? "").startsWith("2026-09-30")) {
+    throw new Error(`date write failed: ${after.fields["Unavailable Until When"]}`);
+  }
   const row = await at.getSyncRow(rowId);
   if (row.fields.Status !== "Resolved") throw new Error(`row status: ${row.fields.Status}`);
   if (!/Resolved via dashboard by IT/.test(row.fields.Detail)) throw new Error("detail append missing");
@@ -1149,7 +1157,7 @@ try {
   console.log("PASS");
 } finally {
   // 5. Cleanup: restore the note, delete the seeded row
-  await at.updateMember(me.id, { "Other Scheduling Notes": originalNotes });
+  await at.updateMember(me.id, { "Other Scheduling Notes": originalNotes, "Unavailable Until When": originalUntil });
   await fetch(`https://api.airtable.com/v0/${cfg.airtable.baseId}/${encodeURIComponent(cfg.airtable.syncLogTable)}/${rowId}`, {
     method: "DELETE", headers: { Authorization: `Bearer ${cfg.airtable.apiKey}` },
   });
