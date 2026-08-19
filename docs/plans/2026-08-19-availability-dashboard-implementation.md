@@ -1182,7 +1182,7 @@ try {
 }
 ```
 
-Note: `GITHUB_TOKEN` may still be blank — set `GITHUB_TOKEN=placeholder GITHUB_REPO=o/r` inline if `loadConfig` complains; this script never touches GitHub.
+A blank `GITHUB_TOKEN` is fine — `loadConfig` doesn't require GitHub credentials and this script never touches GitHub.
 
 **Step 2: Run** with the dev server up: `node --env-file=.env.local scripts/integration.mjs` — expect `seeded recXXX`, `PASS`, `cleaned up`. The stale-check leg only passes if the test base's `Availability Last Updated` (lastModifiedTime) moved on write — it will, since Other Scheduling Notes is one of its watched fields.
 
@@ -1235,6 +1235,7 @@ No code — a verification checklist. Do these in order against the deployed URL
 2. Status page shows the latest real send cycle and 6-member roster.
 3. Members: pause `schreibertuc@gmail.com` (confirm dialog states the consequence) → row greys; resume.
 4. Seed a review item: run the Task 15 script with cleanup commented out (or re-add a fake row), work it in the UI: raw reply left, prefilled form right, edit a value, Apply with initials → disappears from queue, appears in the feed as Resolved. Then clean up (restore note, delete row).
+   **Also click Dismiss once on a seeded row.** Task 15 exercises `Resolved` but not `Dismissed`, and that option likewise gets auto-created by `typecast` on first use — this is the only place it's verified.
 5. **Live send test:** pause everyone except `schreibertuc@gmail.com` and `tucker@simpleventures.ca` (Tucker's own two addresses — no colleagues get test email). Click Send → preflight lists exactly those 2 (or shows them in `willSkip` if <6 days since 08-16 — wait it out or accept the skip note as correct behavior). Confirm → "Send queued…" → within ~5 min the button resolves and the roster shows the new cycle. Reply from one address; after the next poll (~15 min, or `gh workflow run reply-poll`) the roster shows it replied. Restore everyone to Active afterward and remember: **this re-arms the 6-day window for those 2 members** — fine, they're Tucker's addresses.
 6. Confirm the browser back/refresh flows don't wedge anything, and errors (e.g. temporarily set a wrong PAT locally) render as readable messages, not blank screens.
 
