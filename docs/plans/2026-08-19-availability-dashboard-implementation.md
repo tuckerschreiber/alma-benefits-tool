@@ -42,7 +42,7 @@ cd alma-availability-dashboard
 
 **Step 2: Make lib files runnable by `node --test`**
 
-In `package.json`: add `"type": "module"` at top level and `"test": "node --test test/"` under `scripts`.
+In `package.json`: add `"type": "module"` at top level and `"test": "node --test \"test/**/*.test.js\""` under `scripts`. (A bare directory arg — `node --test test/` — does NOT work on Node 22.20.0 with `"type": "module"`: it runs one phantom test, fails, and exits 0. Verified. The glob form is required.)
 
 **Step 3: Add `.env.example`** (real values go in `.env.local`, already gitignored by create-next-app)
 
@@ -407,10 +407,13 @@ export function buildApplyFields(values, include) {
         errors.push(`${name} not a valid option: ${v}`);
       } else fields[name] = v || null;
     } else if (spec.type === "multiselect") {
-      const arr = Array.isArray(v) ? v : [];
-      const bad = arr.filter((d) => !spec.options.includes(d));
+      // Distinguish an explicit clear from a value we can't parse. Coercing a
+      // bare string to [] would silently wipe every day the member had.
+      if (v == null || v === "") { fields[name] = []; continue; }
+      if (!Array.isArray(v)) { errors.push(`${name} must be a list: ${v}`); continue; }
+      const bad = v.filter((d) => !spec.options.includes(d));
       if (bad.length) errors.push(`${name} contains invalid values: ${bad.join(", ")}`);
-      else fields[name] = arr;
+      else fields[name] = v;
     } else if (spec.type === "date") {
       if (v != null && v !== "" && !ISO_DATE.test(v)) errors.push(`${name} is not YYYY-MM-DD: ${v}`);
       else fields[name] = v || null;
@@ -537,8 +540,10 @@ export function airtableClient(cfg, fetchImpl = fetch) {
 
     getMember: (id) => req("GET", `${enc(cfg.careTeamTable)}/${id}`),
 
+    // No typecast, deliberately: a bad select-option name must fail loudly rather
+    // than silently create a new option (the e79de4f bandwidth-casing bug class).
     updateMember: (id, fields) =>
-      req("PATCH", `${enc(cfg.careTeamTable)}/${id}`, { fields, typecast: true }),
+      req("PATCH", `${enc(cfg.careTeamTable)}/${id}`, { fields }),
 
     async listSyncLog({ formula, max = 100 } = {}) {
       const qs = [
@@ -1039,6 +1044,8 @@ export default function Gate({ children }) {
 - Modify: `app/page.js` (replace scaffold)
 
 **Step 1: Implement** — `"use client"` page that loads `/api/status` on mount into `data`, with a Refresh button and `loading`/`error` states, rendering:
+
+**Every timestamp on this page must be formatted with `timeZone: "America/Toronto"` explicitly** (e.g. `new Date(x).toLocaleString("en-CA", { timeZone: "America/Toronto", dateStyle: "medium", timeStyle: "short" })`). The send schedule is defined in Toronto time; a reviewer in another timezone would otherwise see the wrong day.
 
 - **Cards row:** Last send (`new Date(lastSend.at).toLocaleString()` + `count` recipients; red "No send recorded in the last 100 log rows — check with Tucker" if `lastSend` is null and the feed is non-empty). Next send (`nextSend.at` formatted, "Sunday ~noon Toronto"; if `nextSend.suppressed.length`, an amber note "N member(s) will be skipped — emailed within the last 6 days"). Replies this cycle (`counts.replies`) and open Needs Review (`counts.needsReview`, links to `/review`).
 - **Send button** with the two-step confirm, wired per Task 11's API: click → `api("/api/send")` GET → confirm dialog listing `willSend`, `willSkip`, and (if `sundayImpact`) "This also pushes the next automatic Sunday send past {date}." → on confirm `api("/api/send", { method: "POST" })` → button becomes "Send queued…" and the page polls `/api/status` every 20s for up to 5 minutes, until `lastSend.at` is newer than `dispatchedAt`; on timeout show "Dispatch sent, but no send has appeared in the log after 5 minutes — check with Tucker."
