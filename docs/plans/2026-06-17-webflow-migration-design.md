@@ -6,9 +6,13 @@
 
 ## Summary
 
-Move almacare.ca off Webflow and onto Next.js + Sanity CMS, deployed on Vercel. Five-week phased migration. Total labor cost: ~$5,250. Ongoing platform cost: $0–20/mo (vs $23–39/mo on Webflow today).
+Move almacare.ca off Webflow and onto Next.js + Sanity CMS, deployed on Vercel. Three-week Phase 1 at $3,000 flat. Ongoing platform cost: $0–20/mo (vs $23–39/mo on Webflow today).
+
+Phase 1 ships the rebuilt site with the core block library, all pages migrated, and full SEO protocol. Polish work (additional blocks, visual editing mode, Lighthouse tuning, extended training) deferred to an optional Phase 2 scoped separately.
 
 Hedge option: transfer the existing Webflow project to a new account as a $450 stopgap. Defers the structural problems by 3–6 months.
+
+**Revision note (2026-06-17):** Original scope was 70 hrs / $5,250 / 5 weeks. Trimmed to 40 hrs / $3,000 / 3 weeks per client budget. SEO protocol kept intact (non-negotiable). See "What got cut" section below for the tradeoffs.
 
 ## Why migrate
 
@@ -122,37 +126,62 @@ Non-negotiable. With the protocol: under 5% temporary traffic dip, full recovery
 - Weekly rank tracking against baseline.
 - Expect 1–3 weeks of mild fluctuation. Full recovery within 4 weeks if the protocol is followed.
 
-## Cost breakdown — Option C
+## Cost breakdown — Phase 1 ($3,000)
 
-| Phase | Hours |
-|---|---|
-| Project setup (Next.js + Sanity + Tailwind + Vercel) | 6 |
-| Sanity schema design (page types, block types, settings) | 10 |
-| Page templates + components (header, footer, all blocks) | 16 |
-| Content migration (30–50 pages, ~15–20 min each) | 14 |
-| SEO migration protocol | 8 |
-| QA, Lighthouse pass, launch | 8 |
-| Editor training (doc + walkthrough call) | 4 |
-| Post-launch monitoring (4 weeks) | 4 |
-| **Total** | **~70 hrs** |
-
-At $75/hr: **~$5,250 labor**.
+| Phase | Hours | Notes |
+|---|---|---|
+| Project setup (Next.js + Sanity + Vercel) | 3 | Copy from Care app scaffold |
+| Sanity schema design (3 page types + 5 block types) | 5 | Lean schema, expand in Phase 2 |
+| Components (header, footer, 5 blocks, brand-styled) | 9 | Hero, Image+Text, FAQ, ServiceList, CTA |
+| Content migration (all pages, basic block composition) | 11 | ~15–20 min/page incl. images + meta |
+| SEO migration protocol | 6 | Non-negotiable. Baseline, redirects, sitemap, diff |
+| QA + Sunday cutover | 3 | Cross-browser smoke test, DNS flip |
+| Editor training (short doc + 30-min call) | 1 | Lean |
+| Post-launch monitoring (1 week intensive + spot checks) | 2 | Down from 4 weeks |
+| **Total** | **40 hrs** | **$3,000 flat at $75/hr** |
 
 Ongoing platform: $0/mo on free tiers. Vercel Pro is $20/mo if traffic outgrows Hobby tier. Sanity Growth is $99/mo if content scale outgrows free. Neither is likely in year one.
 
 vs Webflow today at $23–39/mo: saves $275–470/year on platform costs alone.
 
-## Phased plan
+## What got cut (and the tradeoffs)
 
-**Week 1.** Repo scaffold. Sanity schemas designed. Screaming Frog + GSC baseline captured. Nav, header, footer built. Working skeleton plus schema spec ready for client review.
+To hit $3,000 from the original $5,250 estimate, the following came out of scope. None of these block launch. All can be added in a separate Phase 2 if/when the value justifies it.
 
-**Week 2.** All block components built and styled to brand. HubSpot forms wired. Live preview at staging.almacare.ca with 2–3 demo pages.
+| Cut | Original | Phase 1 | Risk |
+|---|---|---|---|
+| Block library | 10 types | 5 types | Editors have less flexibility composing new pages. Easy to add more later (~1 hr/block). |
+| Lighthouse / performance polish | Deep tune | Good defaults | Site is fast by default on Next.js + Vercel. Skipping the deep tune sacrifices maybe 10 points on Lighthouse — still well above Webflow today. |
+| Post-launch monitoring | 4 weeks daily | 1 week daily + spot checks | If a GSC issue surfaces in weeks 2–4, takes longer to catch. Mitigated by the staging diff catching most issues pre-launch. |
+| Editor training | 4 hrs | 1 hr | One walkthrough call instead of multiple. Editors get a short reference doc. They'll have questions later that need answering ad hoc. |
+| Visual editing mode polish | In scope | Deferred | Editors use the standard Sanity Studio (form-based + side-by-side preview). The "click on the live page to edit" overlay can be added in Phase 2. |
+| QA depth | Cross-browser, mobile matrix | Smoke test | Lower confidence that every page renders perfectly on every browser/device combo. Risk of small visual bugs surfacing post-launch. |
 
-**Week 3.** Top 15 highest-traffic pages migrated and QA'd side-by-side against the Webflow site.
+**What stayed in (and why):**
 
-**Week 4.** Remaining pages migrated. Screaming Frog diff against baseline shows zero broken links and zero missing metadata. Editor training doc written. Walkthrough call with non-technical editors.
+- Full SEO migration protocol (Screaming Frog baseline, identical URLs, verbatim meta, staging diff before cutover). Cutting this is the only line item that could permanently hurt the business. Non-negotiable.
+- All pages migrated, not a subset. Half-migrating breaks the site because DNS cutover moves all URLs at once.
+- HubSpot forms wired. Already proven on the benefits tool, reuses that integration.
+- Old Webflow site stays paid for 30 days as a rollback option. Free, operational.
 
-**Week 5.** Sunday early-morning DNS cutover. Sitemap submitted to GSC. Daily monitoring through week 6. Old Webflow stays paid for 30 days as a rollback option.
+## Phase 2 (deferred, scope TBD)
+
+Estimated 15–25 hrs ($1,125–1,875) depending on what's needed. Likely components:
+
+- Additional block types as content needs evolve
+- Sanity Presentation mode (visual editing overlay) polish
+- Deep Lighthouse / Core Web Vitals tuning
+- Animations and richer interactive elements
+- Extended editor docs and second training session
+- Any post-launch issues surfaced during the lighter monitoring window
+
+## Phased plan (3 weeks, ~13 hrs/week)
+
+**Week 1 (~14 hrs).** Repo scaffold (copy from Care app). Sanity schemas designed. Screaming Frog + GSC baseline captured. Header, footer, 5 block components built and styled to brand. HubSpot form block wired.
+
+**Week 2 (~14 hrs).** All pages migrated to staging.almacare.ca using the block library. Side-by-side comparison against the live Webflow site. Screaming Frog diff against baseline: zero broken links, zero missing metadata.
+
+**Week 3 (~12 hrs).** Smoke test + cross-browser pass. Sunday early-morning DNS cutover. Sitemap submitted to GSC. Editor doc + 30-minute training call. Daily GSC monitoring through week 4. Old Webflow stays paid for 30 days as a rollback option.
 
 ## Sequencing with the Care Coordination app
 

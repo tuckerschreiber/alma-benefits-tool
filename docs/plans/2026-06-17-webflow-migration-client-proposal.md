@@ -13,7 +13,7 @@ Webflow is causing more problems than it solves. I recommend rebuilding the webs
 - Cost $0–20/month going forward, vs $23–39/month today
 - Share infrastructure with the Care Coordination app we're already building, saving time on both
 
-**Total cost: about $5,250.** Five weeks of part-time work. Ends in a Sunday-morning launch with the same URLs and the same SEO presence.
+**Total cost: $3,000 (flat-rate). Three weeks of part-time work.** Sunday-morning launch with the same URLs and the same SEO presence.
 
 ## What's broken today
 
@@ -31,49 +31,71 @@ Rebuild almacare.ca on **Next.js + Sanity**. This is the same modern stack used 
 **For the editors (non-technical team members):**
 
 - A simple form-based interface. They see labeled fields like "Headline," "Body text," "Button label" and fill them in.
-- They can compose new pages by stacking pre-built blocks (Hero, FAQ, Service list, Testimonial, and so on). They cannot break the design. Every block is brand-correct by default.
+- They can compose new pages by stacking pre-built blocks. They cannot break the design. Every block is brand-correct by default.
 - Live preview as they type. Click "Publish" and it's live.
 
 **For Alma:**
 
 - The site loads faster. Google rewards this.
-- The website and the Care Coordination app share one design system and one deploy pipeline. New features built for one are easier to extend to the other.
+- The website and the Care Coordination app share one design system and one deploy pipeline.
 - No more $30/month subscription you don't really own.
+
+## What's in scope at $3,000
+
+This is a Phase 1 — get the site rebuilt, launched, and SEO-safe. Phase 2 polish is deferred and scoped separately later if you want it.
+
+**Phase 1 (in scope, $3,000):**
+
+- Next.js + Sanity + Vercel infrastructure
+- 5 reusable page blocks covering 90%+ of current page patterns (Hero, Image+Text, FAQ, Service list, CTA)
+- All current pages migrated with identical URLs and SEO metadata
+- HubSpot forms wired (already proven on the benefits tool)
+- Full SEO migration protocol (baseline crawl, identical URLs, verbatim metadata, staging diff before cutover)
+- Sunday morning DNS cutover, sitemap submitted to Google Search Console
+- Editor training (short doc plus a 30-minute walkthrough call)
+- One week of post-launch monitoring
+- Old Webflow site stays paid for 30 days as a safety net
+
+**Deferred to a possible Phase 2 (separate proposal if/when you want it):**
+
+- Additional block types beyond the initial 5
+- Visual "click-on-the-page-to-edit" mode polish
+- Deep Lighthouse and performance tuning
+- Extended editor documentation
+- Animations and richer interactive elements
 
 ## Cost
 
-- **One-time:** $5,250 (70 hours at $75/hr).
-- **Ongoing platform costs:** $0/month on free tiers. Up to $20/month at most if the site grows a lot. Saves Alma $300–450/year vs Webflow.
+- **One-time:** $3,000 flat (40 hours of work).
+- **Ongoing platform costs:** $0/month on free tiers. Up to $20/month if the site grows a lot. Saves Alma $300–450/year vs Webflow.
 
 ## Timeline
 
-Five weeks of part-time work:
+Three weeks of part-time work:
 
 | Week | Milestone |
 |---|---|
-| 1 | Foundation built. Content structure designed. Current site backed up. |
-| 2 | All page blocks built and styled. Demo pages live on a staging URL. |
-| 3 | Top 15 most-trafficked pages migrated. Side-by-side comparisons. |
-| 4 | All remaining pages migrated. Training session with editors. |
-| 5 | Sunday morning cutover. Old site stays online 30 days as a safety net. |
+| 1 | Foundation built. Schemas designed. 5 block types styled to brand. Baseline of current site captured. |
+| 2 | All pages migrated to staging. Side-by-side comparison against the Webflow site. HubSpot forms wired. |
+| 3 | Final QA, Sunday morning cutover, sitemap submitted, editor training. |
 
 ## SEO: the most important piece
 
 The site ranks for terms like "postpartum care," "in-home postpartum doula," and similar high-intent searches. Losing that ranking would cost the business meaningful revenue.
 
-My approach:
+My approach (not cut from the budget):
 
 - Capture a complete record of the current site's URLs, page titles, and rankings before any work starts.
 - Every URL stays identical. Every page title and description copies over exactly.
 - Run a full diff between the new staging site and the current site before cutting over. Zero broken links allowed.
-- Monitor Google Search Console daily for four weeks after launch.
+- Monitor Google Search Console daily for one week after launch, with spot-checks for three more weeks.
 
 With this protocol, expected impact is under 5% temporary fluctuation, recovering within a month. The current site's SEO equity stays intact.
 
 ## The alternative (smaller fix)
 
-If the budget isn't there for the full rebuild: transfer the existing Webflow project to a fresh account I control. About $450 and one week. Solves the ownership and API problems. Doesn't address the editor frustration or platform limits. A Band-Aid that buys 3–6 months before we'd want to migrate anyway.
+If even $3,000 isn't workable right now: transfer the existing Webflow project to a fresh account I control. About $450 and one week. Solves the ownership and API problems. Doesn't address the editor frustration or platform limits. A Band-Aid that buys 3–6 months before we'd want to migrate anyway.
 
 ## Next step
 
-Reply to confirm whether you'd like to proceed with the full migration ($5,250, five weeks) or the smaller transfer ($450, one week). Happy to walk through this on a call.
+Reply to confirm whether you'd like to proceed with the full migration ($3,000, three weeks) or the smaller transfer ($450, one week). Happy to walk through this on a call.
